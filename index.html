@@ -420,18 +420,14 @@
 
   <!-- ===== USTOZ AI (Gulchiroy) ===== -->
   <section class="panel" id="panel-teacher">
-    <h2 class="sec-title">Ustoz AI — Gulchiroy</h2>
+    <h2 class="sec-title">Ustoz AI </h2>
     <p class="sec-sub">Savolingizni yozing yoki quyidagi kitoblardan birini tanlang.</p>
     <div class="glass-card">
       <div class="teacher-layout" id="teacher-layout">
         <div class="chat-col">
           <div class="chat-window" id="chat-window">
             <div class="msg teacher">
-              <div class="avatar teacher">👩‍🏫</div>
-              <div>
-                <div class="msg-name">Gulchiroy</div>
-                <div class="bubble">Assalomu alaykum! Men Gulchiroy — sizning matematika bo'yicha ustozingizman. Nimani o'rganmoqchisiz?</div>
-              </div>
+              <div class="bubble">Assalomu alaykum! Nimani o'rganmoqchisiz?</div>
             </div>
           </div>
           <div class="chat-input-wrap">
@@ -768,25 +764,13 @@ function appendMsg(role, text){
   const win = document.getElementById('chat-window');
   const div = document.createElement('div');
   div.className = 'msg ' + role;
-  const name = role === 'teacher' ? 'Gulchiroy' : 'Siz';
-  const avatarChar = role === 'teacher' ? '👩‍🏫' : '🙂';
-  div.innerHTML = `
-    <div class="avatar ${role}">${avatarChar}</div>
-    <div><div class="msg-name">${name}</div><div class="bubble"></div></div>
-  `;
-  const bubbleEl = div.querySelector('.bubble');
-  bubbleEl.innerHTML = marked.parse(text);
-  renderMathInElement(bubbleEl, {
-    delimiters: [
-      {left: "$$", right: "$$", display: true},
-      {left: "$", right: "$", display: false}
-    ]
-  });
+  div.innerHTML = `<div class="bubble"></div>`;
+  div.querySelector('.bubble').textContent = text;
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
 }
 
-function appendTypingBubble(){ const win = document.getElementById('chat-window'); const div = document.createElement('div'); div.className = 'msg teacher'; div.innerHTML = `<div class="avatar teacher">👩‍🏫</div><div><div class="msg-name">Gulchiroy</div><div class="bubble"></div></div>`; win.appendChild(div); win.scrollTop = win.scrollHeight; return div; }
+function appendTypingBubble(){ const win = document.getElementById('chat-window'); const div = document.createElement('div'); div.className = 'msg teacher'; div.innerHTML = `<div class="bubble"></div>`; win.appendChild(div); win.scrollTop = win.scrollHeight; return div; }
 
 function typewriterReveal(div, text){ const bubbleEl = div.querySelector('.bubble'); bubbleEl.classList.remove('typing-dots'); const win = document.getElementById('chat-window'); let i = 0; function step(){ i += 3; bubbleEl.textContent = text.slice(0, i); win.scrollTop = win.scrollHeight; if(i < text.length){ setTimeout(step, 12); }else{ bubbleEl.innerHTML = marked.parse(text); renderMathInElement(bubbleEl, { delimiters: [{left: "$$", right: "$$", display: true},{left: "$", right: "$", display: false}] }); win.scrollTop = win.scrollHeight; } } step(); }
 
