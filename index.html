@@ -751,7 +751,6 @@ function renderBookGrid(containerEl, books, {selectable, deletable}){
       ${b.coverUrl ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : ''}
       <div class="b-title">${escapeHtml(b.title)}</div>
       ${b.author ? `<div class="b-author">${escapeHtml(b.author)}</div>` : ''}
-      <div class="b-count">📄 PDF kitob</div>
     `;
     if(selectable){ card.addEventListener('click', ()=> openBookInChat(b)); }
     containerEl.appendChild(card);
