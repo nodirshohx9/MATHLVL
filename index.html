@@ -298,7 +298,7 @@
   .signed-in-badge{ display:none; background: var(--gold-soft); border:1px solid var(--gold); border-radius:12px; padding:14px; margin-top:16px; font-size:13.5px; }
   .signed-in-badge.show{ display:block; }
 
-  /* ======================================================
+ /* ======================================================
      RESPONSIVE — suyuq (fluid) o'lchamlar orqali silliq moslashuv
      ====================================================== */
   .app{ padding: clamp(12px, 3vw, 22px) clamp(12px, 4vw, 24px) 60px; }
@@ -350,77 +350,6 @@
     button.glow-btn{ width: 100%; }
     button.ghost-btn{ width: 100%; }
     .profile-card{ max-width: 100%; }
-  }
-</style>
-  @media (max-width: 900px){
-    .app{ max-width: 100%; padding: 16px 16px 60px; }
-    .glass-card{ padding: 20px; }
-    .home-title{ font-size: 28px; }
-    .sec-title{ font-size: 22px; }
-    .book-grid{ grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap:10px; }
-  }
-
-  @media (max-width: 640px){
-    .app{ padding: 12px 12px 50px; }
-
-   /* Header: hammasi bitta qatorda qoladi, joy yetmasa tugmalar gorizontal siljiydi */
-    header.topbar{
-      border-radius: 20px; padding: 10px 12px; flex-wrap: nowrap; gap: 8px;
-    }
-    .logo-mark{ font-size: 16px; flex: none; }
-    .logo-mark img{ height: 22px; }
-    nav.main-nav{
-      flex: 1 1 auto; overflow-x: auto; -webkit-overflow-scrolling: touch;
-      scrollbar-width: none; gap:4px; justify-content: flex-start;
-    }
-    nav.main-nav::-webkit-scrollbar{ display:none; }
-    nav.main-nav .nav-btn{ flex: none; white-space: nowrap; padding: 7px 10px; font-size: 11px; }
-    .pp{ width: 32px; height: 32px; flex: none; }
-
-    .sub-nav{ justify-content: flex-start; overflow-x: auto; padding-bottom: 4px; }
-
-    /* Matn va sarlavhalar */
-    .home-title{ font-size: 22px; }
-    .home-sub{ font-size: 13px; }
-    .sec-title{ font-size: 19px; }
-    .sec-sub{ font-size: 12.5px; }
-
-    /* Kartalar va formalar */
-    .glass-card{ padding: 16px; border-radius: 14px; }
-    textarea, input[type=text], input[type=number], select{ font-size: 14px; padding: 12px; }
-    button.glow-btn{ width: 100%; padding: 13px 18px; }
-    button.ghost-btn{ width: 100%; }
-
-    /* Ustoz AI: kitob va chat ustunlari yonma-yon emas, tepa-past bo'lib chiqadi */
-    .teacher-layout{ flex-direction: column; }
-    .teacher-layout.book-mode .chat-col{ flex: 1 1 100%; order: 2; width: 100%; }
-    .teacher-layout.book-mode .book-col{ order: 1; width: 100%; }
-    .chat-window{ max-height: 340px; }
-    .book-col iframe{ height: 55vh !important; }
-
-    .book-grid{ grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); gap:8px; }
-    .book-card{ padding: 10px; }
-    .book-card .b-title{ font-size: 15px; }
-
-    .msg{ max-width: 100%; }
-    .avatar{ width: 30px; height: 30px; font-size: 14px; }
-    .bubble{ font-size: 13px; }
-
-    .video-embed iframe{ aspect-ratio: 16/10; }
-
-    .row{ flex-direction: column; gap: 12px; }
-    .row > .field{ flex: 1 1 auto; }
-
-    .profile-card{ max-width: 100%; }
-
-    .step{ gap: 8px; }
-    .step-text{ font-size: 13px; }
-  }
-
-  @media (max-width: 380px){
-    .logo-mark{ font-size: 16px; }
-    nav.main-nav .nav-btn{ font-size: 10.5px; padding: 7px 4px; }
-    .home-title{ font-size: 19px; }
   }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
