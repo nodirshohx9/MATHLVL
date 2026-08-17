@@ -299,8 +299,59 @@
   .signed-in-badge.show{ display:block; }
 
   /* ======================================================
-     RESPONSIVE — planshet (<=900px) va telefon (<=640px)
+     RESPONSIVE — suyuq (fluid) o'lchamlar orqali silliq moslashuv
      ====================================================== */
+  .app{ padding: clamp(12px, 3vw, 22px) clamp(12px, 4vw, 24px) 60px; }
+
+  header.topbar{
+    padding: clamp(8px, 2vw, 12px) clamp(10px, 3vw, 18px);
+    flex-wrap: nowrap; gap: clamp(6px, 2vw, 12px);
+  }
+  .logo-mark{ font-size: clamp(15px, 3.2vw, 22px); flex: none; }
+  .logo-mark img{ height: clamp(20px, 4.5vw, 30px); }
+
+  nav.main-nav{
+    display:flex; flex: 1 1 auto; gap: clamp(2px, 1vw, 8px);
+    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  nav.main-nav::-webkit-scrollbar{ display:none; }
+  nav.main-nav .nav-btn{
+    flex: none; white-space: nowrap;
+    padding: clamp(6px, 1.4vw, 9px) clamp(8px, 2vw, 16px);
+    font-size: clamp(10.5px, 2vw, 13.5px);
+  }
+  .pp{ width: clamp(28px, 5.5vw, 42px); height: clamp(28px, 5.5vw, 42px); flex: none; }
+
+  .home-title{ font-size: clamp(20px, 4.5vw, 34px); }
+  .home-sub{ font-size: clamp(12px, 2vw, 14px); }
+  .sec-title{ font-size: clamp(17px, 3.5vw, 26px); }
+  .sec-sub{ font-size: clamp(11.5px, 1.8vw, 13.5px); }
+
+  .glass-card{ padding: clamp(14px, 3vw, 28px); }
+  textarea, input[type=text], input[type=number], select{ font-size: clamp(13px, 1.8vw, 14.5px); }
+
+  .book-grid{ grid-template-columns: repeat(auto-fill, minmax(clamp(110px, 22vw, 190px), 1fr)); gap: clamp(8px, 1.5vw, 14px); }
+  .book-card{ padding: clamp(10px, 1.8vw, 14px); }
+  .book-card .b-title{ font-size: clamp(14px, 2.2vw, 18px); }
+
+  .bubble{ font-size: clamp(13px, 1.8vw, 13.8px); }
+  .step-text{ font-size: clamp(13px, 1.8vw, 14px); }
+
+  /* Faqat haqiqiy telefon kengligida (<=600px): kitob va chatni tepa-past qilib qo'yamiz,
+     chunki yonma-yon sig'ishning iloji yo'q */
+  @media (max-width: 600px){
+    .teacher-layout{ flex-direction: column; }
+    .teacher-layout.book-mode .chat-col{ flex: 1 1 100%; order: 2; width: 100%; }
+    .teacher-layout.book-mode .book-col{ order: 1; width: 100%; }
+    .chat-window{ max-height: 320px; }
+    .book-col iframe{ height: 50vh !important; }
+    .row{ flex-direction: column; gap: 12px; }
+    .row > .field{ flex: 1 1 auto; }
+    button.glow-btn{ width: 100%; }
+    button.ghost-btn{ width: 100%; }
+    .profile-card{ max-width: 100%; }
+  }
+</style>
   @media (max-width: 900px){
     .app{ max-width: 100%; padding: 16px 16px 60px; }
     .glass-card{ padding: 20px; }
