@@ -538,6 +538,10 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <script type="module">
+    import { upload } from 'https://esm.sh/@vercel/blob@0.27.0/client';
+    window.__blobUpload = upload;
+  </script>
 </head>
 <body>
 
@@ -806,7 +810,7 @@
         <button class="plan-toggle-btn" data-cycle="yearly">Yillik</button>
       </div>
 
-      <div class="glass-card plan-card">
+      <div class="glass-card plan-card" id="plan-card-view">
         <div class="plan-price" id="plan-price">—</div>
         <ul class="plan-benefits">
           <li>✓ Plus kutubxonasi</li>
@@ -816,6 +820,33 @@
         </ul>
         <button class="glow-btn" id="plan-purchase-btn" style="width:100%;">Tanlash</button>
         <div class="status" id="plan-purchase-status"></div>
+      </div>
+
+      <div class="glass-card plan-card" id="payment-instruction-view" style="display:none; text-align:center;">
+        <div style="font-size:13px; color:var(--text-dim); margin-bottom:6px;">To'lov summasi</div>
+        <div style="font-family:var(--font-display); font-size:24px; font-weight:800; margin-bottom:18px;" id="payment-amount">—</div>
+
+        <div style="background: rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:16px; margin-bottom:16px;">
+          <div style="font-size:11.5px; color:var(--text-dim); margin-bottom:6px;">Karta raqami</div>
+          <div style="font-family:var(--font-mono); font-size:17px; letter-spacing:1px; margin-bottom:10px;" id="payment-card-number">—</div>
+          <div style="font-size:13px; color:var(--text-dim);" id="payment-card-holder">—</div>
+          <button class="ghost-btn" id="payment-copy-card-btn" style="margin-top:12px; font-size:12px; padding:8px 14px;">Karta raqamini nusxalash</button>
+        </div>
+
+        <p style="font-size:12.5px; color:var(--text-dim); margin-bottom:14px; text-align:left;">
+          Yuqoridagi summani shu kartaga o'tkazing, so'ng to'lov chekining rasmini (skrinshotini) yuklang. Admin tekshirib, Plus'ni faollashtiradi.
+        </p>
+
+        <input type="file" id="payment-screenshot-input" accept="image/*" style="width:100%; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:12px; padding:12px; box-sizing:border-box; margin-bottom:12px;">
+        <button class="glow-btn" id="payment-submit-btn" style="width:100%;">Chekni yubordim</button>
+        <button class="ghost-btn" id="payment-instruction-back-btn" style="width:100%; margin-top:10px;">Orqaga</button>
+        <div class="status" id="payment-submit-status"></div>
+      </div>
+
+      <div class="glass-card plan-card" id="payment-pending-view" style="display:none; text-align:center;">
+        <div style="font-size:32px; margin-bottom:10px;">⏳</div>
+        <h3 style="font-family:var(--font-display); margin-bottom:8px;">Tekshirilmoqda</h3>
+        <p style="font-size:13px; color:var(--text-dim);">To'lovingiz qabul qilindi, admin tez orada tasdiqlaydi. Odatda bir necha soat ichida.</p>
       </div>
 
       <div class="glass-card profile-section-card" style="margin-top:16px; text-align:center;">
@@ -1773,10 +1804,22 @@ function renderMyBooks(){
 }
 
 // ---- Tarif tanlash ekrani ----
-const planPrices = { monthly: null, yearly: null }; // Haqiqiy narxlar ulanguncha bo'sh
+let paymentSettings = { cardNumber: '', cardHolder: '', monthlyPrice: 0, yearlyPrice: 0 };
 let selectedCycle = 'monthly';
-function openPlanSelect(plusData){
+
+async function loadPaymentSettings(){
+  try{
+    const res = await fetch('/api/gift?action=payment-settings');
+    paymentSettings = await res.json();
+  }catch(e){}
+}
+
+async function openPlanSelect(plusData){
   document.getElementById('plan-select-overlay').classList.add('open');
+  document.getElementById('plan-card-view').style.display = 'block';
+  document.getElementById('payment-instruction-view').style.display = 'none';
+  document.getElementById('payment-pending-view').style.display = 'none';
+
   const noteEl = document.getElementById('current-plan-note');
   if(plusData && plusData.active){
     const dateStr = new Date(plusData.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
@@ -1789,7 +1832,18 @@ function openPlanSelect(plusData){
     noteEl.style.display = 'none';
     noteEl.innerHTML = '';
   }
+  await loadPaymentSettings();
   updatePlanPriceDisplay();
+
+  // Agar kutilayotgan to'lov bo'lsa, shuni ko'rsatish
+  try{
+    const myPayRes = await fetch('/api/gift?action=my-payment');
+    const myPay = await myPayRes.json();
+    if(myPay.payment && myPay.payment.status === 'PENDING'){
+      document.getElementById('plan-card-view').style.display = 'none';
+      document.getElementById('payment-pending-view').style.display = 'block';
+    }
+  }catch(e){}
 }
 document.getElementById('plan-select-back').addEventListener('click', ()=>{
   document.getElementById('plan-select-overlay').classList.remove('open');
@@ -1802,14 +1856,72 @@ document.querySelectorAll('.plan-toggle-btn').forEach(btn=>{
     updatePlanPriceDisplay();
   });
 });
+function formatSom(n){
+  return n ? n.toLocaleString('uz-UZ') + " so'm" : "Narx hali belgilanmagan";
+}
 function updatePlanPriceDisplay(){
-  const price = planPrices[selectedCycle];
-  document.getElementById('plan-price').textContent = price ? price : "Narx tez orada e'lon qilinadi";
+  const price = selectedCycle === 'monthly' ? paymentSettings.monthlyPrice : paymentSettings.yearlyPrice;
+  const label = selectedCycle === 'monthly' ? '/ oy' : '/ yil';
+  document.getElementById('plan-price').textContent = price ? `${formatSom(price)} ${label}` : "Narx tez orada e'lon qilinadi";
 }
 document.getElementById('plan-purchase-btn').addEventListener('click', ()=>{
-  const statusEl = document.getElementById('plan-purchase-status');
-  statusEl.textContent = "To'lov tizimi hozircha ulanmagan. Hozircha sovg'a kodi orqali faollashtirishingiz mumkin.";
-  statusEl.classList.add('err');
+  if(!paymentSettings.cardNumber){
+    document.getElementById('plan-purchase-status').textContent = "To'lov hali sozlanmagan. Sovg'a kodi orqali faollashtirishingiz mumkin.";
+    document.getElementById('plan-purchase-status').classList.add('err');
+    return;
+  }
+  const price = selectedCycle === 'monthly' ? paymentSettings.monthlyPrice : paymentSettings.yearlyPrice;
+  document.getElementById('payment-amount').textContent = formatSom(price);
+  document.getElementById('payment-card-number').textContent = paymentSettings.cardNumber;
+  document.getElementById('payment-card-holder').textContent = paymentSettings.cardHolder;
+  document.getElementById('plan-card-view').style.display = 'none';
+  document.getElementById('payment-instruction-view').style.display = 'block';
+});
+document.getElementById('payment-instruction-back-btn').addEventListener('click', ()=>{
+  document.getElementById('payment-instruction-view').style.display = 'none';
+  document.getElementById('plan-card-view').style.display = 'block';
+});
+document.getElementById('payment-copy-card-btn').addEventListener('click', ()=>{
+  navigator.clipboard.writeText(paymentSettings.cardNumber);
+  const btn = document.getElementById('payment-copy-card-btn');
+  btn.textContent = 'Nusxalandi ✓';
+  setTimeout(()=> btn.textContent = 'Karta raqamini nusxalash', 1500);
+});
+document.getElementById('payment-submit-btn').addEventListener('click', async ()=>{
+  const fileInput = document.getElementById('payment-screenshot-input');
+  const statusEl = document.getElementById('payment-submit-status');
+  const btn = document.getElementById('payment-submit-btn');
+  const file = fileInput.files[0];
+  if(!file){
+    statusEl.textContent = "Chek rasmini yuklang.";
+    statusEl.classList.add('err');
+    return;
+  }
+  btn.disabled = true;
+  statusEl.classList.remove('err');
+  statusEl.textContent = "Yuklanmoqda...";
+  try{
+    const blobResult = await window.__blobUpload(file.name, file, {
+      access: 'public',
+      handleUploadUrl: '/api/upload'
+    });
+    statusEl.textContent = "Yuborilmoqda...";
+    const res = await fetch('/api/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'submit-payment', plan: selectedCycle, screenshotUrl: blobResult.url })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || "Yuborib bo'lmadi");
+
+    document.getElementById('payment-instruction-view').style.display = 'none';
+    document.getElementById('payment-pending-view').style.display = 'block';
+  }catch(err){
+    statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
+    statusEl.classList.add('err');
+  }finally{
+    btn.disabled = false;
+  }
 });
 document.getElementById('plan-open-redeem-btn').addEventListener('click', openRedeemScreen);
 document.getElementById('open-redeem-btn').addEventListener('click', ()=> openRedeemScreen());
