@@ -316,16 +316,18 @@
   .logo-mark{ font-size: clamp(15px, 3.2vw, 22px); flex: none; }
   .logo-mark img{ height: clamp(20px, 4.5vw, 30px); }
 
+  @media (max-width: 600px){
     .hamburger-btn{ display:flex; }
-  .pp{ display:none; }
-  nav.main-nav{
-    display:flex; position:fixed; top:0; right:0; height:100vh; width: 210px;
-    flex-direction:column; gap:6px; background: var(--panel-solid); border-left:1px solid var(--border);
-    padding: 70px 14px 14px; z-index:50; box-shadow: -10px 0 30px rgba(0,0,0,0.4);
-    transform: translateX(110%); transition: transform .3s ease;
+    .pp{ display:none; }
+    nav.main-nav{
+      display:flex; position:fixed; top:0; right:0; height:100vh; width: 210px;
+      flex-direction:column; gap:6px; background: var(--panel-solid); border-left:1px solid var(--border);
+      padding: 70px 14px 14px; z-index:50; box-shadow: -10px 0 30px rgba(0,0,0,0.4);
+      transform: translateX(110%); transition: transform .3s ease;
+    }
+    nav.main-nav.open{ transform: translateX(0); }
+    nav.main-nav .nav-btn{ width:100%; text-align:center; padding:12px; font-size:14px; }
   }
-  nav.main-nav.open{ transform: translateX(0); }
-  nav.main-nav .nav-btn{ width:100%; text-align:center; padding:12px; font-size:14px; }
 
   .home-title{ font-size: clamp(20px, 4.5vw, 34px); }
   .home-sub{ font-size: clamp(12px, 2vw, 14px); }
@@ -375,10 +377,10 @@
       <button class="nav-btn" data-tab="teacher">Ustoz AI</button>
       <button class="nav-btn active" data-tab="home">Bosh menyu</button>
       <button class="nav-btn" data-tab="video">Vidio darsliklar</button>
-      <button class="nav-btn" id="pp-mobile-btn" style="display:flex; align-items:center; justify-content:center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>
+      <button class="nav-btn" id="pp-mobile-btn">Shaxsiy profil</button>
     </nav>
         <button class="hamburger-btn" id="hamburger-btn" title="Menyu"><span></span><span></span><span></span></button>
-    <button class="pp" id="pp-btn" title="Shaxsiy profil"><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/><path d="M4 20c0-4.4 3.6-7 8-7s8 2.6 8 7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span></button>
+    <button class="pp" id="pp-btn" title="Shaxsiy profil"><span>PP</span></button>
   </header>
 
   <!-- ===== HOME / SOLVE ===== -->
