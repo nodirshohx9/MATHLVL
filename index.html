@@ -316,15 +316,15 @@
   .logo-mark{ font-size: clamp(15px, 3.2vw, 22px); flex: none; }
   .logo-mark img{ height: clamp(20px, 4.5vw, 30px); }
 
-    .hamburger-btn{ display:flex; }
+  .hamburger-btn{ display:flex; }
+  .pp{ display:none; }
   nav.main-nav{
-    display:none; position:absolute; top: calc(100% + 8px); left:0; right:0;
-    flex-direction:column; gap:6px; background: var(--panel-solid); border:1px solid var(--border);
+    display:none; position:absolute; top: calc(100% + 8px); right:0; left:auto;
+    width: 200px; flex-direction:column; gap:6px; background: var(--panel-solid); border:1px solid var(--border);
     border-radius:16px; padding:10px; z-index:50; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   }
   nav.main-nav.open{ display:flex; }
-  nav.main-nav .nav-btn{ width:100%; text-align:center; padding:11px; font-size:14px; }
-  .pp{ width: clamp(28px, 5.5vw, 42px); height: clamp(28px, 5.5vw, 42px); flex: none; }
+  nav.main-nav .nav-btn{ width:100%; text-align:center; padding:11px; font-size:13.5px; }
 
   .home-title{ font-size: clamp(20px, 4.5vw, 34px); }
   .home-sub{ font-size: clamp(12px, 2vw, 14px); }
@@ -374,6 +374,7 @@
       <button class="nav-btn" data-tab="teacher">Ustoz AI</button>
       <button class="nav-btn active" data-tab="home">Bosh menyu</button>
       <button class="nav-btn" data-tab="video">Vidio darsliklar</button>
+      <button class="nav-btn" id="pp-mobile-btn">Shaxsiy profil</button>
     </nav>
         <button class="hamburger-btn" id="hamburger-btn" title="Menyu"><span></span><span></span><span></span></button>
     <button class="pp" id="pp-btn" title="Shaxsiy profil"><span>PP</span></button>
@@ -536,8 +537,15 @@ function activateTab(tab){
 document.getElementById('hamburger-btn').addEventListener('click', ()=>{
   document.querySelector('nav.main-nav').classList.toggle('open');
 });
+document.getElementById('pp-mobile-btn').addEventListener('click', ()=>{
+  document.querySelector('nav.main-nav').classList.remove('open');
+  document.getElementById('pp-btn').click();
+});
 document.querySelectorAll('.nav-btn').forEach(btn=>{
-  btn.addEventListener('click', ()=> activateTab(btn.dataset.tab));
+  btn.addEventListener('click', ()=>{
+    activateTab(btn.dataset.tab);
+    document.querySelector('nav.main-nav').classList.remove('open');
+  });
 });
 
 // ---------- PP profile button ----------
