@@ -459,7 +459,7 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
 </head>
 <body>
 
@@ -576,7 +576,10 @@
               <button class="icon-btn" id="reader-toc-btn" title="Mundarija" aria-label="Mundarija">☰</button>
             </div>
             <div class="reader-canvas-wrap" id="reader-canvas-wrap">
-              <div class="reader-loading" id="reader-loading">📖 Kitob tayyorlanmoqda...</div>
+              <div class="reader-loading" id="reader-loading">
+                <div id="reader-loading-text">📖 Kitob tayyorlanmoqda...</div>
+                <button class="ghost-btn" id="reader-retry-btn" style="display:none; margin-top:14px;">Qayta urinish</button>
+              </div>
               <canvas id="reader-canvas" style="display:none;"></canvas>
             </div>
             <div class="reader-controls">
@@ -1130,7 +1133,7 @@ document.querySelectorAll('.chip-btn').forEach(chip=>{
 
 // ---- Book mode: detail screen -> custom PDF reader (PDF.js) ----
 if(window['pdfjsLib']){
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.0.379/pdf.worker.min.js';
+  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 }
 let readerPdfDoc = null;
 let readerPageNum = 1;
@@ -1161,9 +1164,12 @@ function startReading(book){
   document.getElementById('reader-header-title').textContent = book.title;
 
   const loadingEl = document.getElementById('reader-loading');
+  const loadingTextEl = document.getElementById('reader-loading-text');
+  const retryBtn = document.getElementById('reader-retry-btn');
   const canvas = document.getElementById('reader-canvas');
   loadingEl.style.display = 'block';
-  loadingEl.textContent = '📖 Kitob tayyorlanmoqda...';
+  loadingTextEl.textContent = '📖 Kitob tayyorlanmoqda...';
+  retryBtn.style.display = 'none';
   canvas.style.display = 'none';
   document.getElementById('reader-page-text').textContent = '— / —';
   document.getElementById('reader-toc-list').innerHTML = '';
@@ -1171,10 +1177,22 @@ function startReading(book){
   readerPdfDoc = null;
   readerPageNum = 1;
 
-  pdfjsLib.getDocument(book.fileUrl).promise.then(pdf=>{
-    readerPdfDoc = pdf;
-    renderReaderPage(readerPageNum);
-    pdf.getOutline().then(outline=>{
+  function showReaderError(){
+    loadingTextEl.textContent = "Kitobni ochishda muammo yuz berdi. Qayta urinib ko'ring.";
+    retryBtn.style.display = 'inline-block';
+  }
+
+  if(typeof pdfjsLib === 'undefined'){
+    console.error('PDF.js kutubxonasi yuklanmadi (pdfjsLib aniqlanmagan).');
+    showReaderError();
+    return;
+  }
+
+  pdfjsLib.getDocument(book.fileUrl).promise.then(async pdf=>{
+    try{
+      readerPdfDoc = pdf;
+      await renderReaderPage(readerPageNum);
+      const outline = await pdf.getOutline().catch(()=>null);
       const tocList = document.getElementById('reader-toc-list');
       if(outline && outline.length){
         outline.forEach(item=>{
@@ -1197,11 +1215,18 @@ function startReading(book){
       }else{
         tocList.innerHTML = '<div class="empty-note">Bu kitobda mundarija topilmadi.</div>';
       }
-    }).catch(()=>{});
-  }).catch(()=>{
-    loadingEl.textContent = "Kitobni yuklashda muammo yuz berdi. Qayta urinib ko'ring.";
+    }catch(renderErr){
+      console.error('PDF sahifasini render qilishda xato:', renderErr);
+      showReaderError();
+    }
+  }).catch(err=>{
+    console.error('PDF hujjatini yuklashda xato:', err);
+    showReaderError();
   });
 }
+document.getElementById('reader-retry-btn').addEventListener('click', ()=>{
+  if(activeBook) startReading(activeBook);
+});
 
 async function renderReaderPage(num){
   if(!readerPdfDoc) return;
