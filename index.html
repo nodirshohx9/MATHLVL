@@ -1600,7 +1600,7 @@ async function refreshPlusStatus(){
   const el = document.getElementById('plus-status-display');
   if(!el) return;
   try{
-    const res = await fetch('/api/plus-status');
+    const res = await fetch('/api/gift?action=status');
     const data = await res.json();
     if(data.active){
       const dateStr = new Date(data.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
@@ -1622,7 +1622,7 @@ async function handleRedeemFlow(){
   const content = document.getElementById('redeem-content');
   overlay.style.display = 'flex';
 
-  const meRes = await fetch('/api/me');
+  const meRes = await fetch('/api/auth');
   const me = await meRes.json();
 
   if(!me.loggedIn){
@@ -1640,10 +1640,10 @@ async function handleRedeemFlow(){
 
   content.innerHTML = `<div style="color:var(--text-dim); font-size:13.5px;">Tekshirilmoqda...</div>`;
   try{
-    const res = await fetch('/api/gift-redeem', {
+    const res = await fetch('/api/gift', {
       method:'POST',
       headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ code: redeemCode })
+      body: JSON.stringify({ action:'redeem', code: redeemCode })
     });
     const data = await res.json();
     if(!res.ok){
@@ -1679,7 +1679,7 @@ async function handleRedeemFlow(){
 
 async function refreshAuthState(){
   try{
-    const res = await fetch('/api/me');
+    const res = await fetch('/api/auth');
     const data = await res.json();
     if(data.loggedIn){ showSignedInUI(data); }
     else{ showSignedOutUI(); }
@@ -1692,7 +1692,7 @@ document.getElementById('apple-btn').addEventListener('click', ()=>{
   alert("Apple orqali kirish hozircha mavjud emas.");
 });
 document.getElementById('logout-btn').addEventListener('click', async ()=>{
-  await fetch('/api/logout', { method:'POST' });
+  await fetch('/api/auth', { method:'POST' });
   showSignedOutUI();
 });
 
@@ -1761,10 +1761,10 @@ document.getElementById('manual-redeem-btn').addEventListener('click', async ()=
   statusEl.classList.remove('err');
   statusEl.textContent = "Tekshirilmoqda...";
   try{
-    const res = await fetch('/api/gift-redeem', {
+    const res = await fetch('/api/gift', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code })
+      body: JSON.stringify({ action:'redeem', code })
     });
     const data = await res.json();
     if(!res.ok){
