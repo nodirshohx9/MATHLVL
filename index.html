@@ -335,6 +335,7 @@
   .reader-toc-header{ display:flex; align-items:center; justify-content:space-between; font-family: var(--font-display); font-size:16px; margin-bottom:14px; }
   .reader-toc-item{ padding:10px 8px; border-radius:8px; font-size:13px; cursor:pointer; color: var(--text-dim); }
   .reader-toc-item:hover{ background: rgba(255,255,255,0.05); color: var(--text); }
+  .reader-toc-item.active{ background: var(--blue-soft); color: var(--blue); font-weight:700; }
 
   .ai-fab{
     position:absolute; bottom:16px; right:14px; width:52px; height:52px; border-radius:50%;
@@ -354,6 +355,31 @@
   .ai-sheet-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .ai-sheet-header span{ font-family: var(--font-display); font-size:15px; font-weight:700; }
   .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; max-height:30vh; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+
+  .reader-page-jump-wrap{ position:relative; display:flex; flex-direction:column; align-items:center; }
+  button.reader-page-text{
+    background:none; border:none; cursor:pointer; font-family: var(--font-mono); font-size:12.5px;
+    color: var(--text-dim); min-width:64px; text-align:center; padding:4px 8px; border-radius:8px;
+  }
+  button.reader-page-text:hover{ background: rgba(255,255,255,0.05); color: var(--text); }
+  #reader-current-chapter{ font-size:10px; color: var(--text-dim); font-family: var(--font-mono); opacity:.7; margin-top:-2px; }
+  .reader-page-popover{
+    display:none; position:absolute; bottom: calc(100% + 8px); left:50%; transform: translateX(-50%);
+    background: var(--panel-solid); border:1px solid var(--border); border-radius:12px; padding:12px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:50; white-space:nowrap;
+  }
+  .reader-page-popover.open{ display:block; }
+  .reader-page-popover-label{ font-size:11.5px; color: var(--text-dim); margin-bottom:8px; text-align:center; }
+  .reader-page-popover-row{ display:flex; gap:8px; align-items:center; }
+  .reader-page-popover-row input{
+    width:70px; text-align:center; background: rgba(5,7,18,0.55); border:1px solid var(--border);
+    border-radius:8px; color: var(--text); font-family: var(--font-mono); font-size:13px; padding:8px;
+  }
+
+  .book-progress-bar{ height:5px; background: rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin: 8px 0; }
+  .book-progress-bar-fill{ height:100%; background: linear-gradient(90deg, var(--blue), var(--gold)); border-radius:3px; }
+  .book-progress-text{ font-size:11px; color: var(--text-dim); font-family: var(--font-mono); }
+  .book-card .book-progress-bar{ margin: 6px 0 2px; }
   .back-link{ background:none; border:none; color: var(--blue); font-family: var(--font-mono); font-size:12.5px; cursor:pointer; padding:0; margin-bottom:14px; }
   .back-link:hover{ text-decoration:underline; }
   .problem-item{ background: rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:13.5px; font-family: var(--font-mono); cursor:pointer; transition: border-color .15s ease; }
@@ -584,7 +610,17 @@
             </div>
             <div class="reader-controls">
               <button class="icon-btn" id="reader-prev" title="Oldingi sahifa" aria-label="Oldingi sahifa">‹</button>
-              <span class="reader-page-text" id="reader-page-text">— / —</span>
+              <div class="reader-page-jump-wrap">
+                <button class="reader-page-text" id="reader-page-text" title="Sahifaga o'tish">— / —</button>
+                <div id="reader-current-chapter"></div>
+                <div class="reader-page-popover" id="reader-page-popover">
+                  <div class="reader-page-popover-label">Sahifaga o'tish</div>
+                  <div class="reader-page-popover-row">
+                    <input type="number" id="reader-page-input" min="1">
+                    <button class="glow-btn" id="reader-page-go" style="padding:8px 16px; font-size:13px;">O'tish</button>
+                  </div>
+                </div>
+              </div>
               <button class="icon-btn" id="reader-next" title="Keyingi sahifa" aria-label="Keyingi sahifa">›</button>
             </div>
             <div class="reader-toc-drawer" id="reader-toc-drawer">
@@ -930,6 +966,37 @@ async function loadBooks(){
   }catch(e){ return []; }
 }
 
+// ---- O'qish jarayonini saqlash (qurilma darajasida, haqiqiy hisob tizimi bo'lmagani uchun) ----
+const BOOK_PROGRESS_KEY = 'nova_book_progress';
+function getAllBookProgress(){
+  try{ return JSON.parse(localStorage.getItem(BOOK_PROGRESS_KEY) || '{}'); }catch(e){ return {}; }
+}
+function getBookProgress(bookId){
+  return getAllBookProgress()[bookId] || null;
+}
+function saveBookProgress(bookId, currentPage, totalPages){
+  try{
+    const all = getAllBookProgress();
+    all[bookId] = { currentPage, totalPages, progressPercent: Math.round((currentPage / totalPages) * 100), updatedAt: Date.now() };
+    localStorage.setItem(BOOK_PROGRESS_KEY, JSON.stringify(all));
+  }catch(e){}
+}
+let progressSaveTimer = null;
+function scheduleProgressSave(bookId, currentPage, totalPages){
+  clearTimeout(progressSaveTimer);
+  progressSaveTimer = setTimeout(()=> saveBookProgress(bookId, currentPage, totalPages), 500);
+}
+function flushProgressSave(){
+  clearTimeout(progressSaveTimer);
+  if(activeBook && readerPdfDoc){
+    saveBookProgress(activeBook.id, readerPageNum, readerPdfDoc.numPages);
+  }
+}
+document.addEventListener('visibilitychange', ()=>{
+  if(document.visibilityState === 'hidden') flushProgressSave();
+});
+window.addEventListener('beforeunload', flushProgressSave);
+
 function renderBookGrid(containerEl, books, {selectable, deletable}){
   containerEl.innerHTML = '';
   if(books.length === 0){
@@ -939,10 +1006,16 @@ function renderBookGrid(containerEl, books, {selectable, deletable}){
   books.forEach(b=>{
     const card = document.createElement('div');
     card.className = 'book-card';
+    const progress = getBookProgress(b.id);
+    const progressHtml = progress
+      ? `<div class="book-progress-bar"><div class="book-progress-bar-fill" style="width:${progress.progressPercent}%;"></div></div>
+         <div class="book-progress-text">${progress.currentPage}-betdan davom ettirish</div>`
+      : '';
     card.innerHTML = `
       ${b.coverUrl ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : ''}
       <div class="b-title">${escapeHtml(b.title)}</div>
       ${b.author ? `<div class="b-author">${escapeHtml(b.author)}</div>` : ''}
+      ${progressHtml}
     `;
     if(selectable){ card.addEventListener('click', ()=> openBookInChat(b)); }
     containerEl.appendChild(card);
@@ -1138,6 +1211,7 @@ if(window['pdfjsLib']){
 let readerPdfDoc = null;
 let readerPageNum = 1;
 let readerRendering = false;
+let readerToc = [];
 
 function openBookInChat(book){
   activeBook = book;
@@ -1153,7 +1227,10 @@ function openBookInChat(book){
   document.getElementById('book-detail-title').textContent = book.title;
   document.getElementById('book-detail-author').textContent = book.author || '';
 
-  document.getElementById('book-start-reading').onclick = ()=> startReading(book);
+  const progress = getBookProgress(book.id);
+  const startBtn = document.getElementById('book-start-reading');
+  startBtn.textContent = progress ? `${progress.currentPage}-betdan davom ettirish` : "O'qishni boshlash";
+  startBtn.onclick = ()=> startReading(book);
 
   appendMsg('teacher', `"${book.title}" kitobini ochdik. O'ng tarafda o'qing, tushunmagan joyingiz bo'lsa menga yozing.`);
 }
@@ -1175,7 +1252,8 @@ function startReading(book){
   document.getElementById('reader-toc-list').innerHTML = '';
   document.getElementById('reader-toc-drawer').classList.remove('open');
   readerPdfDoc = null;
-  readerPageNum = 1;
+  const savedProgress = getBookProgress(book.id);
+  readerPageNum = (savedProgress && savedProgress.currentPage) ? savedProgress.currentPage : 1;
 
   function showReaderError(){
     loadingTextEl.textContent = "Kitobni ochishda muammo yuz berdi. Qayta urinib ko'ring.";
@@ -1191,23 +1269,29 @@ function startReading(book){
   pdfjsLib.getDocument(book.fileUrl).promise.then(async pdf=>{
     try{
       readerPdfDoc = pdf;
+      if(readerPageNum > pdf.numPages) readerPageNum = 1;
+      if(readerPageNum < 1) readerPageNum = 1;
       await renderReaderPage(readerPageNum);
       const outline = await pdf.getOutline().catch(()=>null);
       const tocList = document.getElementById('reader-toc-list');
+      readerToc = [];
       if(outline && outline.length){
-        outline.forEach(item=>{
+        for(const item of outline){
+          let pageIndex = null;
+          try{
+            const dest = await pdf.getDestination(item.dest) || item.dest;
+            if(dest) pageIndex = await pdf.getPageIndex(dest[0]);
+          }catch(e){}
+          readerToc.push({ title: item.title, page: pageIndex !== null ? pageIndex + 1 : null });
+        }
+        readerToc.filter(t=>t.page !== null).forEach(chapter=>{
           const el = document.createElement('div');
           el.className = 'reader-toc-item';
-          el.textContent = item.title;
-          el.addEventListener('click', async ()=>{
-            try{
-              const dest = await pdf.getDestination(item.dest) || item.dest;
-              if(dest){
-                const pageIndex = await pdf.getPageIndex(dest[0]);
-                readerPageNum = pageIndex + 1;
-                renderReaderPage(readerPageNum);
-              }
-            }catch(e){}
+          el.textContent = chapter.title;
+          el.dataset.page = chapter.page;
+          el.addEventListener('click', ()=>{
+            readerPageNum = chapter.page;
+            renderReaderPage(readerPageNum);
             document.getElementById('reader-toc-drawer').classList.remove('open');
           });
           tocList.appendChild(el);
@@ -1249,6 +1333,17 @@ async function renderReaderPage(num){
   document.getElementById('reader-prev').disabled = num <= 1;
   document.getElementById('reader-next').disabled = num >= readerPdfDoc.numPages;
 
+  if(activeBook){
+    scheduleProgressSave(activeBook.id, num, readerPdfDoc.numPages);
+  }
+
+  const currentChapters = readerToc.filter(t=>t.page !== null && t.page <= num);
+  const currentChapter = currentChapters.length ? currentChapters[currentChapters.length - 1] : null;
+  document.getElementById('reader-current-chapter').textContent = currentChapter ? currentChapter.title : '';
+  document.querySelectorAll('.reader-toc-item').forEach(el=>{
+    el.classList.toggle('active', currentChapter && el.dataset.page == currentChapter.page);
+  });
+
   // Keyingi sahifani fonda oldindan tayyorlaydi (tezroq o'tish uchun)
   if(num < readerPdfDoc.numPages){
     readerPdfDoc.getPage(num + 1).catch(()=>{});
@@ -1271,17 +1366,62 @@ document.getElementById('reader-toc-btn').addEventListener('click', ()=>{
 document.getElementById('reader-toc-close').addEventListener('click', ()=>{
   document.getElementById('reader-toc-drawer').classList.remove('open');
 });
+
+// ---- Sahifaga to'g'ridan-to'g'ri o'tish ----
+document.getElementById('reader-page-text').addEventListener('click', ()=>{
+  if(!readerPdfDoc) return;
+  const popover = document.getElementById('reader-page-popover');
+  const input = document.getElementById('reader-page-input');
+  input.max = readerPdfDoc.numPages;
+  input.value = readerPageNum;
+  popover.classList.toggle('open');
+  if(popover.classList.contains('open')) input.focus();
+});
+function jumpToPage(){
+  if(!readerPdfDoc) return;
+  const input = document.getElementById('reader-page-input');
+  let n = parseInt(input.value, 10);
+  if(isNaN(n)) return;
+  n = Math.max(1, Math.min(readerPdfDoc.numPages, n));
+  readerPageNum = n;
+  renderReaderPage(readerPageNum);
+  document.getElementById('reader-page-popover').classList.remove('open');
+}
+document.getElementById('reader-page-go').addEventListener('click', jumpToPage);
+document.getElementById('reader-page-input').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter'){ e.preventDefault(); jumpToPage(); }
+});
+document.addEventListener('click', (e)=>{
+  const wrap = document.getElementById('reader-page-jump-wrap');
+  if(wrap && !wrap.contains(e.target)){
+    document.getElementById('reader-page-popover').classList.remove('open');
+  }
+});
+
+// ---- Klaviatura orqali navigatsiya (kompyuterda) ----
+document.addEventListener('keydown', (e)=>{
+  if(!document.body.classList.contains('reader-mode')) return;
+  const tag = (e.target.tagName || '').toLowerCase();
+  if(tag === 'input' || tag === 'textarea') return;
+  if(document.getElementById('book-reader-screen').style.display !== 'block') return;
+  if(e.key === 'ArrowLeft'){ document.getElementById('reader-prev').click(); }
+  else if(e.key === 'ArrowRight'){ document.getElementById('reader-next').click(); }
+});
+
 document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
+  flushProgressSave();
   document.getElementById('book-reader-screen').style.display = 'none';
   document.getElementById('book-detail-screen').style.display = 'block';
   readerPdfDoc = null;
 });
 
 document.getElementById('book-back').addEventListener('click', ()=>{
+  flushProgressSave();
   activeBook = null;
   readerPdfDoc = null;
   document.getElementById('teacher-layout').classList.remove('book-mode');
   document.body.classList.remove('reader-mode');
+  refreshAllBookViews();
 });
 
 // ---- In-reader AI tutor (floating button + bottom sheet) ----
