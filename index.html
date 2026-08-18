@@ -71,8 +71,14 @@
     padding: 12px 18px; border-radius: 999px;
     background: var(--panel); border: 1px solid var(--border);
     backdrop-filter: blur(14px);
-    flex-wrap: wrap; gap: 12px;
+    flex-wrap: wrap; gap: 12px; position: relative;
   }
+  .hamburger-btn{
+    display:none; width:38px; height:38px; border-radius:50%; border:1px solid var(--border);
+    background: rgba(255,255,255,0.05); flex:none; cursor:pointer;
+    flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  }
+  .hamburger-btn span{ width:16px; height:2px; background: var(--text); border-radius:2px; }
   .logo-mark{
     font-family: var(--font-display); font-weight:800; font-size:22px; letter-spacing:.02em;
     color: var(--text); display:flex; align-items:center; gap:8px;
@@ -310,16 +316,14 @@
   .logo-mark{ font-size: clamp(15px, 3.2vw, 22px); flex: none; }
   .logo-mark img{ height: clamp(20px, 4.5vw, 30px); }
 
+    .hamburger-btn{ display:flex; }
   nav.main-nav{
-    display:flex; flex: 1 1 auto; gap: clamp(2px, 1vw, 8px);
-    overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    display:none; position:absolute; top: calc(100% + 8px); left:0; right:0;
+    flex-direction:column; gap:6px; background: var(--panel-solid); border:1px solid var(--border);
+    border-radius:16px; padding:10px; z-index:50; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   }
-  nav.main-nav::-webkit-scrollbar{ display:none; }
-  nav.main-nav .nav-btn{
-    flex: none; white-space: nowrap;
-    padding: clamp(6px, 1.4vw, 9px) clamp(8px, 2vw, 16px);
-    font-size: clamp(10.5px, 2vw, 13.5px);
-  }
+  nav.main-nav.open{ display:flex; }
+  nav.main-nav .nav-btn{ width:100%; text-align:center; padding:11px; font-size:14px; }
   .pp{ width: clamp(28px, 5.5vw, 42px); height: clamp(28px, 5.5vw, 42px); flex: none; }
 
   .home-title{ font-size: clamp(20px, 4.5vw, 34px); }
@@ -371,6 +375,7 @@
       <button class="nav-btn active" data-tab="home">Bosh menyu</button>
       <button class="nav-btn" data-tab="video">Vidio darsliklar</button>
     </nav>
+        <button class="hamburger-btn" id="hamburger-btn" title="Menyu"><span></span><span></span><span></span></button>
     <button class="pp" id="pp-btn" title="Shaxsiy profil"><span>PP</span></button>
   </header>
 
@@ -528,6 +533,9 @@ function activateTab(tab){
   document.querySelectorAll('.nav-btn').forEach(b=> b.classList.toggle('active', b.dataset.tab === tab));
   document.querySelectorAll('.panel').forEach(p=> p.classList.toggle('active', p.id === 'panel-' + tab));
 }
+document.getElementById('hamburger-btn').addEventListener('click', ()=>{
+  document.querySelector('nav.main-nav').classList.toggle('open');
+});
 document.querySelectorAll('.nav-btn').forEach(btn=>{
   btn.addEventListener('click', ()=> activateTab(btn.dataset.tab));
 });
