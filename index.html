@@ -335,6 +335,25 @@
   .reader-toc-header{ display:flex; align-items:center; justify-content:space-between; font-family: var(--font-display); font-size:16px; margin-bottom:14px; }
   .reader-toc-item{ padding:10px 8px; border-radius:8px; font-size:13px; cursor:pointer; color: var(--text-dim); }
   .reader-toc-item:hover{ background: rgba(255,255,255,0.05); color: var(--text); }
+
+  .ai-fab{
+    position:absolute; bottom:16px; right:14px; width:52px; height:52px; border-radius:50%;
+    background: linear-gradient(120deg, var(--blue), #6FC3FF); border:none; color:var(--space-1);
+    font-size:20px; cursor:pointer; box-shadow: 0 8px 24px rgba(61,169,252,0.4); z-index:45;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .ai-sheet-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:70; }
+  .ai-sheet-backdrop.open{ display:block; }
+  .ai-sheet{
+    display:none; flex-direction:column; position:fixed; left:0; right:0; bottom:0; max-height:65vh; z-index:71;
+    background: var(--panel-solid); border-top:1px solid var(--border); border-radius:20px 20px 0 0;
+    padding: 10px 16px calc(16px + env(safe-area-inset-bottom,0px)); box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+  }
+  .ai-sheet.open{ display:flex; }
+  .ai-sheet-handle{ width:40px; height:4px; background: var(--border); border-radius:2px; margin: 0 auto 10px; }
+  .ai-sheet-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .ai-sheet-header span{ font-family: var(--font-display); font-size:15px; font-weight:700; }
+  .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; max-height:30vh; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
   .back-link{ background:none; border:none; color: var(--blue); font-family: var(--font-mono); font-size:12.5px; cursor:pointer; padding:0; margin-bottom:14px; }
   .back-link:hover{ text-decoration:underline; }
   .problem-item{ background: rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:13.5px; font-family: var(--font-mono); cursor:pointer; transition: border-color .15s ease; }
@@ -415,7 +434,9 @@
   /* Faqat haqiqiy telefon kengligida (<=600px): kitob va chatni tepa-past qilib qo'yamiz,
      chunki yonma-yon sig'ishning iloji yo'q */
   @media (max-width: 600px){
-    .teacher-layout{ flex-direction: column; }
+    .teacher-layout{ flex-direction: column; height:auto; min-height:0; }
+    .chat-col{ height:auto; min-height:0; flex:none; }
+    .chat-window{ max-height: 320px; height:auto; }
     .teacher-layout.book-mode .chat-col{ display:none; }
     .teacher-layout.book-mode .book-col{ order: 1; width: 100%; }
     .chat-window{ max-height: 320px; }
@@ -548,7 +569,7 @@
             </div>
           </div>
 
-          <div id="book-reader-screen" style="display:none;">
+          <div id="book-reader-screen" style="display:none; position:relative;">
             <div class="reader-header">
               <button class="back-link" id="reader-back-to-detail" aria-label="Orqaga">&larr;</button>
               <div class="reader-header-title" id="reader-header-title"></div>
@@ -570,6 +591,30 @@
               </div>
               <div id="reader-toc-list"></div>
             </div>
+
+            <button class="ai-fab" id="ai-fab" aria-label="AI'dan so'rash" title="AI'dan so'rash">✨</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ai-sheet-backdrop" id="ai-sheet-backdrop"></div>
+      <div class="ai-sheet" id="ai-sheet">
+        <div class="ai-sheet-handle"></div>
+        <div class="ai-sheet-header">
+          <span id="ai-sheet-title">Kitobdan so'rash</span>
+          <button class="icon-btn" id="ai-sheet-close" aria-label="Yopish">✕</button>
+        </div>
+        <div class="ai-sheet-chat" id="ai-sheet-chat"></div>
+        <div class="quick-prompts" id="ai-sheet-prompts">
+          <button class="chip-btn" data-prompt="Bu sahifani sodda tushuntir">Bu sahifani sodda tushuntir</button>
+          <button class="chip-btn" data-prompt="Menga misol ber">Menga misol ber</button>
+          <button class="chip-btn" data-prompt="Bu formulani tushuntir">Bu formulani tushuntir</button>
+          <button class="chip-btn" data-prompt="Qisqa xulosa qil">Qisqa xulosa qil</button>
+        </div>
+        <div class="chat-input-wrap">
+          <textarea id="ai-sheet-input" placeholder="Savolingizni yozing..."></textarea>
+          <div class="chat-input-actions">
+            <button class="icon-btn send-btn" id="ai-sheet-send" aria-label="Yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
           </div>
         </div>
       </div>
@@ -1178,6 +1223,11 @@ async function renderReaderPage(num){
   document.getElementById('reader-page-text').textContent = `${num} / ${readerPdfDoc.numPages}`;
   document.getElementById('reader-prev').disabled = num <= 1;
   document.getElementById('reader-next').disabled = num >= readerPdfDoc.numPages;
+
+  // Keyingi sahifani fonda oldindan tayyorlaydi (tezroq o'tish uchun)
+  if(num < readerPdfDoc.numPages){
+    readerPdfDoc.getPage(num + 1).catch(()=>{});
+  }
 }
 
 document.getElementById('reader-prev').addEventListener('click', ()=>{
@@ -1207,6 +1257,124 @@ document.getElementById('book-back').addEventListener('click', ()=>{
   readerPdfDoc = null;
   document.getElementById('teacher-layout').classList.remove('book-mode');
   document.body.classList.remove('reader-mode');
+});
+
+// ---- In-reader AI tutor (floating button + bottom sheet) ----
+function openAiSheet(){
+  document.getElementById('ai-sheet').classList.add('open');
+  document.getElementById('ai-sheet-backdrop').classList.add('open');
+  document.getElementById('ai-sheet-title').textContent = activeBook
+    ? `${activeBook.title} • ${readerPageNum}-sahifa`
+    : "Kitobdan so'rash";
+}
+function closeAiSheet(){
+  document.getElementById('ai-sheet').classList.remove('open');
+  document.getElementById('ai-sheet-backdrop').classList.remove('open');
+}
+document.getElementById('ai-fab').addEventListener('click', openAiSheet);
+document.getElementById('ai-sheet-close').addEventListener('click', closeAiSheet);
+document.getElementById('ai-sheet-backdrop').addEventListener('click', closeAiSheet);
+
+function appendAiSheetMsg(role, text){
+  const win = document.getElementById('ai-sheet-chat');
+  const div = document.createElement('div');
+  div.className = 'msg ' + role;
+  div.innerHTML = `<div class="bubble"></div>`;
+  const bubbleEl = div.querySelector('.bubble');
+  bubbleEl.innerHTML = marked.parse(text);
+  renderMathInElement(bubbleEl, {
+    delimiters: [
+      {left: "$$", right: "$$", display: true},
+      {left: "$", right: "$", display: false}
+    ]
+  });
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+  return div;
+}
+
+async function getCurrentPageText(){
+  if(!readerPdfDoc) return '';
+  try{
+    const page = await readerPdfDoc.getPage(readerPageNum);
+    const textContent = await page.getTextContent();
+    return textContent.items.map(it=>it.str).join(' ').slice(0, 3000);
+  }catch(e){ return ''; }
+}
+
+async function sendAiSheetMessage(text){
+  if(!text) return;
+  appendAiSheetMsg('user', text);
+  document.getElementById('ai-sheet-prompts').style.display = 'none';
+
+  const typingDiv = document.createElement('div');
+  typingDiv.className = 'msg teacher';
+  typingDiv.innerHTML = `<div class="bubble"></div>`;
+  document.getElementById('ai-sheet-chat').appendChild(typingDiv);
+  const bubbleEl = typingDiv.querySelector('.bubble');
+  const win = document.getElementById('ai-sheet-chat');
+  win.scrollTop = win.scrollHeight;
+
+  const pageText = await getCurrentPageText();
+  let system = `Sen tajribali, mehribon matematika ustozisan. O'zbek tilida javob ber. Foydalanuvchi hozir "${activeBook ? activeBook.title : ''}" kitobining ${readerPageNum}-sahifasini o'qiyapti.`;
+  if(pageText){
+    system += `\n\nShu sahifadagi matn (kontekst uchun): ${pageText}`;
+  }
+  system += `\nSavolga shu sahifa kontekstidan foydalanib, aniq va tushunarli javob ber.`;
+
+  try{
+    const res = await fetch('/api/chat-stream', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system, messages: [{ role:'user', content: text }], max_tokens: 1000 })
+    });
+    if(!res.ok || !res.body) throw new Error("Xatolik yuz berdi");
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '', fullText = '';
+    while(true){
+      const { done, value } = await reader.read();
+      if(done) break;
+      buffer += decoder.decode(value, { stream:true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data: ')) continue;
+        const payload = line.slice(6).trim();
+        if(payload === '[DONE]') continue;
+        try{
+          const parsed = JSON.parse(payload);
+          if(parsed.text){ fullText += parsed.text; bubbleEl.textContent = fullText; win.scrollTop = win.scrollHeight; }
+        }catch(e){}
+      }
+    }
+    bubbleEl.innerHTML = marked.parse(fullText);
+    renderMathInElement(bubbleEl, {
+      delimiters: [
+        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: false}
+      ]
+    });
+  }catch(err){
+    bubbleEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
+  }
+}
+
+document.getElementById('ai-sheet-send').addEventListener('click', ()=>{
+  const input = document.getElementById('ai-sheet-input');
+  const text = input.value.trim();
+  if(!text) return;
+  input.value = '';
+  sendAiSheetMessage(text);
+});
+document.getElementById('ai-sheet-input').addEventListener('keydown', (e)=>{
+  if(e.key === 'Enter' && !e.shiftKey){
+    e.preventDefault();
+    document.getElementById('ai-sheet-send').click();
+  }
+});
+document.querySelectorAll('#ai-sheet-prompts .chip-btn').forEach(chip=>{
+  chip.addEventListener('click', ()=> sendAiSheetMessage(chip.dataset.prompt));
 });
 
 refreshAllBookViews();
