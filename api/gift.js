@@ -91,6 +91,34 @@ async function handleCreate(req, res) {
   res.status(200).json({ giftId, code });
 }
 
+async function handlePreview(req, res) {
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: 'not_logged_in' });
+
+  const { code } = req.body || {};
+  if (!code) return res.status(400).json({ error: 'Kod kerak' });
+
+  const normalizedCode = code.trim().toUpperCase();
+  const tokenHash = crypto.createHash('sha256').update(normalizedCode).digest('hex');
+
+  const giftId = await redisCommand(['GET', `nova:gift-token:${tokenHash}`]);
+  if (!giftId) return res.status(404).json({ error: 'not_found' });
+
+  const raw = await redisCommand(['HGET', 'nova:gifts', giftId]);
+  if (!raw) return res.status(404).json({ error: 'not_found' });
+  const gift = JSON.parse(raw);
+
+  if (gift.status === 'REVOKED') return res.status(400).json({ error: 'revoked' });
+  if (gift.expiresAt < Date.now()) return res.status(400).json({ error: 'expired' });
+
+  const currentCount = parseInt(await redisCommand(['GET', `nova:gift-redeem-count:${giftId}`]) || '0', 10);
+  if (currentCount >= gift.maxRedemptions) {
+    return res.status(400).json({ error: 'already_used' });
+  }
+
+  res.status(200).json({ ok: true, durationDays: gift.durationDays });
+}
+
 async function handleRedeem(req, res) {
   const session = getSession(req);
   if (!session) return res.status(401).json({ error: 'not_logged_in' });
@@ -218,6 +246,7 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
       const action = (req.body || {}).action;
       if (action === 'create') return await handleCreate(req, res);
+      if (action === 'preview') return await handlePreview(req, res);
       if (action === 'redeem') return await handleRedeem(req, res);
       if (action === 'revoke') return await handleRevoke(req, res);
       if (action === 'manual') return await handleManual(req, res);
