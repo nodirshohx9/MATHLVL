@@ -438,10 +438,10 @@ document.getElementById('gift-create-btn').addEventListener('click', async ()=>{
   statusEl.classList.remove('err');
   statusEl.textContent = "Yaratilmoqda...";
   try{
-    const res = await fetch('/api/gift-create', {
+    const res = await fetch('/api/gift', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword, durationDays, maxRedemptions, expiresInDays, note })
+      body: JSON.stringify({ action:'create', password: adminPassword, durationDays, maxRedemptions, expiresInDays, note })
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Sovg'a yaratib bo'lmadi");
@@ -488,10 +488,10 @@ document.getElementById('manual-gift-btn').addEventListener('click', async ()=>{
   statusEl.classList.remove('err');
   statusEl.textContent = "Berilmoqda...";
   try{
-    const res = await fetch('/api/gift-manual', {
+    const res = await fetch('/api/gift', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword, email, durationDays })
+      body: JSON.stringify({ action:'manual', password: adminPassword, email, durationDays })
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Berib bo'lmadi");
@@ -508,7 +508,7 @@ document.getElementById('manual-gift-btn').addEventListener('click', async ()=>{
 async function refreshGiftHistory(){
   const listEl = document.getElementById('gift-history');
   try{
-    const res = await fetch('/api/gift-list', {
+    const res = await fetch('/api/gift?action=list', {
       headers: { 'x-admin-password': adminPassword }
     });
     const data = await res.json();
@@ -538,10 +538,10 @@ async function refreshGiftHistory(){
 async function revokeGift(giftId){
   if(!confirm("Bu sovg'ani bekor qilmoqchimisiz?")) return;
   try{
-    const res = await fetch('/api/gift-revoke', {
+    const res = await fetch('/api/gift', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: adminPassword, giftId })
+      body: JSON.stringify({ action:'revoke', password: adminPassword, giftId })
     });
     if(!res.ok) throw new Error("Bekor qilib bo'lmadi");
     refreshGiftHistory();
