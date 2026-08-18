@@ -701,6 +701,12 @@
 
       <div class="signed-in-badge" id="signed-in-badge"></div>
       <div id="plus-status-display"></div>
+      <div id="manual-redeem-wrap" style="display:none; margin-top:16px;">
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">🎁 Sovg'a kodingiz bormi?</div>
+        <input type="text" id="manual-redeem-input" placeholder="NOVA-XXXX-XXXX-XXXX" style="width:100%; text-align:center; letter-spacing:1px; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:12px; box-sizing:border-box;">
+        <button class="glow-btn" id="manual-redeem-btn" style="width:100%; margin-top:10px;">Kodni faollashtirish</button>
+        <div class="status" id="manual-redeem-status"></div>
+      </div>
       <button class="oauth-btn" id="logout-btn" style="display:none; color:var(--gold); border-color:var(--gold);">Chiqish</button>
       <div class="oauth-note" id="oauth-note">Google hisobingiz orqali kiring — o'qish jarayoningiz saqlanadi.</div>
     </div>
@@ -1561,6 +1567,7 @@ function showSignedOutUI(){
   document.getElementById('logout-btn').style.display = 'none';
   document.getElementById('signed-in-badge').classList.remove('show');
   document.getElementById('oauth-note').style.display = 'block';
+  document.getElementById('manual-redeem-wrap').style.display = 'none';
 }
 function showSignedInUI(user){
   const avatarEl = document.getElementById('profile-avatar');
@@ -1574,6 +1581,7 @@ function showSignedInUI(user){
   document.getElementById('apple-btn').style.display = 'none';
   document.getElementById('logout-btn').style.display = 'inline-flex';
   document.getElementById('oauth-note').style.display = 'none';
+  document.getElementById('manual-redeem-wrap').style.display = 'block';
   const badge = document.getElementById('signed-in-badge');
   badge.textContent = `${user.email} sifatida kirdingiz.`;
   badge.classList.add('show');
@@ -1688,6 +1696,49 @@ if(urlParams.get('logged_in') === '1' && !urlParams.get('redeem')){
   window.history.replaceState({}, '', window.location.pathname);
 }
 handleRedeemFlow();
+
+document.getElementById('manual-redeem-btn').addEventListener('click', async ()=>{
+  const input = document.getElementById('manual-redeem-input');
+  const code = input.value.trim();
+  const statusEl = document.getElementById('manual-redeem-status');
+  const btn = document.getElementById('manual-redeem-btn');
+  if(!code){
+    statusEl.textContent = "Kodni kiriting.";
+    statusEl.classList.add('err');
+    return;
+  }
+  btn.disabled = true;
+  statusEl.classList.remove('err');
+  statusEl.textContent = "Tekshirilmoqda...";
+  try{
+    const res = await fetch('/api/gift-redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      const messages = {
+        already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
+        expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
+        revoked: "Ushbu sovg'a kodi endi faol emas.",
+        not_found: "Sovg'a kodi topilmadi.",
+        not_logged_in: "Avval hisobingizga kiring."
+      };
+      statusEl.textContent = messages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
+      statusEl.classList.add('err');
+    }else{
+      statusEl.textContent = `🎉 ${data.durationDays} kunlik NOVA Plus faollashtirildi!`;
+      input.value = '';
+      refreshPlusStatus();
+    }
+  }catch(err){
+    statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
+    statusEl.classList.add('err');
+  }finally{
+    btn.disabled = false;
+  }
+});
 refreshAuthState();
 </script>
 </body>
