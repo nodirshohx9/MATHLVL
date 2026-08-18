@@ -316,15 +316,16 @@
   .logo-mark{ font-size: clamp(15px, 3.2vw, 22px); flex: none; }
   .logo-mark img{ height: clamp(20px, 4.5vw, 30px); }
 
-  .hamburger-btn{ display:flex; }
+    .hamburger-btn{ display:flex; }
   .pp{ display:none; }
   nav.main-nav{
-    display:none; position:absolute; top: calc(100% + 8px); right:0; left:auto;
-    width: 200px; flex-direction:column; gap:6px; background: var(--panel-solid); border:1px solid var(--border);
-    border-radius:16px; padding:10px; z-index:50; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+    display:flex; position:fixed; top:0; right:0; height:100vh; width: 210px;
+    flex-direction:column; gap:6px; background: var(--panel-solid); border-left:1px solid var(--border);
+    padding: 70px 14px 14px; z-index:50; box-shadow: -10px 0 30px rgba(0,0,0,0.4);
+    transform: translateX(110%); transition: transform .3s ease;
   }
-  nav.main-nav.open{ display:flex; }
-  nav.main-nav .nav-btn{ width:100%; text-align:center; padding:11px; font-size:13.5px; }
+  nav.main-nav.open{ transform: translateX(0); }
+  nav.main-nav .nav-btn{ width:100%; text-align:center; padding:12px; font-size:14px; }
 
   .home-title{ font-size: clamp(20px, 4.5vw, 34px); }
   .home-sub{ font-size: clamp(12px, 2vw, 14px); }
