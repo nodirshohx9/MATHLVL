@@ -11,7 +11,14 @@ export default async function handler(req, res) {
   const redirectUri = `${proto}://${req.headers.host}/api/auth-google-callback`;
   const state = crypto.randomBytes(16).toString('hex');
 
-  res.setHeader('Set-Cookie', `nova_oauth_state=${state}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`);
+  const url = new URL(req.url, `https://${req.headers.host}`);
+  const redeemCode = url.searchParams.get('redeem') || '';
+
+  const cookiesToSet = [`nova_oauth_state=${state}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`];
+  if (redeemCode) {
+    cookiesToSet.push(`nova_pending_redeem=${encodeURIComponent(redeemCode)}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`);
+  }
+  res.setHeader('Set-Cookie', cookiesToSet);
 
   const params = new URLSearchParams({
     client_id: clientId,
