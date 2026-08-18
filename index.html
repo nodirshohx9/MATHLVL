@@ -418,6 +418,54 @@
   .oauth-btn:hover{ border-color: var(--blue); background: var(--blue-soft); }
   .oauth-note{ font-size:11.5px; color: var(--text-dim); font-family: var(--font-mono); margin-top:16px; }
   .signed-in-badge{ display:none; background: var(--gold-soft); border:1px solid var(--gold); border-radius:12px; padding:14px; margin-top:16px; font-size:13.5px; }
+
+  /* ---- Profile dashboard (redesigned) ---- */
+  .profile-hero{ display:flex; align-items:center; gap:18px; margin-bottom:22px; }
+  .profile-hero-avatar{
+    width:78px; height:78px; border-radius:50%; flex:none; overflow:hidden;
+    background: linear-gradient(135deg, var(--blue), var(--gold)); display:flex; align-items:center; justify-content:center;
+    font-family: var(--font-display); font-size:28px; font-weight:800; color: var(--space-1);
+  }
+  .profile-hero-avatar img{ width:100%; height:100%; object-fit:cover; }
+  .profile-hero-name-row{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .profile-hero-name-row span:first-child{ font-family: var(--font-display); font-size:21px; font-weight:700; }
+  .plan-badge{
+    font-family: var(--font-mono); font-size:10.5px; font-weight:700; letter-spacing:.5px;
+    padding:4px 10px; border-radius:999px; background: rgba(255,255,255,0.06); color: var(--text-dim); border:1px solid var(--border);
+  }
+  .plan-badge.plus{ background: var(--gold-soft); color: var(--gold); border-color: var(--gold); }
+  .profile-hero-email{ font-size:13px; color: var(--text-dim); font-family: var(--font-mono); margin-top:4px; }
+
+  .profile-grid{ display:grid; grid-template-columns: 1fr 1fr; gap:16px; }
+  .profile-section-card h3{ font-family: var(--font-display); font-size:15.5px; margin:0 0 10px; }
+  .settings-row{
+    display:flex; align-items:center; justify-content:space-between; padding:12px 4px;
+    cursor:pointer; font-size:14px; border-top:1px solid var(--border-soft);
+  }
+  .settings-row:first-of-type{ border-top:none; }
+  .settings-row:hover{ color: var(--blue); }
+  .settings-row span:last-child{ color: var(--text-dim); }
+
+  /* ---- Full-screen overlays (plan select, redeem) ---- */
+  .fullscreen-overlay{
+    display:none; position:fixed; inset:0; z-index:150; background: var(--space-1);
+    overflow-y:auto; padding: 24px 20px 60px;
+  }
+  .fullscreen-overlay.open{ display:block; }
+  .fullscreen-overlay-inner{ max-width:460px; margin:0 auto; }
+
+  .plan-toggle{ display:flex; gap:8px; margin:18px 0; background: rgba(255,255,255,0.03); border-radius:999px; padding:4px; }
+  .plan-toggle-btn{
+    flex:1; background:none; border:none; color: var(--text-dim); font-family: var(--font-body); font-weight:700;
+    font-size:13.5px; padding:10px; border-radius:999px; cursor:pointer; transition: all .15s ease;
+  }
+  .plan-toggle-btn.active{ background: var(--blue); color: var(--space-1); }
+
+  .plan-card{ text-align:center; }
+  .plan-price{ font-family: var(--font-display); font-size:26px; font-weight:800; margin-bottom:18px; }
+  .plan-benefits{ list-style:none; padding:0; margin:0 0 22px; text-align:left; }
+  .plan-benefits li{ padding:8px 0; font-size:13.5px; color: var(--text-dim); border-bottom:1px solid var(--border-soft); }
+  .plan-benefits li:last-child{ border-bottom:none; }
   .signed-in-badge.show{ display:block; }
 
  /* ======================================================
@@ -479,6 +527,9 @@
     button.glow-btn{ width: 100%; }
     button.ghost-btn{ width: 100%; }
     .profile-card{ max-width: 100%; }
+    .profile-grid{ grid-template-columns: 1fr; }
+    .profile-hero-avatar{ width:64px; height:64px; font-size:22px; }
+    .profile-hero{ gap:14px; }
   }
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
@@ -685,40 +736,123 @@
   </section>
   <!-- ===== PROFILE (PP) ===== -->
   <section class="panel" id="panel-profile">
-    <h2 class="sec-title" style="text-align:center;">Shaxsiy profil</h2>
-    <p class="sec-sub" style="text-align:center;">Hisobingizga kiring va o'qishni davom ettiring.</p>
-    <div class="glass-card profile-card">
-      <div class="profile-avatar" id="profile-avatar">?</div>
-      <div id="profile-name" style="font-family:var(--font-display); font-size:20px; margin-bottom:20px;">Mehmon</div>
+    <div id="profile-logged-out">
+      <h2 class="sec-title" style="text-align:center;">Shaxsiy profil</h2>
+      <p class="sec-sub" style="text-align:center;">Hisobingizga kiring va o'qishni davom ettiring.</p>
+      <div class="glass-card profile-card">
+        <div class="profile-avatar" id="profile-avatar-out">?</div>
+        <div style="height:16px;"></div>
+        <button class="oauth-btn" id="google-btn">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.6 9.2c0-.6-.05-1.2-.15-1.8H9v3.4h4.8c-.2 1.1-.85 2-1.8 2.6v2.2h2.9c1.7-1.55 2.7-3.85 2.7-6.4z"/><path fill="#34A853" d="M9 18c2.4 0 4.45-.8 5.9-2.15l-2.9-2.2c-.8.55-1.85.85-3 .85-2.3 0-4.25-1.55-4.95-3.65H1.05v2.3C2.5 15.95 5.5 18 9 18z"/><path fill="#FBBC05" d="M4.05 10.85c-.2-.55-.3-1.15-.3-1.85s.1-1.3.3-1.85V4.85H1.05C.4 6.15 0 7.55 0 9s.4 2.85 1.05 4.15l3-2.3z"/><path fill="#EA4335" d="M9 3.58c1.3 0 2.5.45 3.4 1.35l2.55-2.55C13.45.9 11.4 0 9 0 5.5 0 2.5 2.05 1.05 4.85l3 2.3C4.75 5.05 6.7 3.58 9 3.58z"/></svg>
+          Google bilan kirish
+        </button>
+        <button class="oauth-btn" id="apple-btn">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="#fff"><path d="M11.2 0c.1 1-.3 2-1 2.7-.7.7-1.7 1.2-2.6 1.1-.1-1 .3-2 1-2.7C9.3.4 10.3-.1 11.2 0zM13.9 11.5c-.3.8-.5 1.1-1 1.8-.7 1-1.6 2.2-2.8 2.2-1.1 0-1.4-.7-2.8-.7-1.5 0-1.8.7-2.9.7-1.2 0-2-1.1-2.7-2.1C.1 11.6-.7 8.4.6 6.3c.7-1.1 1.9-1.8 3-1.8 1.2 0 1.9.7 2.9.7 1 0 1.5-.7 2.9-.7 1 0 2 .5 2.7 1.4-2.4 1.3-2 4.6.8 5.6z"/></svg>
+          Apple akkaunti bilan kirish
+        </button>
+        <div class="oauth-note">Google hisobingiz orqali kiring — o'qish jarayoningiz saqlanadi.</div>
+      </div>
+    </div>
 
-      <button class="oauth-btn" id="google-btn">
-        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.6 9.2c0-.6-.05-1.2-.15-1.8H9v3.4h4.8c-.2 1.1-.85 2-1.8 2.6v2.2h2.9c1.7-1.55 2.7-3.85 2.7-6.4z"/><path fill="#34A853" d="M9 18c2.4 0 4.45-.8 5.9-2.15l-2.9-2.2c-.8.55-1.85.85-3 .85-2.3 0-4.25-1.55-4.95-3.65H1.05v2.3C2.5 15.95 5.5 18 9 18z"/><path fill="#FBBC05" d="M4.05 10.85c-.2-.55-.3-1.15-.3-1.85s.1-1.3.3-1.85V4.85H1.05C.4 6.15 0 7.55 0 9s.4 2.85 1.05 4.15l3-2.3z"/><path fill="#EA4335" d="M9 3.58c1.3 0 2.5.45 3.4 1.35l2.55-2.55C13.45.9 11.4 0 9 0 5.5 0 2.5 2.05 1.05 4.85l3 2.3C4.75 5.05 6.7 3.58 9 3.58z"/></svg>
-        Google bilan kirish
-      </button>
-      <button class="oauth-btn" id="apple-btn">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="#fff"><path d="M11.2 0c.1 1-.3 2-1 2.7-.7.7-1.7 1.2-2.6 1.1-.1-1 .3-2 1-2.7C9.3.4 10.3-.1 11.2 0zM13.9 11.5c-.3.8-.5 1.1-1 1.8-.7 1-1.6 2.2-2.8 2.2-1.1 0-1.4-.7-2.8-.7-1.5 0-1.8.7-2.9.7-1.2 0-2-1.1-2.7-2.1C.1 11.6-.7 8.4.6 6.3c.7-1.1 1.9-1.8 3-1.8 1.2 0 1.9.7 2.9.7 1 0 1.5-.7 2.9-.7 1 0 2 .5 2.7 1.4-2.4 1.3-2 4.6.8 5.6z"/></svg>
-        Apple akkaunti bilan kirish
-      </button>
-
-      <div class="signed-in-badge" id="signed-in-badge"></div>
-      <div id="plus-status-display"></div>
-      <div id="manual-redeem-wrap" style="display:none; margin-top:16px;">
-        <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">🎁 Sovg'a kodingiz bormi?</div>
-        <input type="text" id="manual-redeem-input" placeholder="NOVA-XXXX-XXXX-XXXX" style="width:100%; text-align:center; letter-spacing:1px; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:12px; box-sizing:border-box;">
-        <div style="display:flex; gap:8px; margin-top:10px;">
-          <button class="glow-btn" id="manual-redeem-btn" style="flex:1;">Faollashtirish</button>
-          <button class="ghost-btn" id="qr-scan-btn" style="flex:none; padding:13px 16px;" title="QR kodni skanerlash" aria-label="QR kodni skanerlash">📷</button>
+    <div id="profile-dashboard" style="display:none; max-width:1050px; margin:0 auto;">
+      <div class="profile-hero">
+        <div class="profile-hero-avatar" id="profile-avatar"></div>
+        <div class="profile-hero-info">
+          <div class="profile-hero-name-row">
+            <span id="profile-name"></span>
+            <span class="plan-badge" id="plan-badge">NOVA FREE</span>
+          </div>
+          <div class="profile-hero-email" id="profile-email"></div>
         </div>
+      </div>
+
+      <div class="profile-grid">
+        <div class="glass-card profile-section-card">
+          <h3>⭐ Sizning tarifingiz</h3>
+          <div id="subscription-card-body"></div>
+        </div>
+        <div class="glass-card profile-section-card">
+          <h3>📚 Mening kitoblarim</h3>
+          <div id="my-books-body"></div>
+        </div>
+      </div>
+
+      <div class="glass-card profile-section-card" style="margin-top:16px;">
+        <h3>🎁 Sovg'a Plus</h3>
+        <p style="font-size:13px; color:var(--text-dim); margin:6px 0 14px;">Sovg'a kodingiz yoki QR kodingiz bormi?</p>
+        <button class="ghost-btn" id="open-redeem-btn">Sovg'ani faollashtirish</button>
+      </div>
+
+      <div class="glass-card profile-section-card" style="margin-top:16px;">
+        <h3>Hisob</h3>
+        <div class="settings-row" id="logout-row">
+          <span>Chiqish</span><span>›</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===== TARIF TANLASH ===== -->
+  <div id="plan-select-overlay" class="fullscreen-overlay">
+    <div class="fullscreen-overlay-inner">
+      <button class="back-link" id="plan-select-back" style="margin-bottom:16px;">&larr; Orqaga</button>
+      <h2 class="sec-title">NOVA Plus</h2>
+      <p class="sec-sub">Ko'proq kitoblar, ko'proq AI, ko'proq imkoniyat.</p>
+
+      <div id="current-plan-note" style="display:none;"></div>
+
+      <div class="plan-toggle">
+        <button class="plan-toggle-btn active" data-cycle="monthly">Oylik</button>
+        <button class="plan-toggle-btn" data-cycle="yearly">Yillik</button>
+      </div>
+
+      <div class="glass-card plan-card">
+        <div class="plan-price" id="plan-price">—</div>
+        <ul class="plan-benefits">
+          <li>✓ Plus kutubxonasi</li>
+          <li>✓ Kitob ichidagi Ustoz AI</li>
+          <li>✓ Kengaytirilgan AI imkoniyatlari</li>
+          <li>✓ Premium o'quv materiallari</li>
+        </ul>
+        <button class="glow-btn" id="plan-purchase-btn" style="width:100%;">Tanlash</button>
+        <div class="status" id="plan-purchase-status"></div>
+      </div>
+
+      <div class="glass-card profile-section-card" style="margin-top:16px; text-align:center;">
+        <div style="font-size:13px; color:var(--text-dim); margin-bottom:10px;">🎁 Sovg'a kodingiz bormi?</div>
+        <button class="ghost-btn" id="plan-open-redeem-btn">Kodni faollashtirish</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== SOVG'ANI FAOLLASHTIRISH ===== -->
+  <div id="redeem-screen-overlay" class="fullscreen-overlay">
+    <div class="fullscreen-overlay-inner" style="max-width:420px;">
+      <button class="back-link" id="redeem-screen-back" style="margin-bottom:16px;">&larr; Orqaga</button>
+      <div id="redeem-screen-body" style="text-align:center;">
+        <div style="font-size:32px; margin-bottom:10px;">🎁</div>
+        <h3 style="font-family:var(--font-display); margin-bottom:6px;">NOVA Plus sovg'asi</h3>
+        <p style="font-size:13px; color:var(--text-dim); margin-bottom:20px;">QR kodni skaner qiling yoki kodni kiriting.</p>
+
+        <button class="ghost-btn" id="qr-scan-btn" style="width:100%;">📷 QR kodni skanerlash</button>
         <div id="qr-scanner-wrap" style="display:none; margin-top:14px;">
           <div id="qr-scanner-view" style="border-radius:12px; overflow:hidden;"></div>
           <button class="ghost-btn" id="qr-scan-close-btn" style="width:100%; margin-top:10px;">Skanerlashni bekor qilish</button>
         </div>
+
+        <div style="display:flex; align-items:center; gap:10px; margin:20px 0; color:var(--text-dim); font-size:12px;">
+          <div style="flex:1; height:1px; background:var(--border-soft);"></div>
+          yoki
+          <div style="flex:1; height:1px; background:var(--border-soft);"></div>
+        </div>
+
+        <div style="text-align:left; font-size:12px; color:var(--text-dim); margin-bottom:6px;">Sovg'a kodi</div>
+        <input type="text" id="manual-redeem-input" placeholder="NOVA-XXXX-XXXX-XXXX" style="width:100%; text-align:center; letter-spacing:1px; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:12px; box-sizing:border-box;">
+        <button class="glow-btn" id="manual-redeem-btn" style="width:100%; margin-top:10px;">Faollashtirish</button>
         <div class="status" id="manual-redeem-status"></div>
       </div>
-      <button class="oauth-btn" id="logout-btn" style="display:none; color:var(--gold); border-color:var(--gold);">Chiqish</button>
-      <div class="oauth-note" id="oauth-note">Google hisobingiz orqali kiring — o'qish jarayoningiz saqlanadi.</div>
     </div>
-  </section>
+  </div>
 
   <div id="redeem-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center; padding:20px;">
     <div class="glass-card" style="max-width:380px; width:100%; text-align:center;">
@@ -1568,51 +1702,127 @@ refreshAllBookViews();
 
 // ================= PROFILE (haqiqiy Google login) =================
 function showSignedOutUI(){
-  document.getElementById('profile-avatar').textContent = '?';
-  document.getElementById('profile-name').textContent = 'Mehmon';
-  document.getElementById('google-btn').style.display = 'flex';
-  document.getElementById('apple-btn').style.display = 'flex';
-  document.getElementById('logout-btn').style.display = 'none';
-  document.getElementById('signed-in-badge').classList.remove('show');
-  document.getElementById('oauth-note').style.display = 'block';
-  document.getElementById('manual-redeem-wrap').style.display = 'none';
+  document.getElementById('profile-logged-out').style.display = 'block';
+  document.getElementById('profile-dashboard').style.display = 'none';
 }
 function showSignedInUI(user){
+  document.getElementById('profile-logged-out').style.display = 'none';
+  document.getElementById('profile-dashboard').style.display = 'block';
+
   const avatarEl = document.getElementById('profile-avatar');
   if(user.picture){
-    avatarEl.innerHTML = `<img src="${user.picture}" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+    avatarEl.innerHTML = `<img src="${user.picture}" alt="">`;
   }else{
     avatarEl.textContent = (user.name || user.email || '?').charAt(0).toUpperCase();
   }
   document.getElementById('profile-name').textContent = user.name || user.email;
-  document.getElementById('google-btn').style.display = 'none';
-  document.getElementById('apple-btn').style.display = 'none';
-  document.getElementById('logout-btn').style.display = 'inline-flex';
-  document.getElementById('oauth-note').style.display = 'none';
-  document.getElementById('manual-redeem-wrap').style.display = 'block';
-  const badge = document.getElementById('signed-in-badge');
-  badge.textContent = `${user.email} sifatida kirdingiz.`;
-  badge.classList.add('show');
+  document.getElementById('profile-email').textContent = user.email;
   refreshPlusStatus();
+  renderMyBooks();
+}
+
+function renderSubscriptionCard(plusData){
+  const el = document.getElementById('subscription-card-body');
+  const badge = document.getElementById('plan-badge');
+  if(plusData.active){
+    badge.textContent = 'NOVA PLUS';
+    badge.classList.add('plus');
+    const dateStr = new Date(plusData.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+    el.innerHTML = `
+      <div style="font-family:var(--font-display); font-size:16px; margin-bottom:4px;">NOVA Plus</div>
+      <div style="font-size:13px; color:var(--gold); margin-bottom:2px;">Faol</div>
+      <div style="font-size:13px; color:var(--text-dim); margin-bottom:16px;">${dateStr}gacha</div>
+      <button class="ghost-btn" id="manage-plan-btn" style="width:100%;">Tarifni boshqarish</button>
+    `;
+  }else{
+    badge.textContent = 'NOVA FREE';
+    badge.classList.remove('plus');
+    el.innerHTML = `
+      <div style="font-family:var(--font-display); font-size:16px; margin-bottom:4px;">NOVA Free</div>
+      <div style="font-size:13px; color:var(--text-dim); margin-bottom:16px;">Bepul imkoniyatlardan foydalanyapsiz.</div>
+      <button class="glow-btn" id="manage-plan-btn" style="width:100%;">NOVA Plus'ga o'tish</button>
+    `;
+  }
+  document.getElementById('manage-plan-btn').addEventListener('click', ()=> openPlanSelect(plusData));
 }
 
 async function refreshPlusStatus(){
-  const el = document.getElementById('plus-status-display');
-  if(!el) return;
   try{
     const res = await fetch('/api/gift?action=status');
     const data = await res.json();
-    if(data.active){
-      const dateStr = new Date(data.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
-      el.innerHTML = `<div style="background: var(--gold-soft); border:1px solid var(--gold); border-radius:12px; padding:14px; margin-top:16px;">
-        <strong style="color:var(--gold);">⭐ NOVA Plus</strong><br>
-        <span style="font-size:13px; color:var(--text-dim);">Faol — ${dateStr}gacha</span>
-      </div>`;
-    }else{
-      el.innerHTML = '';
-    }
-  }catch(e){ el.innerHTML = ''; }
+    renderSubscriptionCard(data);
+  }catch(e){
+    renderSubscriptionCard({ active:false });
+  }
 }
+
+function renderMyBooks(){
+  const el = document.getElementById('my-books-body');
+  const progress = getAllBookProgress();
+  const entries = Object.entries(progress);
+  if(!entries.length){
+    el.innerHTML = `<div style="font-size:13px; color:var(--text-dim);">Hali hech qanday kitob o'qilmagan.</div>`;
+    return;
+  }
+  const recent = entries.sort((a,b)=> (b[1].updatedAt||0) - (a[1].updatedAt||0)).slice(0,3);
+  el.innerHTML = recent.map(([bookId, p])=>
+    `<div style="font-size:12.5px; color:var(--text-dim); padding:6px 0; border-top:1px solid var(--border-soft);">
+      ${p.currentPage}/${p.totalPages}-bet — %${p.progressPercent}
+    </div>`
+  ).join('') + `<button class="ghost-btn" style="width:100%; margin-top:12px;" onclick="activateTab('teacher')">Ko'rish</button>`;
+}
+
+// ---- Tarif tanlash ekrani ----
+const planPrices = { monthly: null, yearly: null }; // Haqiqiy narxlar ulanguncha bo'sh
+let selectedCycle = 'monthly';
+function openPlanSelect(plusData){
+  document.getElementById('plan-select-overlay').classList.add('open');
+  const noteEl = document.getElementById('current-plan-note');
+  if(plusData && plusData.active){
+    const dateStr = new Date(plusData.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+    noteEl.style.display = 'block';
+    noteEl.innerHTML = `<div class="glass-card profile-section-card" style="margin-bottom:16px;">
+      <div style="font-size:12px; color:var(--text-dim); margin-bottom:6px;">Sizning hozirgi tarifingiz</div>
+      <div style="color:var(--gold); font-family:var(--font-display);">⭐ NOVA Plus — Faol, ${dateStr}gacha</div>
+    </div>`;
+  }else{
+    noteEl.style.display = 'none';
+    noteEl.innerHTML = '';
+  }
+  updatePlanPriceDisplay();
+}
+document.getElementById('plan-select-back').addEventListener('click', ()=>{
+  document.getElementById('plan-select-overlay').classList.remove('open');
+});
+document.querySelectorAll('.plan-toggle-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.plan-toggle-btn').forEach(b=> b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCycle = btn.dataset.cycle;
+    updatePlanPriceDisplay();
+  });
+});
+function updatePlanPriceDisplay(){
+  const price = planPrices[selectedCycle];
+  document.getElementById('plan-price').textContent = price ? price : "Narx tez orada e'lon qilinadi";
+}
+document.getElementById('plan-purchase-btn').addEventListener('click', ()=>{
+  const statusEl = document.getElementById('plan-purchase-status');
+  statusEl.textContent = "To'lov tizimi hozircha ulanmagan. Hozircha sovg'a kodi orqali faollashtirishingiz mumkin.";
+  statusEl.classList.add('err');
+});
+document.getElementById('plan-open-redeem-btn').addEventListener('click', openRedeemScreen);
+document.getElementById('open-redeem-btn').addEventListener('click', ()=> openRedeemScreen());
+
+// ---- Sovg'ani faollashtirish ekrani ----
+function openRedeemScreen(){
+  document.getElementById('redeem-screen-overlay').classList.add('open');
+}
+document.getElementById('redeem-screen-back').addEventListener('click', ()=>{
+  document.getElementById('redeem-screen-overlay').classList.remove('open');
+  stopQrScanner();
+});
+
 async function handleRedeemFlow(){
   const params = new URLSearchParams(window.location.search);
   const redeemCode = params.get('redeem');
@@ -1640,37 +1850,71 @@ async function handleRedeemFlow(){
 
   content.innerHTML = `<div style="color:var(--text-dim); font-size:13.5px;">Tekshirilmoqda...</div>`;
   try{
-    const res = await fetch('/api/gift', {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ action:'redeem', code: redeemCode })
+    const previewRes = await fetch('/api/gift', {
+      method:'POST', headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ action:'preview', code: redeemCode })
     });
-    const data = await res.json();
-    if(!res.ok){
-      const messages = {
-        already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
-        expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
-        revoked: "Ushbu sovg'a kodi endi faol emas.",
-        not_found: "Sovg'a kodi topilmadi.",
-        not_logged_in: "Avval hisobingizga kiring."
-      };
+    const preview = await previewRes.json();
+    const errMessages = {
+      already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
+      expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
+      revoked: "Ushbu sovg'a kodi endi faol emas.",
+      not_found: "Sovg'a kodi topilmadi."
+    };
+    if(!previewRes.ok){
       content.innerHTML = `
         <div style="font-size:32px; margin-bottom:12px;">😕</div>
-        <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${messages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring."}</p>
+        <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${errMessages[preview.error] || "Nimadir xato ketdi."}</p>
         <button class="ghost-btn" id="redeem-close-btn" style="width:100%;">Yopish</button>
       `;
-    }else{
-      content.innerHTML = `
-        <div style="font-size:32px; margin-bottom:12px;">🎉</div>
-        <h3 style="font-family:var(--font-display); margin-bottom:10px;">NOVA Plus faollashtirildi!</h3>
-        <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:20px;">Sizga ${data.durationDays} kunlik NOVA Plus qo'shildi.</p>
-        <button class="glow-btn" id="redeem-close-btn" style="width:100%;">NOVA'ni boshlash</button>
-      `;
-      refreshPlusStatus();
+      document.getElementById('redeem-close-btn').addEventListener('click', ()=>{
+        overlay.style.display = 'none';
+        window.history.replaceState({}, '', window.location.pathname);
+      });
+      return;
     }
-    document.getElementById('redeem-close-btn').addEventListener('click', ()=>{
+
+    content.innerHTML = `
+      <div style="font-size:32px; margin-bottom:12px;">🎁</div>
+      <h3 style="font-family:var(--font-display); margin-bottom:10px;">Sizga NOVA Plus sovg'a qilindi</h3>
+      <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${preview.durationDays} kunlik NOVA Plus</p>
+      <div style="display:flex; gap:10px;">
+        <button class="ghost-btn" id="redeem-cancel-btn" style="flex:1;">Bekor qilish</button>
+        <button class="glow-btn" id="redeem-confirm-btn" style="flex:1;">Faollashtirish</button>
+      </div>
+    `;
+    document.getElementById('redeem-cancel-btn').addEventListener('click', ()=>{
       overlay.style.display = 'none';
       window.history.replaceState({}, '', window.location.pathname);
+    });
+    document.getElementById('redeem-confirm-btn').addEventListener('click', async ()=>{
+      content.innerHTML = `<div style="color:var(--text-dim); font-size:13.5px;">Faollashtirilmoqda...</div>`;
+      const res = await fetch('/api/gift', {
+        method:'POST', headers:{ 'Content-Type':'application/json' },
+        body: JSON.stringify({ action:'redeem', code: redeemCode })
+      });
+      const data = await res.json();
+      if(!res.ok){
+        content.innerHTML = `
+          <div style="font-size:32px; margin-bottom:12px;">😕</div>
+          <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${errMessages[data.error] || "Nimadir xato ketdi."}</p>
+          <button class="ghost-btn" id="redeem-close-btn" style="width:100%;">Yopish</button>
+        `;
+      }else{
+        const newDateStr = new Date(data.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+        content.innerHTML = `
+          <div style="font-size:32px; margin-bottom:12px;">🎉</div>
+          <h3 style="font-family:var(--font-display); margin-bottom:10px;">NOVA Plus faollashtirildi!</h3>
+          <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:6px;">+${data.durationDays} kun</p>
+          <p style="color:var(--text-dim); font-size:13px; margin-bottom:20px;">Yangi muddat: ${newDateStr}gacha</p>
+          <button class="glow-btn" id="redeem-close-btn" style="width:100%;">Davom etish</button>
+        `;
+        refreshPlusStatus();
+      }
+      document.getElementById('redeem-close-btn').addEventListener('click', ()=>{
+        overlay.style.display = 'none';
+        window.history.replaceState({}, '', window.location.pathname);
+      });
     });
   }catch(err){
     content.innerHTML = `<p style="color:var(--text-dim); font-size:14px;">Nimadir xato ketdi. Qayta urinib ko'ring.</p>`;
@@ -1691,7 +1935,7 @@ document.getElementById('google-btn').addEventListener('click', ()=>{
 document.getElementById('apple-btn').addEventListener('click', ()=>{
   alert("Apple orqali kirish hozircha mavjud emas.");
 });
-document.getElementById('logout-btn').addEventListener('click', async ()=>{
+document.getElementById('logout-row').addEventListener('click', async ()=>{
   await fetch('/api/auth', { method:'POST' });
   showSignedOutUI();
 });
@@ -1760,7 +2004,34 @@ document.getElementById('manual-redeem-btn').addEventListener('click', async ()=
   btn.disabled = true;
   statusEl.classList.remove('err');
   statusEl.textContent = "Tekshirilmoqda...";
+  const errMessages = {
+    already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
+    expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
+    revoked: "Ushbu sovg'a kodi endi faol emas.",
+    not_found: "Sovg'a kodi topilmadi.",
+    not_logged_in: "Avval hisobingizga kiring."
+  };
   try{
+    const previewRes = await fetch('/api/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'preview', code })
+    });
+    const preview = await previewRes.json();
+    if(!previewRes.ok){
+      statusEl.textContent = errMessages[preview.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
+      statusEl.classList.add('err');
+      btn.disabled = false;
+      return;
+    }
+
+    if(!confirm(`Sizga NOVA Plus sovg'a qilindi — ${preview.durationDays} kunlik. Faollashtirilsinmi?`)){
+      statusEl.textContent = '';
+      btn.disabled = false;
+      return;
+    }
+
+    statusEl.textContent = "Faollashtirilmoqda...";
     const res = await fetch('/api/gift', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -1768,14 +2039,7 @@ document.getElementById('manual-redeem-btn').addEventListener('click', async ()=
     });
     const data = await res.json();
     if(!res.ok){
-      const messages = {
-        already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
-        expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
-        revoked: "Ushbu sovg'a kodi endi faol emas.",
-        not_found: "Sovg'a kodi topilmadi.",
-        not_logged_in: "Avval hisobingizga kiring."
-      };
-      statusEl.textContent = messages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
+      statusEl.textContent = errMessages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
       statusEl.classList.add('err');
     }else{
       statusEl.textContent = `🎉 ${data.durationDays} kunlik NOVA Plus faollashtirildi!`;
