@@ -125,7 +125,7 @@
 
   .glass-card{
     background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
-    backdrop-filter: blur(14px); padding: 28px;
+    backdrop-filter: blur(14px); padding: 28px; transition: border-color .2s ease, box-shadow .2s ease;
   }
 
   /* ---------- Home / Solve ---------- */
@@ -169,6 +169,7 @@
     box-shadow: 0 0 22px rgba(61,169,252,0.3);
   }
   button.glow-btn:hover{ transform: translateY(-1px); box-shadow: 0 0 28px rgba(61,169,252,0.5); }
+  button.glow-btn:active{ transform: translateY(0) scale(.98); }
   button.glow-btn:disabled{ opacity:.5; cursor:not-allowed; transform:none; }
 
   button.ghost-btn{
@@ -177,6 +178,13 @@
     border-radius: 999px; cursor:pointer; transition: border-color .15s ease, background .15s ease;
   }
   button.ghost-btn:hover{ border-color: var(--blue); background: var(--blue-soft); }
+  button.ghost-btn:active{ transform: scale(.98); }
+
+  /* Klaviatura orqali harakatlanish uchun ko'rinadigan fokus holati */
+  button:focus-visible, .nav-btn:focus-visible, .icon-btn:focus-visible,
+  .book-card:focus-visible, textarea:focus-visible, input:focus-visible, select:focus-visible{
+    outline: 2px solid var(--gold); outline-offset: 2px;
+  }
 
   .status{ font-family: var(--font-mono); font-size:12.5px; color: var(--blue); margin-top:12px; min-height:16px; }
   .status.err{ color: #FF8080; }
@@ -231,6 +239,13 @@
     30%{ transform: translateY(-5px); opacity:1; }
   }
 
+  .quick-prompts{ display:flex; flex-wrap:wrap; gap:8px; margin-top:14px; }
+  .chip-btn{
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border-soft); color: var(--text-dim);
+    font-family: var(--font-body); font-weight:600; font-size:12.5px; padding: 8px 14px;
+    border-radius: 999px; cursor:pointer; transition: all .15s ease;
+  }
+  .chip-btn:hover{ border-color: var(--blue); color: var(--text); background: var(--blue-soft); }
   .chat-input-wrap{ margin-top:14px; }
   .chat-input-wrap textarea{ width:100%; box-sizing:border-box; resize:none; min-height: 44px; }
   .chat-input-actions{ display:flex; gap:6px; justify-content:flex-end; margin-top:8px; }
@@ -254,9 +269,10 @@
   .teacher-layout.book-mode .book-grid{ display:none; }
   .book-card{
     background: rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:14px;
-    cursor:pointer; transition: border-color .15s ease, transform .12s ease;
+    cursor:pointer; transition: border-color .15s ease, transform .12s ease, box-shadow .15s ease;
   }
-  .book-card:hover{ border-color: var(--gold); transform: translateY(-2px); }
+  .book-card:hover{ border-color: var(--gold); transform: translateY(-3px); box-shadow: 0 8px 20px rgba(255,201,60,0.12); }
+  .book-card:active{ transform: translateY(-1px); }
   .book-card .b-title{ font-family: var(--font-display); font-size:18px; margin:0 0 4px; }
   .book-card .b-author{ font-size:11.5px; color: var(--text-dim); font-family: var(--font-mono); }
   .book-card .b-count{ font-size:11px; color: var(--blue); margin-top:6px; font-family: var(--font-mono); }
@@ -379,8 +395,8 @@
       <button class="nav-btn" data-tab="video">Video darsliklar</button>
       <button class="nav-btn" id="pp-mobile-btn">Shaxsiy profil</button>
     </nav>
-        <button class="hamburger-btn" id="hamburger-btn" title="Menyu"><span></span><span></span><span></span></button>
-    <button class="pp" id="pp-btn" title="Shaxsiy profil"><span>PP</span></button>
+        <button class="hamburger-btn" id="hamburger-btn" title="Menyu" aria-label="Menyuni ochish"><span></span><span></span><span></span></button>
+    <button class="pp" id="pp-btn" title="Shaxsiy profil" aria-label="Shaxsiy profil"><span>PP</span></button>
   </header>
 
   <!-- ===== HOME / SOLVE ===== -->
@@ -400,7 +416,7 @@
           <button type="button" class="clear-btn" id="solve-clear">Rasmni olib tashlash</button>
         </div>
       </div>
-      <button class="glow-btn" id="solve-btn">Yechish</button>
+      <button class="glow-btn" id="solve-btn">Yechib ber ✨</button>
       <div class="status" id="solve-status"></div>
       <div class="result" id="solve-result">
         <h3>Yechim</h3>
@@ -413,7 +429,7 @@
   <!-- ===== USTOZ AI (Gulchiroy) ===== -->
   <section class="panel" id="panel-teacher">
     <h2 class="sec-title">Ustoz AI </h2>
-    <p class="sec-sub">Savolingizni yozing yoki quyidagi kitoblardan birini tanlang.</p>
+    <p class="sec-sub">Nimani tushunmay qolding? Savolingizni yozing yoki quyidagi kitoblardan birini tanlang.</p>
     <div class="glass-card">
       <div class="teacher-layout" id="teacher-layout">
         <div class="chat-col">
@@ -422,12 +438,18 @@
               <div class="bubble">Assalomu alaykum! Nimani o'rganmoqchisiz?</div>
             </div>
           </div>
+          <div class="quick-prompts" id="quick-prompts">
+            <button class="chip-btn" data-prompt="Bu mavzuni sodda tushuntir">Bu mavzuni sodda tushuntir</button>
+            <button class="chip-btn" data-prompt="Menga misol ber">Menga misol ber</button>
+            <button class="chip-btn" data-prompt="Qadam-baqadam tushuntir">Qadam-baqadam tushuntir</button>
+            <button class="chip-btn" data-prompt="Bilimimni tekshir">Bilimimni tekshir</button>
+          </div>
           <div class="chat-input-wrap">
             <textarea id="chat-input" placeholder="Savolingizni yozing..."></textarea>
             <div class="chat-input-actions">
               <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
-              <button class="icon-btn" id="chat-image-btn" title="Rasm biriktirish">+</button>
-              <button class="icon-btn send-btn" id="chat-send" title="Yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
+              <button class="icon-btn" id="chat-image-btn" title="Rasm biriktirish" aria-label="Rasm biriktirish">+</button>
+              <button class="icon-btn send-btn" id="chat-send" title="Yuborish" aria-label="Xabarni yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
             </div>
           </div>
           <div id="chat-image-preview" style="display:none;"></div>
@@ -439,11 +461,12 @@
           <div id="book-problems"></div>
         </div>
       </div>
-      </div>
 
-    <div class="glass-card" style="margin-top:20px;">
-      <h2 class="sec-title" style="font-size:20px;">📚 Kitoblar</h2>
-      <div id="book-grid" class="book-grid"></div>
+      <div style="margin-top:20px; padding-top:20px; border-top:1px solid var(--border-soft);">
+        <h2 class="sec-title" style="font-size:20px;">📚 Kitoblar</h2>
+        <input type="text" id="book-search" placeholder="Kitob nomi bo'yicha qidirish..." style="margin: 10px 0 4px;">
+        <div id="book-grid" class="book-grid"></div>
+      </div>
     </div>
   </section>
 
@@ -616,7 +639,7 @@ document.getElementById('solve-btn').addEventListener('click', async ()=>{
   const btn = document.getElementById('solve-btn');
 
   if(!text && !solveImageBase64){
-    statusEl.textContent = "Masala matnini yozing yoki rasm yuklang.";
+    statusEl.textContent = "Masala matnini yozing yoki rasmini yuklang.";
     statusEl.classList.add('err');
     return;
   }
@@ -668,7 +691,7 @@ JAVOBNI FAQAT quyidagi JSON formatida qaytar, hech qanday qo'shimcha matn, izoh 
     resultEl.classList.add('show');
     statusEl.textContent = "Tayyor.";
   }catch(err){
-    statusEl.textContent = "Xatolik yuz berdi: " + err.message;
+    statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
     statusEl.classList.add('err');
   }finally{
     btn.disabled = false;
@@ -718,7 +741,7 @@ document.getElementById('video-btn').addEventListener('click', async ()=>{
     resultEl.classList.add('show');
     statusEl.textContent = "Tayyor.";
   }catch(err){
-    statusEl.textContent = "Xatolik yuz berdi: " + err.message;
+    statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
     statusEl.classList.add('err');
   }finally{ btn.disabled = false; }
 });
@@ -758,6 +781,15 @@ function renderBookGrid(containerEl, books, {selectable, deletable}){
 async function refreshAllBookViews(){
   const books = await loadBooks();
   renderBookGrid(document.getElementById('book-grid'), books, { selectable:true, deletable:false });
+}
+
+const bookSearchInput = document.getElementById('book-search');
+if(bookSearchInput){
+  bookSearchInput.addEventListener('input', ()=>{
+    const q = bookSearchInput.value.trim().toLowerCase();
+    const filtered = q ? booksCache.filter(b => b.title.toLowerCase().includes(q)) : booksCache;
+    renderBookGrid(document.getElementById('book-grid'), filtered, { selectable:true, deletable:false });
+  });
 }
 // ================= USTOZ AI (Gulchiroy) CHAT =================
 let chatHistory = []; // {role, content}
@@ -814,6 +846,8 @@ async function sendChat(){
   }
 
   if(!text && !chatImageBase64) return;
+  const qp = document.getElementById('quick-prompts');
+  if(qp) qp.style.display = 'none';
 
   let userContent = text;
   if(chatImageBase64){
@@ -904,7 +938,7 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
       bubbleEl.innerHTML = marked.parse(bubbleEl.textContent || "To'xtatildi.");
     }else{
       typingDiv.remove();
-      statusEl.textContent = "Xatolik yuz berdi: " + err.message;
+      statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
       statusEl.classList.add('err');
     }
   }finally{
@@ -917,6 +951,13 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
 document.getElementById('chat-send').addEventListener('click', sendChat);
 document.getElementById('chat-input').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChat(); }
+});
+document.querySelectorAll('.chip-btn').forEach(chip=>{
+  chip.addEventListener('click', ()=>{
+    document.getElementById('chat-input').value = chip.dataset.prompt;
+    document.getElementById('quick-prompts').style.display = 'none';
+    sendChat();
+  });
 });
 
 // ---- Book mode inside teacher chat ----
