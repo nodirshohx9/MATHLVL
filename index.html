@@ -700,10 +700,17 @@
       </button>
 
       <div class="signed-in-badge" id="signed-in-badge"></div>
+      <div id="plus-status-display"></div>
       <button class="oauth-btn" id="logout-btn" style="display:none; color:var(--gold); border-color:var(--gold);">Chiqish</button>
       <div class="oauth-note" id="oauth-note">Google hisobingiz orqali kiring — o'qish jarayoningiz saqlanadi.</div>
     </div>
   </section>
+
+  <div id="redeem-overlay" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:200; align-items:center; justify-content:center; padding:20px;">
+    <div class="glass-card" style="max-width:380px; width:100%; text-align:center;">
+      <div id="redeem-content"></div>
+    </div>
+  </div>
 
   <div class="footer-note">
     Nova — sun'iy intellekt yordamida ishlaydi. Javoblarni qayta tekshirib ko'ring.
@@ -1570,7 +1577,90 @@ function showSignedInUI(user){
   const badge = document.getElementById('signed-in-badge');
   badge.textContent = `${user.email} sifatida kirdingiz.`;
   badge.classList.add('show');
+  refreshPlusStatus();
 }
+
+async function refreshPlusStatus(){
+  const el = document.getElementById('plus-status-display');
+  if(!el) return;
+  try{
+    const res = await fetch('/api/plus-status');
+    const data = await res.json();
+    if(data.active){
+      const dateStr = new Date(data.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+      el.innerHTML = `<div style="background: var(--gold-soft); border:1px solid var(--gold); border-radius:12px; padding:14px; margin-top:16px;">
+        <strong style="color:var(--gold);">⭐ NOVA Plus</strong><br>
+        <span style="font-size:13px; color:var(--text-dim);">Faol — ${dateStr}gacha</span>
+      </div>`;
+    }else{
+      el.innerHTML = '';
+    }
+  }catch(e){ el.innerHTML = ''; }
+}
+async function handleRedeemFlow(){
+  const params = new URLSearchParams(window.location.search);
+  const redeemCode = params.get('redeem');
+  if(!redeemCode) return;
+
+  const overlay = document.getElementById('redeem-overlay');
+  const content = document.getElementById('redeem-content');
+  overlay.style.display = 'flex';
+
+  const meRes = await fetch('/api/me');
+  const me = await meRes.json();
+
+  if(!me.loggedIn){
+    content.innerHTML = `
+      <div style="font-size:32px; margin-bottom:12px;">🎁</div>
+      <h3 style="font-family:var(--font-display); margin-bottom:10px;">Sizga NOVA Plus sovg'a qilindi!</h3>
+      <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:20px;">Sovg'ani faollashtirish uchun avval hisobingizga kiring.</p>
+      <button class="glow-btn" id="redeem-login-btn" style="width:100%;">Google bilan kirish</button>
+    `;
+    document.getElementById('redeem-login-btn').addEventListener('click', ()=>{
+      window.location.href = '/api/auth-google-start?redeem=' + encodeURIComponent(redeemCode);
+    });
+    return;
+  }
+
+  content.innerHTML = `<div style="color:var(--text-dim); font-size:13.5px;">Tekshirilmoqda...</div>`;
+  try{
+    const res = await fetch('/api/gift-redeem', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ code: redeemCode })
+    });
+    const data = await res.json();
+    if(!res.ok){
+      const messages = {
+        already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
+        expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
+        revoked: "Ushbu sovg'a kodi endi faol emas.",
+        not_found: "Sovg'a kodi topilmadi.",
+        not_logged_in: "Avval hisobingizga kiring."
+      };
+      content.innerHTML = `
+        <div style="font-size:32px; margin-bottom:12px;">😕</div>
+        <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${messages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring."}</p>
+        <button class="ghost-btn" id="redeem-close-btn" style="width:100%;">Yopish</button>
+      `;
+    }else{
+      content.innerHTML = `
+        <div style="font-size:32px; margin-bottom:12px;">🎉</div>
+        <h3 style="font-family:var(--font-display); margin-bottom:10px;">NOVA Plus faollashtirildi!</h3>
+        <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:20px;">Sizga ${data.durationDays} kunlik NOVA Plus qo'shildi.</p>
+        <button class="glow-btn" id="redeem-close-btn" style="width:100%;">NOVA'ni boshlash</button>
+      `;
+      refreshPlusStatus();
+    }
+    document.getElementById('redeem-close-btn').addEventListener('click', ()=>{
+      overlay.style.display = 'none';
+      window.history.replaceState({}, '', window.location.pathname);
+    });
+  }catch(err){
+    content.innerHTML = `<p style="color:var(--text-dim); font-size:14px;">Nimadir xato ketdi. Qayta urinib ko'ring.</p>`;
+  }
+}
+
 async function refreshAuthState(){
   try{
     const res = await fetch('/api/me');
@@ -1591,12 +1681,13 @@ document.getElementById('logout-btn').addEventListener('click', async ()=>{
 });
 
 const urlParams = new URLSearchParams(window.location.search);
-if(urlParams.get('logged_in') === '1'){
+if(urlParams.get('logged_in') === '1' && !urlParams.get('redeem')){
   activateTab('profile');
   window.history.replaceState({}, '', window.location.pathname);
 }else if(urlParams.get('login_error') === '1'){
   window.history.replaceState({}, '', window.location.pathname);
 }
+handleRedeemFlow();
 refreshAuthState();
 </script>
 </body>
