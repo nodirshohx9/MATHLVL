@@ -226,10 +226,130 @@ async function handleStatus(req, res) {
   res.status(200).json({ active, expiresAt: plus.expiresAt });
 }
 
-// Bitta faylda barcha gift/plus amallari, ?action= orqali yo'naltiriladi.
-// GET  ?action=list    -> sovg'alar tarixi (admin)
-// GET  ?action=status  -> foydalanuvchining Plus holati
-// POST body.action=create|redeem|revoke|manual
+// ---- To'lov sozlamalari (karta raqami, narxlar) ----
+async function handleGetPaymentSettings(req, res) {
+  const raw = await redisCommand(['GET', 'nova:payment-settings']);
+  const settings = raw ? JSON.parse(raw) : { cardNumber: '', cardHolder: '', monthlyPrice: 0, yearlyPrice: 0 };
+  res.status(200).json(settings);
+}
+async function handleSetPaymentSettings(req, res) {
+  const { password, cardNumber, cardHolder, monthlyPrice, yearlyPrice } = req.body || {};
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Parol noto'g'ri" });
+  }
+  const settings = {
+    cardNumber: cardNumber || '',
+    cardHolder: cardHolder || '',
+    monthlyPrice: parseInt(monthlyPrice, 10) || 0,
+    yearlyPrice: parseInt(yearlyPrice, 10) || 0
+  };
+  await redisCommand(['SET', 'nova:payment-settings', JSON.stringify(settings)]);
+  res.status(200).json({ ok: true });
+}
+
+// ---- Qo'lda to'lov da'volari (karta-kartaga o'tkazma + chek) ----
+async function handleSubmitPayment(req, res) {
+  const session = getSession(req);
+  if (!session) return res.status(401).json({ error: 'not_logged_in' });
+
+  const { plan, screenshotUrl } = req.body || {};
+  if (!plan || !screenshotUrl) return res.status(400).json({ error: 'plan va screenshotUrl kerak' });
+  if (plan !== 'monthly' && plan !== 'yearly') return res.status(400).json({ error: 'Notogri plan' });
+
+  const settingsRaw = await redisCommand(['GET', 'nova:payment-settings']);
+  const settings = settingsRaw ? JSON.parse(settingsRaw) : { monthlyPrice: 0, yearlyPrice: 0 };
+  const amount = plan === 'monthly' ? settings.monthlyPrice : settings.yearlyPrice;
+
+  const paymentId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const record = {
+    id: paymentId,
+    email: session.email,
+    name: session.name,
+    plan,
+    amount,
+    screenshotUrl,
+    status: 'PENDING',
+    createdAt: Date.now(),
+    reviewedAt: null
+  };
+  await redisCommand(['HSET', 'nova:payments', paymentId, JSON.stringify(record)]);
+  res.status(200).json({ ok: true, paymentId });
+}
+
+async function handleListPayments(req, res) {
+  const password = req.headers['x-admin-password'];
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Parol noto'g'ri" });
+  }
+  const flat = await redisCommand(['HGETALL', 'nova:payments']);
+  const payments = [];
+  for (let i = 0; i < flat.length; i += 2) {
+    try { payments.push(JSON.parse(flat[i + 1])); } catch (e) {}
+  }
+  payments.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  res.status(200).json({ payments });
+}
+
+async function handleApprovePayment(req, res) {
+  const { password, paymentId } = req.body || {};
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Parol noto'g'ri" });
+  }
+  const raw = await redisCommand(['HGET', 'nova:payments', paymentId]);
+  if (!raw) return res.status(404).json({ error: 'not_found' });
+  const payment = JSON.parse(raw);
+  if (payment.status !== 'PENDING') return res.status(400).json({ error: 'already_reviewed' });
+
+  const durationDays = payment.plan === 'monthly' ? 30 : 365;
+  const plusRaw = await redisCommand(['GET', `nova:plus:${payment.email}`]);
+  const currentPlus = plusRaw ? JSON.parse(plusRaw) : null;
+  const baseDate = Math.max(currentPlus && currentPlus.expiresAt ? currentPlus.expiresAt : 0, Date.now());
+  const newExpiresAt = baseDate + durationDays * 86400000;
+  await redisCommand(['SET', `nova:plus:${payment.email}`, JSON.stringify({ expiresAt: newExpiresAt, source: 'payment', updatedAt: Date.now() })]);
+
+  payment.status = 'APPROVED';
+  payment.reviewedAt = Date.now();
+  await redisCommand(['HSET', 'nova:payments', paymentId, JSON.stringify(payment)]);
+  res.status(200).json({ ok: true });
+}
+
+async function handleRejectPayment(req, res) {
+  const { password, paymentId } = req.body || {};
+  if (password !== process.env.ADMIN_PASSWORD) {
+    return res.status(401).json({ error: "Parol noto'g'ri" });
+  }
+  const raw = await redisCommand(['HGET', 'nova:payments', paymentId]);
+  if (!raw) return res.status(404).json({ error: 'not_found' });
+  const payment = JSON.parse(raw);
+  payment.status = 'REJECTED';
+  payment.reviewedAt = Date.now();
+  await redisCommand(['HSET', 'nova:payments', paymentId, JSON.stringify(payment)]);
+  res.status(200).json({ ok: true });
+}
+
+// ---- Foydalanuvchining o'z so'nggi to'lov holatini ko'rish ----
+async function handleMyPaymentStatus(req, res) {
+  const session = getSession(req);
+  if (!session) return res.status(200).json({ payment: null });
+
+  const flat = await redisCommand(['HGETALL', 'nova:payments']);
+  let latest = null;
+  for (let i = 0; i < flat.length; i += 2) {
+    try {
+      const p = JSON.parse(flat[i + 1]);
+      if (p.email === session.email && (!latest || p.createdAt > latest.createdAt)) latest = p;
+    } catch (e) {}
+  }
+  res.status(200).json({ payment: latest });
+}
+
+// Bitta faylda barcha gift/plus/to'lov amallari, ?action= orqali yo'naltiriladi.
+// GET  ?action=list             -> sovg'alar tarixi (admin)
+// GET  ?action=status           -> foydalanuvchining Plus holati
+// GET  ?action=payment-settings -> karta raqami va narxlar (ochiq)
+// GET  ?action=payments-list    -> to'lov da'volari ro'yxati (admin)
+// GET  ?action=my-payment       -> foydalanuvchining o'z so'nggi to'lovi
+// POST body.action=create|preview|redeem|revoke|manual|set-payment-settings|submit-payment|approve-payment|reject-payment
 export default async function handler(req, res) {
   if (!REDIS_URL || !REDIS_TOKEN) {
     return res.status(500).json({ error: 'Server sozlanmagan: UPSTASH kalitlar topilmadi' });
@@ -240,6 +360,9 @@ export default async function handler(req, res) {
       const action = req.query.action;
       if (action === 'list') return await handleList(req, res);
       if (action === 'status') return await handleStatus(req, res);
+      if (action === 'payment-settings') return await handleGetPaymentSettings(req, res);
+      if (action === 'payments-list') return await handleListPayments(req, res);
+      if (action === 'my-payment') return await handleMyPaymentStatus(req, res);
       return res.status(400).json({ error: 'Noma\'lum action' });
     }
 
@@ -250,6 +373,10 @@ export default async function handler(req, res) {
       if (action === 'redeem') return await handleRedeem(req, res);
       if (action === 'revoke') return await handleRevoke(req, res);
       if (action === 'manual') return await handleManual(req, res);
+      if (action === 'set-payment-settings') return await handleSetPaymentSettings(req, res);
+      if (action === 'submit-payment') return await handleSubmitPayment(req, res);
+      if (action === 'approve-payment') return await handleApprovePayment(req, res);
+      if (action === 'reject-payment') return await handleRejectPayment(req, res);
       return res.status(400).json({ error: 'Noma\'lum action' });
     }
 
