@@ -700,7 +700,8 @@
       </button>
 
       <div class="signed-in-badge" id="signed-in-badge"></div>
-      <div class="oauth-note">Eslatma: bu demo interfeys — chinakam Google/Apple kirish uchun backend server ulanishi kerak.</div>
+      <button class="oauth-btn" id="logout-btn" style="display:none; color:var(--gold); border-color:var(--gold);">Chiqish</button>
+      <div class="oauth-note" id="oauth-note">Google hisobingiz orqali kiring — o'qish jarayoningiz saqlanadi.</div>
     </div>
   </section>
 
@@ -1544,16 +1545,59 @@ document.querySelectorAll('#ai-sheet-prompts .chip-btn').forEach(chip=>{
 
 refreshAllBookViews();
 
-// ================= PROFILE (mock OAuth) =================
-function mockSignIn(provider, displayName){
-  document.getElementById('profile-avatar').textContent = displayName.charAt(0).toUpperCase();
-  document.getElementById('profile-name').textContent = displayName;
+// ================= PROFILE (haqiqiy Google login) =================
+function showSignedOutUI(){
+  document.getElementById('profile-avatar').textContent = '?';
+  document.getElementById('profile-name').textContent = 'Mehmon';
+  document.getElementById('google-btn').style.display = 'flex';
+  document.getElementById('apple-btn').style.display = 'flex';
+  document.getElementById('logout-btn').style.display = 'none';
+  document.getElementById('signed-in-badge').classList.remove('show');
+  document.getElementById('oauth-note').style.display = 'block';
+}
+function showSignedInUI(user){
+  const avatarEl = document.getElementById('profile-avatar');
+  if(user.picture){
+    avatarEl.innerHTML = `<img src="${user.picture}" alt="" style="width:100%; height:100%; border-radius:50%; object-fit:cover;">`;
+  }else{
+    avatarEl.textContent = (user.name || user.email || '?').charAt(0).toUpperCase();
+  }
+  document.getElementById('profile-name').textContent = user.name || user.email;
+  document.getElementById('google-btn').style.display = 'none';
+  document.getElementById('apple-btn').style.display = 'none';
+  document.getElementById('logout-btn').style.display = 'inline-flex';
+  document.getElementById('oauth-note').style.display = 'none';
   const badge = document.getElementById('signed-in-badge');
-  badge.textContent = `${provider} orqali kirildi (namoyish rejimi).`;
+  badge.textContent = `${user.email} sifatida kirdingiz.`;
   badge.classList.add('show');
 }
-document.getElementById('google-btn').addEventListener('click', ()=> mockSignIn('Google', "Foydalanuvchi"));
-document.getElementById('apple-btn').addEventListener('click', ()=> mockSignIn('Apple', "Foydalanuvchi"));
+async function refreshAuthState(){
+  try{
+    const res = await fetch('/api/me');
+    const data = await res.json();
+    if(data.loggedIn){ showSignedInUI(data); }
+    else{ showSignedOutUI(); }
+  }catch(e){ showSignedOutUI(); }
+}
+document.getElementById('google-btn').addEventListener('click', ()=>{
+  window.location.href = '/api/auth-google-start';
+});
+document.getElementById('apple-btn').addEventListener('click', ()=>{
+  alert("Apple orqali kirish hozircha mavjud emas.");
+});
+document.getElementById('logout-btn').addEventListener('click', async ()=>{
+  await fetch('/api/logout', { method:'POST' });
+  showSignedOutUI();
+});
+
+const urlParams = new URLSearchParams(window.location.search);
+if(urlParams.get('logged_in') === '1'){
+  activateTab('profile');
+  window.history.replaceState({}, '', window.location.pathname);
+}else if(urlParams.get('login_error') === '1'){
+  window.history.replaceState({}, '', window.location.pathname);
+}
+refreshAuthState();
 </script>
 </body>
 </html>
