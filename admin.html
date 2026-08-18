@@ -215,6 +215,33 @@
       </div>
 
       <div style="margin-top:26px; padding-top:20px; border-top:1px dashed var(--border-soft);">
+        <h2 class="sec-title"><span class="icon">💳</span>To'lov sozlamalari</h2>
+        <div class="field">
+          <label for="pay-card-number">Karta raqami</label>
+          <input type="text" id="pay-card-number" placeholder="9860 1234 5678 9012" style="width:100%; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:14px 16px;">
+        </div>
+        <div class="field">
+          <label for="pay-card-holder">Karta egasining ismi</label>
+          <input type="text" id="pay-card-holder" placeholder="NODIRSHOH ABDULLAYEV" style="width:100%; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:14px 16px;">
+        </div>
+        <div class="field">
+          <label for="pay-monthly-price">Oylik narx (so'm)</label>
+          <input type="number" id="pay-monthly-price" placeholder="49000" style="width:100%; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:14px 16px;">
+        </div>
+        <div class="field">
+          <label for="pay-yearly-price">Yillik narx (so'm)</label>
+          <input type="number" id="pay-yearly-price" placeholder="490000" style="width:100%; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:14px 16px;">
+        </div>
+        <button class="glow-btn" id="pay-settings-save-btn">Saqlash</button>
+        <div class="status" id="pay-settings-status"></div>
+      </div>
+
+      <div style="margin-top:26px; padding-top:20px; border-top:1px dashed var(--border-soft);">
+        <h2 class="sec-title"><span class="icon">⏳</span>Kutilayotgan to'lovlar</h2>
+        <div id="payments-list"></div>
+      </div>
+
+      <div style="margin-top:26px; padding-top:20px; border-top:1px dashed var(--border-soft);">
         <h2 class="sec-title"><span class="icon">🗂️</span>Sovg'alar tarixi</h2>
         <div id="gift-history"></div>
       </div>
@@ -297,6 +324,8 @@ document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>
       statusEl.textContent = '';
       refreshBookList();
       refreshGiftHistory();
+      loadPaymentSettingsAdmin();
+      refreshPaymentsList();
     }else{
       statusEl.textContent = "Kod noto'g'ri.";
       statusEl.classList.add('err');
@@ -545,6 +574,122 @@ async function revokeGift(giftId){
     });
     if(!res.ok) throw new Error("Bekor qilib bo'lmadi");
     refreshGiftHistory();
+  }catch(err){
+    alert(err.message);
+  }
+}
+
+// ---------- To'lov sozlamalari ----------
+async function loadPaymentSettingsAdmin(){
+  try{
+    const res = await fetch('/api/gift?action=payment-settings');
+    const data = await res.json();
+    document.getElementById('pay-card-number').value = data.cardNumber || '';
+    document.getElementById('pay-card-holder').value = data.cardHolder || '';
+    document.getElementById('pay-monthly-price').value = data.monthlyPrice || '';
+    document.getElementById('pay-yearly-price').value = data.yearlyPrice || '';
+  }catch(e){}
+}
+
+document.getElementById('pay-settings-save-btn').addEventListener('click', async ()=>{
+  const statusEl = document.getElementById('pay-settings-status');
+  const btn = document.getElementById('pay-settings-save-btn');
+  btn.disabled = true;
+  statusEl.classList.remove('err');
+  statusEl.textContent = "Saqlanmoqda...";
+  try{
+    const res = await fetch('/api/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        action: 'set-payment-settings',
+        password: adminPassword,
+        cardNumber: document.getElementById('pay-card-number').value.trim(),
+        cardHolder: document.getElementById('pay-card-holder').value.trim(),
+        monthlyPrice: document.getElementById('pay-monthly-price').value,
+        yearlyPrice: document.getElementById('pay-yearly-price').value
+      })
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || "Saqlab bo'lmadi");
+    statusEl.textContent = "Saqlandi ✓";
+  }catch(err){
+    statusEl.textContent = err.message;
+    statusEl.classList.add('err');
+  }finally{
+    btn.disabled = false;
+  }
+});
+
+// ---------- Kutilayotgan to'lovlar ----------
+function paymentPlanLabel(plan){
+  return plan === 'monthly' ? 'Oylik' : 'Yillik';
+}
+function paymentStatusLabel(status){
+  if(status === 'PENDING') return '⏳ Kutilmoqda';
+  if(status === 'APPROVED') return '✓ Tasdiqlangan';
+  if(status === 'REJECTED') return '✕ Rad etilgan';
+  return status;
+}
+async function refreshPaymentsList(){
+  const listEl = document.getElementById('payments-list');
+  try{
+    const res = await fetch('/api/gift?action=payments-list', {
+      headers: { 'x-admin-password': adminPassword }
+    });
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error);
+    const pending = data.payments.filter(p => p.status === 'PENDING');
+    if(!pending.length){
+      listEl.innerHTML = '<div class="field-hint">Hozircha kutilayotgan to\'lovlar yo\'q.</div>';
+      return;
+    }
+    listEl.innerHTML = pending.map(p => `
+      <div style="background: rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:10px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+          <strong style="font-size:13px;">${p.name || p.email}</strong>
+          <span style="font-size:12px; color:var(--text-dim);">${paymentStatusLabel(p.status)}</span>
+        </div>
+        <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">
+          ${paymentPlanLabel(p.plan)} — ${(p.amount||0).toLocaleString('uz-UZ')} so'm • ${new Date(p.createdAt).toLocaleString('uz-UZ')}
+        </div>
+        <a href="${p.screenshotUrl}" target="_blank" rel="noopener">
+          <img src="${p.screenshotUrl}" alt="chek" style="max-width:100%; border-radius:8px; margin-bottom:10px; display:block;">
+        </a>
+        <div style="display:flex; gap:8px;">
+          <button class="glow-btn" style="flex:1; padding:9px; font-size:12.5px;" onclick="approvePayment('${p.id}')">Tasdiqlash</button>
+          <button class="ghost-btn" style="flex:1; padding:9px; font-size:12.5px;" onclick="rejectPayment('${p.id}')">Rad etish</button>
+        </div>
+      </div>
+    `).join('');
+  }catch(err){
+    listEl.innerHTML = `<div class="field-hint">Yuklab bo'lmadi: ${err.message}</div>`;
+  }
+}
+async function approvePayment(paymentId){
+  if(!confirm("Bu to'lovni tasdiqlaysizmi? Foydalanuvchiga Plus beriladi.")) return;
+  try{
+    const res = await fetch('/api/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'approve-payment', password: adminPassword, paymentId })
+    });
+    if(!res.ok) throw new Error("Tasdiqlab bo'lmadi");
+    refreshPaymentsList();
+  }catch(err){
+    alert(err.message);
+  }
+}
+async function rejectPayment(paymentId){
+  if(!confirm("Bu to'lovni rad etasizmi?")) return;
+  try{
+    const res = await fetch('/api/gift', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action:'reject-payment', password: adminPassword, paymentId })
+    });
+    if(!res.ok) throw new Error("Rad etib bo'lmadi");
+    refreshPaymentsList();
   }catch(err){
     alert(err.message);
   }
