@@ -63,12 +63,18 @@ export default async function handler(req, res) {
     };
     const sessionCookie = signSession(session, process.env.SESSION_SECRET);
 
-    res.setHeader('Set-Cookie', [
+    const pendingRedeem = cookies.nova_pending_redeem;
+    const cookiesToSet = [
       `nova_session=${sessionCookie}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=${30 * 24 * 60 * 60}`,
       `nova_oauth_state=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`
-    ]);
+    ];
+    if (pendingRedeem) {
+      cookiesToSet.push(`nova_pending_redeem=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`);
+    }
+    res.setHeader('Set-Cookie', cookiesToSet);
 
-    res.writeHead(302, { Location: '/?logged_in=1' });
+    const redirectTo = pendingRedeem ? `/?redeem=${encodeURIComponent(pendingRedeem)}` : '/?logged_in=1';
+    res.writeHead(302, { Location: redirectTo });
     res.end();
   } catch (err) {
     console.error('Google OAuth callback xatosi:', err);
