@@ -486,6 +486,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
 
@@ -704,7 +705,14 @@
       <div id="manual-redeem-wrap" style="display:none; margin-top:16px;">
         <div style="font-size:12px; color:var(--text-dim); margin-bottom:8px;">🎁 Sovg'a kodingiz bormi?</div>
         <input type="text" id="manual-redeem-input" placeholder="NOVA-XXXX-XXXX-XXXX" style="width:100%; text-align:center; letter-spacing:1px; background: rgba(5,7,18,0.55); border:1px solid var(--border); border-radius:12px; color:var(--text); font-family:var(--font-mono); font-size:13px; padding:12px; box-sizing:border-box;">
-        <button class="glow-btn" id="manual-redeem-btn" style="width:100%; margin-top:10px;">Kodni faollashtirish</button>
+        <div style="display:flex; gap:8px; margin-top:10px;">
+          <button class="glow-btn" id="manual-redeem-btn" style="flex:1;">Faollashtirish</button>
+          <button class="ghost-btn" id="qr-scan-btn" style="flex:none; padding:13px 16px;" title="QR kodni skanerlash" aria-label="QR kodni skanerlash">📷</button>
+        </div>
+        <div id="qr-scanner-wrap" style="display:none; margin-top:14px;">
+          <div id="qr-scanner-view" style="border-radius:12px; overflow:hidden;"></div>
+          <button class="ghost-btn" id="qr-scan-close-btn" style="width:100%; margin-top:10px;">Skanerlashni bekor qilish</button>
+        </div>
         <div class="status" id="manual-redeem-status"></div>
       </div>
       <button class="oauth-btn" id="logout-btn" style="display:none; color:var(--gold); border-color:var(--gold);">Chiqish</button>
@@ -1696,6 +1704,48 @@ if(urlParams.get('logged_in') === '1' && !urlParams.get('redeem')){
   window.history.replaceState({}, '', window.location.pathname);
 }
 handleRedeemFlow();
+
+let qrScannerInstance = null;
+function extractRedeemCode(scannedText){
+  try{
+    const url = new URL(scannedText);
+    const fromParam = url.searchParams.get('redeem');
+    if(fromParam) return fromParam;
+  }catch(e){}
+  return scannedText.trim();
+}
+document.getElementById('qr-scan-btn').addEventListener('click', async ()=>{
+  const wrap = document.getElementById('qr-scanner-wrap');
+  wrap.style.display = 'block';
+  const statusEl = document.getElementById('manual-redeem-status');
+  statusEl.textContent = '';
+  statusEl.classList.remove('err');
+  try{
+    qrScannerInstance = new Html5Qrcode('qr-scanner-view');
+    await qrScannerInstance.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: 220 },
+      (decodedText)=>{
+        document.getElementById('manual-redeem-input').value = extractRedeemCode(decodedText);
+        stopQrScanner();
+        document.getElementById('manual-redeem-btn').click();
+      },
+      ()=>{}
+    );
+  }catch(err){
+    statusEl.textContent = "Kameraga ruxsat berilmadi yoki kamera topilmadi.";
+    statusEl.classList.add('err');
+    wrap.style.display = 'none';
+  }
+});
+function stopQrScanner(){
+  document.getElementById('qr-scanner-wrap').style.display = 'none';
+  if(qrScannerInstance){
+    qrScannerInstance.stop().then(()=> qrScannerInstance.clear()).catch(()=>{});
+    qrScannerInstance = null;
+  }
+}
+document.getElementById('qr-scan-close-btn').addEventListener('click', stopQrScanner);
 
 document.getElementById('manual-redeem-btn').addEventListener('click', async ()=>{
   const input = document.getElementById('manual-redeem-input');
