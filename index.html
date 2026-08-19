@@ -1496,6 +1496,7 @@ function startReading(book){
   pageStrokesCache = {};
   pageRedoCache = {};
   renderedPages = new Set();
+  pageRenderState = {};
   setAnnotationTool(null);
   if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
 
@@ -1625,11 +1626,44 @@ function updatePageIndicator(){
 }
 
 // ---- Bitta sahifani render qilish ----
-async function renderPageInto(item, num){
-  if(renderedPages.has(num) || !readerPdfDoc) return;
-  renderedPages.add(num);
+// ---- Har sahifa uchun alohida render holatini kuzatish (poyga holatini oldini olish uchun) ----
+let pageRenderState = {}; // { [pageNum]: { task, token } }
+function getPageRenderState(num){
+  if(!pageRenderState[num]) pageRenderState[num] = { task: null, token: 0 };
+  return pageRenderState[num];
+}
+async function cancelPageRender(num){
+  const state = getPageRenderState(num);
+  if(state.task){
+    try{ state.task.cancel(); }catch(e){}
+    try{ await state.task.promise; }catch(e){ /* bekor qilinganda kutilgan xato */ }
+    state.task = null;
+  }
+}
+function cancelAllPageRenders(){
+  Object.keys(pageRenderState).forEach(key=>{
+    const state = pageRenderState[key];
+    if(state.task){ try{ state.task.cancel(); }catch(e){} state.task = null; }
+    state.token++;
+  });
+}
+
+async function renderPageInto(item, num, forceRerender){
+  if(!readerPdfDoc) return;
+  const state = getPageRenderState(num);
+
+  // Sahifa allaqachon joriy sozlamalar bilan render qilingan va hech narsa faol emas — qayta ishlash shart emas
+  if(!forceRerender && renderedPages.has(num) && !state.task) return;
+
+  // Shu sahifa uchun oldingi render tugamagan bo'lsa — avval uni bekor qilib, tugashini kutamiz
+  await cancelPageRender(num);
+
+  const myToken = ++state.token;
+
   try{
     const page = await readerPdfDoc.getPage(num);
+    if(myToken !== state.token) return; // bu vaqt ichida yangiroq so'rov kelgan, eskisini e'tiborsiz qoldiramiz
+
     const width = pageTargetWidth();
     const baseViewport = page.getViewport({ scale: 1 });
     const scale = width / baseViewport.width;
@@ -1647,15 +1681,24 @@ async function renderPageInto(item, num){
       annCanvas.className = 'page-annotation-canvas';
       item.appendChild(annCanvas);
     }
+    // Canvas o'lchamini FAQAT oldingi render to'liq bekor qilingandan keyin yangilaymiz
     canvas.width = viewport.width; canvas.height = viewport.height;
     annCanvas.width = viewport.width; annCanvas.height = viewport.height;
     item.style.width = viewport.width + 'px';
     item.style.height = viewport.height + 'px';
 
     const ctx = canvas.getContext('2d');
-    await page.render({ canvasContext: ctx, viewport }).promise;
+    const task = page.render({ canvasContext: ctx, viewport });
+    state.task = task;
+    await task.promise;
+
+    if(myToken !== state.token) return; // eskirgan natija, UI'ga qo'llanmaydi
+    state.task = null;
+    renderedPages.add(num);
     redrawAnnotationsFor(num, annCanvas);
   }catch(e){
+    if(e && e.name === 'RenderingCancelledException') return; // kutilgan holat, xato emas
+    if(myToken === state.token) state.task = null;
     renderedPages.delete(num);
     console.error('Sahifa render xatosi:', num, e);
   }
@@ -1667,6 +1710,9 @@ function garbageCollectFarPages(){
   document.querySelectorAll('.reader-page-item').forEach(el=>{
     const num = parseInt(el.dataset.page, 10);
     if(Math.abs(num - currentVisiblePage) > 6 && renderedPages.has(num)){
+      const state = getPageRenderState(num);
+      if(state.task){ try{ state.task.cancel(); }catch(e){} state.task = null; }
+      state.token++;
       const canvas = el.querySelector('canvas.page-canvas');
       const annCanvas = el.querySelector('canvas.page-annotation-canvas');
       if(canvas){ canvas.width = 0; canvas.height = 0; canvas.remove(); }
@@ -1689,8 +1735,8 @@ function scrollToPage(num, smooth){
 }
 
 // ================= ZOOM =================
+let zoomDebounceTimer = null;
 function reRenderAllForZoom(){
-  const scrollEl = document.getElementById('reader-scroll');
   const anchorItem = document.querySelector(`.reader-page-item[data-page="${currentVisiblePage}"]`);
   const wrap = document.getElementById('reader-canvas-wrap');
   let anchorFraction = 0;
@@ -1701,29 +1747,35 @@ function reRenderAllForZoom(){
   }
   const width = pageTargetWidth();
   const height = width * readerAspect;
+  const pagesToRender = [];
   document.querySelectorAll('.reader-page-item').forEach(el=>{
     const num = parseInt(el.dataset.page, 10);
     el.style.width = width + 'px';
     el.style.height = height + 'px';
-    if(renderedPages.has(num)){
-      renderedPages.delete(num);
-      renderPageInto(el, num);
-    }
+    if(renderedPages.has(num)) pagesToRender.push([el, num]);
   });
+  // Har sahifani ketma-ket (parallel emas) qayta render qilamiz — bir vaqtda ko'p canvas'ga tegmaslik uchun
+  (async ()=>{
+    for(const [el, num] of pagesToRender){
+      await renderPageInto(el, num, true);
+    }
+  })();
   requestAnimationFrame(()=>{
     const newAnchor = document.querySelector(`.reader-page-item[data-page="${currentVisiblePage}"]`);
     if(newAnchor){
       const r = newAnchor.getBoundingClientRect();
       const wrapTop = wrap.getBoundingClientRect().top;
       const delta = r.top - wrapTop + anchorFraction * r.height;
-      wrap.querySelector('#reader-scroll') && (document.getElementById('reader-scroll').scrollTop += delta);
+      document.getElementById('reader-scroll').scrollTop += delta;
     }
   });
   document.getElementById('zoom-level').textContent = readerZoomPercent + '%';
 }
 function setZoom(percent){
   readerZoomPercent = Math.max(100, Math.min(400, Math.round(percent)));
-  if(readerPdfDoc) reRenderAllForZoom();
+  if(!readerPdfDoc) return;
+  clearTimeout(zoomDebounceTimer);
+  zoomDebounceTimer = setTimeout(()=> reRenderAllForZoom(), 80);
 }
 document.getElementById('zoom-in').addEventListener('click', ()=> setZoom(readerZoomPercent + 25));
 document.getElementById('zoom-out').addEventListener('click', ()=> setZoom(readerZoomPercent - 25));
@@ -1826,6 +1878,8 @@ document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
   flushProgressSave();
   setAnnotationTool(null);
   closeAiSheet();
+  cancelAllPageRenders();
+  if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
   document.getElementById('book-reader-screen').style.display = 'none';
   document.getElementById('book-detail-screen').style.display = 'block';
   readerPdfDoc = null;
@@ -1835,6 +1889,8 @@ document.getElementById('book-back').addEventListener('click', ()=>{
   flushProgressSave();
   setAnnotationTool(null);
   closeAiSheet();
+  cancelAllPageRenders();
+  if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
   activeBook = null;
   readerPdfDoc = null;
   document.getElementById('teacher-layout').classList.remove('book-mode');
