@@ -313,29 +313,25 @@
 
   .reader-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; }
   .reader-header .back-link{ margin-bottom:0; flex:none; }
-  .reader-page-indicator{ font-family: var(--font-mono); font-size:11.5px; color: var(--text-dim); flex:none; }
+  .reader-ai-desktop-btn{ display:none; flex:none; }
+
+  .reader-body{ display:flex; gap:0; align-items:stretch; height: min(72vh, 780px); border:1px solid var(--border-soft); border-radius:14px; overflow:hidden; }
+  .reader-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
 
   .reader-canvas-wrap{
-    position:relative; background: rgba(0,0,0,0.25); border:1px solid var(--border-soft); border-radius:14px;
-    min-height: 320px; display:flex; align-items:center; justify-content:center;
-    padding: 16px; overflow:auto;
+    position:relative; background: rgba(0,0,0,0.25); flex:1; min-width:0;
+    display:flex; flex-direction:column;
   }
-  .reader-loading{ font-family: var(--font-mono); font-size:13px; color: var(--text-dim); text-align:center; }
-  #reader-canvas{ max-width:100%; height:auto; border-radius:6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); background:#fff; }
+  .reader-loading{ font-family: var(--font-mono); font-size:13px; color: var(--text-dim); text-align:center; margin:auto; }
 
-  .reader-controls{ display:flex; align-items:center; justify-content:center; gap:16px; margin-top:12px; }
-  .reader-page-text{ font-family: var(--font-mono); font-size:12.5px; color: var(--text-dim); min-width:64px; text-align:center; }
-
-  .reader-toc-drawer{
-    display:none; position:absolute; top:0; right:0; bottom:0; width: min(280px, 82%);
-    background: var(--panel-solid); border-left:1px solid var(--border); z-index:40;
-    padding: 16px; overflow-y:auto; box-shadow: -10px 0 30px rgba(0,0,0,0.4);
+  .reader-scroll{
+    flex:1; overflow-y:auto; overflow-x:hidden; padding: 16px 0; display:flex; flex-direction:column; align-items:center; gap:14px;
+    -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
-  .reader-toc-drawer.open{ display:block; }
-  .reader-toc-header{ display:flex; align-items:center; justify-content:space-between; font-family: var(--font-display); font-size:16px; margin-bottom:14px; }
-  .reader-toc-item{ padding:10px 8px; border-radius:8px; font-size:13px; cursor:pointer; color: var(--text-dim); }
-  .reader-toc-item:hover{ background: rgba(255,255,255,0.05); color: var(--text); }
-  .reader-toc-item.active{ background: var(--blue-soft); color: var(--blue); font-weight:700; }
+  .reader-scroll.draw-lock{ overflow-y:hidden; touch-action:none; }
+  .reader-page-item{ position:relative; flex:none; background:#fff; border-radius:6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow:hidden; }
+  .reader-page-item canvas.page-canvas{ display:block; width:100%; height:100%; }
+  .reader-page-item canvas.page-annotation-canvas{ position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; }
 
   .ai-fab{
     position:absolute; bottom:16px; right:14px; width:52px; height:52px; border-radius:50%;
@@ -343,51 +339,23 @@
     font-size:20px; cursor:pointer; box-shadow: 0 8px 24px rgba(61,169,252,0.4); z-index:45;
     display:flex; align-items:center; justify-content:center;
   }
-  .ai-sheet-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:70; }
-  .ai-sheet-backdrop.open{ display:block; }
-  .ai-sheet{
-    display:none; flex-direction:column; position:fixed; left:0; right:0; bottom:0; max-height:65vh; z-index:71;
-    background: var(--panel-solid); border-top:1px solid var(--border); border-radius:20px 20px 0 0;
-    padding: 10px 16px calc(16px + env(safe-area-inset-bottom,0px)); box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-  }
-  .ai-sheet.open{ display:flex; }
-  .ai-sheet-handle{ width:40px; height:4px; background: var(--border); border-radius:2px; margin: 0 auto 10px; }
-  .ai-sheet-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
-  .ai-sheet-header span{ font-family: var(--font-display); font-size:15px; font-weight:700; }
-  .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; max-height:30vh; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
 
-  /* ---- Reader page stage (PDF canvas + annotation overlay) ---- */
-  .reader-page-stage{ position:relative; display:inline-block; max-width:100%; touch-action: pan-y; }
-  #reader-annotation-canvas{ position:absolute; top:0; left:0; display:none; touch-action:none; }
-  .reader-canvas-wrap{ overflow:auto; touch-action: pan-x pan-y; }
-  .reader-canvas-wrap.zoomed .reader-page-stage{ touch-action:none; }
-
-  /* ---- Zoom + annotation secondary toolbar ---- */
-  .reader-toolbar-secondary{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; gap:10px; flex-wrap:wrap; }
-  .zoom-controls, .annotation-controls{ display:flex; align-items:center; gap:6px; }
-  .zoom-level{ font-family: var(--font-mono); font-size:11.5px; color: var(--text-dim); min-width:40px; text-align:center; }
+  /* ---- Secondary toolbar: pen, bookmark, page indicator, annotation sub-tools, zoom ---- */
+  .reader-toolbar-secondary{ display:flex; align-items:center; gap:8px; padding:10px 12px; background: var(--panel-solid); border-top:1px solid var(--border-soft); flex-wrap:wrap; }
   #pen-toggle.active, #marker-toggle.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
+  #bookmark-toggle.active{ color: var(--gold); border-color: var(--gold); }
+  .annotation-controls{ display:flex; align-items:center; gap:6px; }
+  .zoom-controls{ display:none; align-items:center; gap:6px; margin-left:auto; }
+  .zoom-level{ font-family: var(--font-mono); font-size:11.5px; color: var(--text-dim); min-width:38px; text-align:center; }
 
-  .annotation-clear-confirm{
-    display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
-    background: var(--panel-solid); border:1px solid var(--border); border-radius:14px; padding:16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:46; width:min(280px,90%); text-align:center;
-  }
-  .annotation-clear-confirm.open{ display:block; }
-  .annotation-clear-confirm p{ font-size:12.5px; color: var(--text-dim); margin:0 0 12px; }
-  .annotation-clear-confirm .ac-row{ display:flex; gap:8px; }
-  .annotation-clear-confirm .ac-row button{ flex:1; font-size:12px; padding:8px; }
-
-
-  .reader-page-jump-wrap{ position:relative; display:flex; flex-direction:column; align-items:center; }
   button.reader-page-text{
     background:none; border:none; cursor:pointer; font-family: var(--font-mono); font-size:12.5px;
-    color: var(--text-dim); min-width:64px; text-align:center; padding:4px 8px; border-radius:8px;
+    color: var(--text-dim); min-width:60px; text-align:center; padding:6px 10px; border-radius:8px;
   }
   button.reader-page-text:hover{ background: rgba(255,255,255,0.05); color: var(--text); }
-  #reader-current-chapter{ font-size:10px; color: var(--text-dim); font-family: var(--font-mono); opacity:.7; margin-top:-2px; }
+
   .reader-page-popover{
-    display:none; position:absolute; bottom: calc(100% + 8px); left:50%; transform: translateX(-50%);
+    display:none; position:absolute; bottom:60px; left:50%; transform: translateX(-50%);
     background: var(--panel-solid); border:1px solid var(--border); border-radius:12px; padding:12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:50; white-space:nowrap;
   }
@@ -399,10 +367,49 @@
     border-radius:8px; color: var(--text); font-family: var(--font-mono); font-size:13px; padding:8px;
   }
 
-  .book-progress-bar{ height:5px; background: rgba(255,255,255,0.08); border-radius:3px; overflow:hidden; margin: 8px 0; }
-  .book-progress-bar-fill{ height:100%; background: linear-gradient(90deg, var(--blue), var(--gold)); border-radius:3px; }
-  .book-progress-text{ font-size:11px; color: var(--text-dim); font-family: var(--font-mono); }
-  .book-card .book-progress-bar{ margin: 6px 0 2px; }
+  .annotation-clear-confirm{
+    display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
+    background: var(--panel-solid); border:1px solid var(--border); border-radius:14px; padding:16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:46; width:min(280px,90%); text-align:center;
+  }
+  .annotation-clear-confirm.open{ display:block; }
+  .annotation-clear-confirm p{ font-size:12.5px; color: var(--text-dim); margin:0 0 12px; }
+  .annotation-clear-confirm .ac-row{ display:flex; gap:8px; }
+  .annotation-clear-confirm .ac-row button{ flex:1; font-size:12px; padding:8px; }
+
+  /* ---- AI panel: mobile drawer overlay, desktop static split ---- */
+  .ai-panel-backdrop{ display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:70; }
+  .ai-panel-backdrop.open{ display:block; }
+  .ai-panel{
+    display:flex; flex-direction:column; position:fixed; top:0; right:0; bottom:0; width:min(360px,88%); z-index:71;
+    background: var(--panel-solid); border-left:1px solid var(--border);
+    padding: 14px 16px calc(16px + env(safe-area-inset-bottom,0px)); box-shadow: -10px 0 40px rgba(0,0,0,0.5);
+    transform: translateX(105%); transition: transform .25s ease;
+  }
+  .ai-panel.open{ transform: translateX(0); }
+  .ai-panel-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+  .ai-panel-header span{ font-family: var(--font-display); font-size:15px; font-weight:700; }
+  .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+
+  @media (min-width: 900px){
+    .ai-fab{ display:none; }
+    .reader-ai-desktop-btn{ display:flex; }
+    .zoom-controls{ display:flex; }
+    .ai-panel{
+      position:static; transform:none; display:none; width:320px; flex:none; height:auto;
+      border-left:1px solid var(--border-soft); box-shadow:none; border-radius:0;
+    }
+    .ai-panel.open{ display:flex; }
+    .ai-panel-backdrop{ display:none !important; }
+  }
+
+  .book-detail-title{ font-family: var(--font-display); font-size:20px; margin: 0 0 12px; }
+
+  .book-detail-card{ text-align:center; padding: 20px 10px; }
+  .book-detail-cover{ width:140px; aspect-ratio:3/4; object-fit:cover; border-radius:10px; margin: 0 auto 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.4); }
+  .book-detail-card .book-detail-title{ margin: 0 0 4px; }
+  .book-detail-author{ font-size:13px; color: var(--text-dim); font-family: var(--font-mono); margin-bottom:20px; }
+
   .back-link{ background:none; border:none; color: var(--blue); font-family: var(--font-mono); font-size:12.5px; cursor:pointer; padding:0; margin-bottom:14px; }
   .back-link:hover{ text-decoration:underline; }
   .problem-item{ background: rgba(255,255,255,0.03); border:1px solid var(--border-soft); border-radius:10px; padding:12px 14px; margin-bottom:10px; font-size:13.5px; font-family: var(--font-mono); cursor:pointer; transition: border-color .15s ease; }
@@ -540,7 +547,7 @@
     .teacher-layout.book-mode .chat-col{ display:none; }
     .teacher-layout.book-mode .book-col{ order: 1; width: 100%; }
     .chat-window{ max-height: 320px; }
-    .reader-canvas-wrap{ min-height: 45vh; }
+    .reader-body{ height: 68vh; }
 
     /* O'qish rejimida (reader-mode) pastki navigatsiya va sarlavha yashiriladi,
        kitob o'qish maydoni butun ekranni egallaydi */
@@ -677,46 +684,24 @@
             </div>
           </div>
 
-          <div id="book-reader-screen" style="display:none; position:relative;">
+          <div id="book-reader-screen" style="display:none;">
             <div class="reader-header">
               <button class="back-link" id="reader-back-to-detail" aria-label="Orqaga">&larr;</button>
               <div class="reader-header-title" id="reader-header-title"></div>
-              <button class="icon-btn" id="reader-toc-btn" title="Mundarija" aria-label="Mundarija">☰</button>
-            </div>
-            <div class="reader-canvas-wrap" id="reader-canvas-wrap">
-              <div class="reader-loading" id="reader-loading">
-                <div id="reader-loading-text">📖 Kitob tayyorlanmoqda...</div>
-                <button class="ghost-btn" id="reader-retry-btn" style="display:none; margin-top:14px;">Qayta urinish</button>
-              </div>
-              <div class="reader-page-stage" id="reader-page-stage">
-                <canvas id="reader-canvas" style="display:none;"></canvas>
-                <canvas id="reader-annotation-canvas" style="display:none;"></canvas>
-              </div>
+              <button class="icon-btn reader-ai-desktop-btn" id="reader-ai-desktop-btn" title="Ustoz AI" aria-label="Ustoz AI">✨</button>
             </div>
 
-            <div class="reader-toolbar-secondary">
-              <div class="zoom-controls">
-                <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
-                <span class="zoom-level" id="zoom-level">100%</span>
-                <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
-                <button class="icon-btn" id="zoom-fit" title="Ekranga moslash" aria-label="Ekranga moslash">⤢</button>
-              </div>
-              <div class="annotation-controls">
-                <button class="icon-btn" id="pen-toggle" title="Qalam" aria-label="Qalam">✏</button>
-                <button class="icon-btn" id="marker-toggle" title="Marker" aria-label="Marker" style="display:none;">🖍</button>
-                <button class="icon-btn" id="eraser-toggle" title="O'chirg'ich" aria-label="O'chirg'ich" style="display:none;">🧽</button>
-                <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish" style="display:none;">↶</button>
-                <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish" style="display:none;">↷</button>
-                <button class="icon-btn" id="annotation-clear" title="Sahifani tozalash" aria-label="Sahifani tozalash" style="display:none;">🗑</button>
-                <button class="icon-btn" id="annotation-done" title="Tayyor" aria-label="Tayyor" style="display:none; color:var(--blue);">✓</button>
-              </div>
-            </div>
+            <div class="reader-body" id="reader-body">
+              <div class="reader-main">
+                <div class="reader-canvas-wrap" id="reader-canvas-wrap">
+                <div class="reader-loading" id="reader-loading">
+                  <div id="reader-loading-text">📖 Kitob tayyorlanmoqda...</div>
+                  <button class="ghost-btn" id="reader-retry-btn" style="display:none; margin-top:14px;">Qayta urinish</button>
+                </div>
+                <div class="reader-scroll" id="reader-scroll"></div>
 
-            <div class="reader-controls">
-              <button class="icon-btn" id="reader-prev" title="Oldingi sahifa" aria-label="Oldingi sahifa">‹</button>
-              <div class="reader-page-jump-wrap">
-                <button class="reader-page-text" id="reader-page-text" title="Sahifaga o'tish">— / —</button>
-                <div id="reader-current-chapter"></div>
+                <button class="ai-fab" id="ai-fab" aria-label="Kitob yordamchisi" title="Kitob yordamchisi">✨</button>
+
                 <div class="reader-page-popover" id="reader-page-popover">
                   <div class="reader-page-popover-label">Sahifaga o'tish</div>
                   <div class="reader-page-popover-row">
@@ -724,49 +709,57 @@
                     <button class="glow-btn" id="reader-page-go" style="padding:8px 16px; font-size:13px;">O'tish</button>
                   </div>
                 </div>
-              </div>
-              <button class="icon-btn" id="reader-next" title="Keyingi sahifa" aria-label="Keyingi sahifa">›</button>
-            </div>
-            <div class="reader-toc-drawer" id="reader-toc-drawer">
-              <div class="reader-toc-header">
-                <span>Mundarija</span>
-                <button class="icon-btn" id="reader-toc-close" aria-label="Mundarijani yopish">✕</button>
-              </div>
-              <div id="reader-toc-list"></div>
-            </div>
 
-            <div class="annotation-clear-confirm" id="annotation-clear-confirm">
-              <p>Bu sahifadagi barcha belgilaringiz o'chirilsinmi?</p>
-              <div class="ac-row">
-                <button class="ghost-btn" id="annotation-clear-cancel">Bekor qilish</button>
-                <button class="ghost-btn" id="annotation-clear-confirm-btn" style="border-color:var(--red); color:var(--red);">Tozalash</button>
+                <div class="annotation-clear-confirm" id="annotation-clear-confirm">
+                  <p>Bu sahifadagi barcha belgilaringiz o'chirilsinmi?</p>
+                  <div class="ac-row">
+                    <button class="ghost-btn" id="annotation-clear-cancel">Bekor qilish</button>
+                    <button class="ghost-btn" id="annotation-clear-confirm-btn" style="border-color:var(--red); color:var(--red);">Tozalash</button>
+                  </div>
+                </div>
+                </div>
+
+                <div class="reader-toolbar-secondary" id="reader-toolbar-secondary">
+                <button class="icon-btn" id="pen-toggle" title="Yozish" aria-label="Yozish">✏</button>
+                <button class="icon-btn" id="bookmark-toggle" title="Belgilash" aria-label="Belgilash">🔖</button>
+                <button class="reader-page-text" id="reader-page-text" title="Sahifaga o'tish">— / —</button>
+                <div class="annotation-controls" id="annotation-controls">
+                  <button class="icon-btn" id="marker-toggle" title="Marker" aria-label="Marker" style="display:none;">🖍</button>
+                  <button class="icon-btn" id="eraser-toggle" title="O'chirg'ich" aria-label="O'chirg'ich" style="display:none;">🧽</button>
+                  <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish" style="display:none;">↶</button>
+                  <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish" style="display:none;">↷</button>
+                  <button class="icon-btn" id="annotation-clear" title="Sahifani tozalash" aria-label="Sahifani tozalash" style="display:none;">🗑</button>
+                  <button class="icon-btn" id="annotation-done" title="Tayyor" aria-label="Tayyor" style="display:none; color:var(--blue);">✓</button>
+                </div>
+                <div class="zoom-controls" id="zoom-controls">
+                  <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
+                  <span class="zoom-level" id="zoom-level">100%</span>
+                  <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
+                </div>
+                </div>
+              </div>
+
+              <div class="ai-panel-backdrop" id="ai-sheet-backdrop"></div>
+              <div class="ai-panel" id="ai-sheet">
+                <div class="ai-panel-header">
+                  <span id="ai-sheet-title">Ustoz AI</span>
+                  <button class="icon-btn" id="ai-sheet-close" aria-label="Yopish">✕</button>
+                </div>
+                <div class="ai-sheet-chat" id="ai-sheet-chat"></div>
+                <div class="quick-prompts" id="ai-sheet-prompts">
+                  <button class="chip-btn" data-prompt="Shu sahifani tushuntir">Shu sahifani tushuntir</button>
+                  <button class="chip-btn" data-prompt="Misolni tushuntir">Misolni tushuntir</button>
+                  <button class="chip-btn" data-prompt="Formulani tushuntir">Formulani tushuntir</button>
+                  <button class="chip-btn" data-prompt="Savol ber">Savol ber</button>
+                </div>
+                <div class="chat-input-wrap">
+                  <textarea id="ai-sheet-input" placeholder="Savolingizni yozing..."></textarea>
+                  <div class="chat-input-actions">
+                    <button class="icon-btn send-btn" id="ai-sheet-send" aria-label="Yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
+                  </div>
+                </div>
               </div>
             </div>
-
-            <button class="ai-fab" id="ai-fab" aria-label="Kitob yordamchisi" title="Kitob yordamchisi">✨</button>
-          </div>
-        </div>
-      </div>
-
-      <div class="ai-sheet-backdrop" id="ai-sheet-backdrop"></div>
-      <div class="ai-sheet" id="ai-sheet">
-        <div class="ai-sheet-handle"></div>
-        <div class="ai-sheet-header">
-          <span id="ai-sheet-title">Kitobdan so'rash</span>
-          <button class="icon-btn" id="ai-sheet-close" aria-label="Yopish">✕</button>
-        </div>
-        <div class="ai-sheet-chat" id="ai-sheet-chat"></div>
-        <div class="quick-prompts" id="ai-sheet-prompts">
-          <button class="chip-btn" data-prompt="Sahifani tushuntir">Sahifani tushuntir</button>
-          <button class="chip-btn" data-prompt="Misolni yechib ko'rsat">Misolni yechib ko'rsat</button>
-          <button class="chip-btn" data-prompt="Formulani tushuntir">Formulani tushuntir</button>
-          <button class="chip-btn" data-prompt="Qisqa xulosa qil">Qisqa xulosa qil</button>
-          <button class="chip-btn" data-prompt="Bilimimni tekshir">Bilimimni tekshir</button>
-        </div>
-        <div class="chat-input-wrap">
-          <textarea id="ai-sheet-input" placeholder="Shu sahifa haqida savol yozing..."></textarea>
-          <div class="chat-input-actions">
-            <button class="icon-btn send-btn" id="ai-sheet-send" aria-label="Yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
           </div>
         </div>
       </div>
@@ -1255,16 +1248,10 @@ function renderBookGrid(containerEl, books, {selectable, deletable}){
   books.forEach(b=>{
     const card = document.createElement('div');
     card.className = 'book-card';
-    const progress = getBookProgress(b.id);
-    const progressHtml = progress
-      ? `<div class="book-progress-bar"><div class="book-progress-bar-fill" style="width:${progress.progressPercent}%;"></div></div>
-         <div class="book-progress-text">${progress.currentPage}-betdan davom ettirish</div>`
-      : '';
     card.innerHTML = `
       ${b.coverUrl ? `<img src="${b.coverUrl}" alt="${escapeHtml(b.title)}" style="width:100%; aspect-ratio:3/4; object-fit:cover; border-radius:8px; margin-bottom:10px;">` : ''}
       <div class="b-title">${escapeHtml(b.title)}</div>
       ${b.author ? `<div class="b-author">${escapeHtml(b.author)}</div>` : ''}
-      ${progressHtml}
     `;
     if(selectable){ card.addEventListener('click', ()=> openBookInChat(b)); }
     containerEl.appendChild(card);
@@ -1453,14 +1440,20 @@ document.querySelectorAll('.chip-btn').forEach(chip=>{
   });
 });
 
-// ---- Book mode: detail screen -> custom PDF reader (PDF.js) ----
+// ---- Book mode: detail screen -> custom continuous-scroll PDF reader (PDF.js) ----
 if(window['pdfjsLib']){
   pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
 }
 let readerPdfDoc = null;
 let readerPageNum = 1;
-let readerRendering = false;
-let readerToc = [];
+let readerNumPages = 0;
+let readerZoomPercent = 100;
+let readerBaseWidth = 0;      // 100% zoom pixel width (fit-width)
+let readerAspect = 1.4;       // page height/width ratio, used for placeholder sizing
+let renderedPages = new Set();
+let pageObserver = null;
+let currentVisiblePage = 1;
+let zoomRerenderTimer = null;
 
 function openBookInChat(book){
   activeBook = book;
@@ -1476,9 +1469,9 @@ function openBookInChat(book){
   document.getElementById('book-detail-title').textContent = book.title;
   document.getElementById('book-detail-author').textContent = book.author || '';
 
-  const progress = getBookProgress(book.id);
   const startBtn = document.getElementById('book-start-reading');
-  startBtn.textContent = progress ? `${progress.currentPage}-betdan davom ettirish` : "O'qishni boshlash";
+  const progress = getBookProgress(book.id);
+  startBtn.textContent = progress ? "O'qishni davom ettirish" : "O'qishni boshlash";
   startBtn.onclick = ()=> startReading(book);
 
   appendMsg('teacher', `"${book.title}" kitobini ochdik. O'ng tarafda o'qing, tushunmagan joyingiz bo'lsa menga yozing.`);
@@ -1492,21 +1485,23 @@ function startReading(book){
   const loadingEl = document.getElementById('reader-loading');
   const loadingTextEl = document.getElementById('reader-loading-text');
   const retryBtn = document.getElementById('reader-retry-btn');
-  const canvas = document.getElementById('reader-canvas');
-  loadingEl.style.display = 'block';
+  const scrollEl = document.getElementById('reader-scroll');
+  loadingEl.style.display = 'flex';
   loadingTextEl.textContent = '📖 Kitob tayyorlanmoqda...';
   retryBtn.style.display = 'none';
-  canvas.style.display = 'none';
+  scrollEl.innerHTML = '';
   document.getElementById('reader-page-text').textContent = '— / —';
-  document.getElementById('reader-toc-list').innerHTML = '';
-  document.getElementById('reader-toc-drawer').classList.remove('open');
   readerPdfDoc = null;
-  const savedProgress = getBookProgress(book.id);
-  readerPageNum = (savedProgress && savedProgress.currentPage) ? savedProgress.currentPage : 1;
   readerZoomPercent = 100;
   pageStrokesCache = {};
   pageRedoCache = {};
+  renderedPages = new Set();
   setAnnotationTool(null);
+  if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
+
+  const savedProgress = getBookProgress(book.id);
+  readerPageNum = (savedProgress && savedProgress.currentPage) ? savedProgress.currentPage : 1;
+  currentVisiblePage = readerPageNum;
 
   function showReaderError(){
     loadingTextEl.textContent = "Kitobni ochishda muammo yuz berdi. Qayta urinib ko'ring.";
@@ -1522,38 +1517,24 @@ function startReading(book){
   pdfjsLib.getDocument(book.fileUrl).promise.then(async pdf=>{
     try{
       readerPdfDoc = pdf;
-      if(readerPageNum > pdf.numPages) readerPageNum = 1;
+      readerNumPages = pdf.numPages;
+      if(readerPageNum > readerNumPages) readerPageNum = 1;
       if(readerPageNum < 1) readerPageNum = 1;
-      await renderReaderPage(readerPageNum);
-      const outline = await pdf.getOutline().catch(()=>null);
-      const tocList = document.getElementById('reader-toc-list');
-      readerToc = [];
-      if(outline && outline.length){
-        for(const item of outline){
-          let pageIndex = null;
-          try{
-            const dest = await pdf.getDestination(item.dest) || item.dest;
-            if(dest) pageIndex = await pdf.getPageIndex(dest[0]);
-          }catch(e){}
-          readerToc.push({ title: item.title, page: pageIndex !== null ? pageIndex + 1 : null });
-        }
-        readerToc.filter(t=>t.page !== null).forEach(chapter=>{
-          const el = document.createElement('div');
-          el.className = 'reader-toc-item';
-          el.textContent = chapter.title;
-          el.dataset.page = chapter.page;
-          el.addEventListener('click', ()=>{
-            readerPageNum = chapter.page;
-            renderReaderPage(readerPageNum);
-            document.getElementById('reader-toc-drawer').classList.remove('open');
-          });
-          tocList.appendChild(el);
-        });
-      }else{
-        tocList.innerHTML = '<div class="empty-note">Bu kitobda mundarija topilmadi.</div>';
-      }
+
+      const firstPage = await pdf.getPage(1);
+      const vp1 = firstPage.getViewport({ scale: 1 });
+      readerAspect = vp1.height / vp1.width;
+
+      buildPageContainers();
+      loadingEl.style.display = 'none';
+      setupPageObserver();
+
+      // Bir necha freym kutib, so'ng saqlangan sahifaga sakrash (layout tayyor bo'lishi uchun)
+      requestAnimationFrame(()=>{
+        scrollToPage(readerPageNum, false);
+      });
     }catch(renderErr){
-      console.error('PDF sahifasini render qilishda xato:', renderErr);
+      console.error('PDF sahifasini tayyorlashda xato:', renderErr);
       showReaderError();
     }
   }).catch(err=>{
@@ -1565,85 +1546,247 @@ document.getElementById('reader-retry-btn').addEventListener('click', ()=>{
   if(activeBook) startReading(activeBook);
 });
 
-let readerZoomPercent = 100;
-let readerBaseScale = 1;
-async function renderReaderPage(num){
-  if(!readerPdfDoc) return;
-  readerRendering = true;
-  const page = await readerPdfDoc.getPage(num);
-  const canvas = document.getElementById('reader-canvas');
-  const annCanvas = document.getElementById('reader-annotation-canvas');
-  const stage = document.getElementById('reader-page-stage');
+// ---- Sahifa konteynerlarini yaratish (placeholder balandliklar bilan) ----
+function pageTargetWidth(){
   const wrap = document.getElementById('reader-canvas-wrap');
-  const maxWidth = Math.min(wrap.clientWidth - 32, 760);
-  const baseViewport = page.getViewport({ scale: 1 });
-  readerBaseScale = maxWidth / baseViewport.width;
-  const scale = readerBaseScale * (readerZoomPercent / 100);
-  const viewport = page.getViewport({ scale });
-  canvas.width = viewport.width;
-  canvas.height = viewport.height;
-  canvas.style.width = viewport.width + 'px';
-  canvas.style.height = viewport.height + 'px';
-  annCanvas.width = viewport.width;
-  annCanvas.height = viewport.height;
-  annCanvas.style.width = viewport.width + 'px';
-  annCanvas.style.height = viewport.height + 'px';
-  stage.style.width = viewport.width + 'px';
-  stage.style.height = viewport.height + 'px';
-  const ctx = canvas.getContext('2d');
-  await page.render({ canvasContext: ctx, viewport }).promise;
-  readerRendering = false;
-  document.getElementById('reader-loading').style.display = 'none';
-  canvas.style.display = 'block';
-  annCanvas.style.display = 'block';
-  document.getElementById('zoom-level').textContent = readerZoomPercent + '%';
-  document.getElementById('reader-page-text').textContent = `${num} / ${readerPdfDoc.numPages}`;
-  document.getElementById('reader-prev').disabled = num <= 1;
-  document.getElementById('reader-next').disabled = num >= readerPdfDoc.numPages;
-
-  if(activeBook){
-    scheduleProgressSave(activeBook.id, num, readerPdfDoc.numPages);
+  const fitWidth = Math.min(wrap.clientWidth - 24, 780);
+  readerBaseWidth = fitWidth;
+  return fitWidth * (readerZoomPercent / 100);
+}
+function buildPageContainers(){
+  const scrollEl = document.getElementById('reader-scroll');
+  scrollEl.innerHTML = '';
+  const width = pageTargetWidth();
+  const height = width * readerAspect;
+  for(let i=1; i<=readerNumPages; i++){
+    const item = document.createElement('div');
+    item.className = 'reader-page-item';
+    item.dataset.page = i;
+    item.style.width = width + 'px';
+    item.style.height = height + 'px';
+    scrollEl.appendChild(item);
   }
+  updatePageIndicator();
+}
 
-  const currentChapters = readerToc.filter(t=>t.page !== null && t.page <= num);
-  const currentChapter = currentChapters.length ? currentChapters[currentChapters.length - 1] : null;
-  document.getElementById('reader-current-chapter').textContent = currentChapter ? currentChapter.title : '';
-  document.querySelectorAll('.reader-toc-item').forEach(el=>{
-    el.classList.toggle('active', currentChapter && el.dataset.page == currentChapter.page);
+// ---- IntersectionObserver: qaysi sahifa render qilinishi va joriy sahifa kuzatuvi ----
+function setupPageObserver(){
+  const wrap = document.getElementById('reader-canvas-wrap');
+  pageObserver = new IntersectionObserver((entries)=>{
+    entries.forEach(entry=>{
+      const num = parseInt(entry.target.dataset.page, 10);
+      if(entry.isIntersecting){
+        renderPageInto(entry.target, num);
+      }
+    });
+    updateCurrentVisiblePage();
+  }, { root: wrap, rootMargin: '900px 0px', threshold: 0.01 });
+
+  document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
+  document.getElementById('reader-canvas-wrap').querySelector('.reader-scroll')
+    .addEventListener('scroll', debounce(updateCurrentVisiblePage, 150));
+}
+
+function debounce(fn, ms){
+  let t = null;
+  return (...args)=>{ clearTimeout(t); t = setTimeout(()=> fn(...args), ms); };
+}
+
+function updateCurrentVisiblePage(){
+  const wrap = document.getElementById('reader-canvas-wrap');
+  const wrapRect = wrap.getBoundingClientRect();
+  const centerY = wrapRect.top + wrapRect.height * 0.35;
+  let best = null, bestDist = Infinity;
+  document.querySelectorAll('.reader-page-item').forEach(el=>{
+    const r = el.getBoundingClientRect();
+    if(r.bottom < wrapRect.top - 50 || r.top > wrapRect.bottom + 50) return;
+    const dist = Math.abs((r.top + r.height/2) - centerY);
+    if(dist < bestDist){ bestDist = dist; best = el; }
   });
+  if(best){
+    const num = parseInt(best.dataset.page, 10);
+    if(num !== currentVisiblePage){
+      currentVisiblePage = num;
+      readerPageNum = num;
+      updatePageIndicator();
+      if(activeBook) scheduleProgressSave(activeBook.id, num, readerNumPages);
+      if(document.getElementById('ai-sheet').classList.contains('open')){
+        document.getElementById('ai-sheet-title').textContent = `${activeBook ? activeBook.title : ''} • ${num}-sahifa`;
+      }
+      updateBookmarkButtonState();
+    }
+  }
+  garbageCollectFarPages();
+}
 
-  redrawAnnotations();
+function updatePageIndicator(){
+  document.getElementById('reader-page-text').textContent = readerNumPages
+    ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
+}
 
-  // Keyingi sahifani fonda oldindan tayyorlaydi (tezroq o'tish uchun)
-  if(num < readerPdfDoc.numPages){
-    readerPdfDoc.getPage(num + 1).catch(()=>{});
+// ---- Bitta sahifani render qilish ----
+async function renderPageInto(item, num){
+  if(renderedPages.has(num) || !readerPdfDoc) return;
+  renderedPages.add(num);
+  try{
+    const page = await readerPdfDoc.getPage(num);
+    const width = pageTargetWidth();
+    const baseViewport = page.getViewport({ scale: 1 });
+    const scale = width / baseViewport.width;
+    const viewport = page.getViewport({ scale });
+
+    let canvas = item.querySelector('canvas.page-canvas');
+    let annCanvas = item.querySelector('canvas.page-annotation-canvas');
+    if(!canvas){
+      canvas = document.createElement('canvas');
+      canvas.className = 'page-canvas';
+      item.appendChild(canvas);
+    }
+    if(!annCanvas){
+      annCanvas = document.createElement('canvas');
+      annCanvas.className = 'page-annotation-canvas';
+      item.appendChild(annCanvas);
+    }
+    canvas.width = viewport.width; canvas.height = viewport.height;
+    annCanvas.width = viewport.width; annCanvas.height = viewport.height;
+    item.style.width = viewport.width + 'px';
+    item.style.height = viewport.height + 'px';
+
+    const ctx = canvas.getContext('2d');
+    await page.render({ canvasContext: ctx, viewport }).promise;
+    redrawAnnotationsFor(num, annCanvas);
+  }catch(e){
+    renderedPages.delete(num);
+    console.error('Sahifa render xatosi:', num, e);
   }
 }
 
-document.getElementById('reader-prev').addEventListener('click', ()=>{
-  if(readerRendering || readerPageNum <= 1) return;
-  readerPageNum--;
-  renderReaderPage(readerPageNum);
-});
-document.getElementById('reader-next').addEventListener('click', ()=>{
-  if(readerRendering || !readerPdfDoc || readerPageNum >= readerPdfDoc.numPages) return;
-  readerPageNum++;
-  renderReaderPage(readerPageNum);
-});
-document.getElementById('reader-toc-btn').addEventListener('click', ()=>{
-  document.getElementById('reader-toc-drawer').classList.toggle('open');
-});
-document.getElementById('reader-toc-close').addEventListener('click', ()=>{
-  document.getElementById('reader-toc-drawer').classList.remove('open');
-});
+// ---- Ekrandan uzoq sahifalarni bo'shatish (xotira uchun) ----
+function garbageCollectFarPages(){
+  if(renderedPages.size <= 10) return;
+  document.querySelectorAll('.reader-page-item').forEach(el=>{
+    const num = parseInt(el.dataset.page, 10);
+    if(Math.abs(num - currentVisiblePage) > 6 && renderedPages.has(num)){
+      const canvas = el.querySelector('canvas.page-canvas');
+      const annCanvas = el.querySelector('canvas.page-annotation-canvas');
+      if(canvas){ canvas.width = 0; canvas.height = 0; canvas.remove(); }
+      if(annCanvas){ annCanvas.width = 0; annCanvas.height = 0; annCanvas.remove(); }
+      renderedPages.delete(num);
+    }
+  });
+}
 
-// ---- Sahifaga to'g'ridan-to'g'ri o'tish ----
+// ---- To'g'ridan-to'g'ri sahifaga o'tish ----
+function scrollToPage(num, smooth){
+  num = Math.max(1, Math.min(readerNumPages || 1, num));
+  const item = document.querySelector(`.reader-page-item[data-page="${num}"]`);
+  if(!item) return;
+  item.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+  currentVisiblePage = num;
+  readerPageNum = num;
+  updatePageIndicator();
+  updateBookmarkButtonState();
+}
+
+// ================= ZOOM =================
+function reRenderAllForZoom(){
+  const scrollEl = document.getElementById('reader-scroll');
+  const anchorItem = document.querySelector(`.reader-page-item[data-page="${currentVisiblePage}"]`);
+  const wrap = document.getElementById('reader-canvas-wrap');
+  let anchorFraction = 0;
+  if(anchorItem){
+    const r = anchorItem.getBoundingClientRect();
+    const wrapTop = wrap.getBoundingClientRect().top;
+    anchorFraction = (wrapTop - r.top) / r.height;
+  }
+  const width = pageTargetWidth();
+  const height = width * readerAspect;
+  document.querySelectorAll('.reader-page-item').forEach(el=>{
+    const num = parseInt(el.dataset.page, 10);
+    el.style.width = width + 'px';
+    el.style.height = height + 'px';
+    if(renderedPages.has(num)){
+      renderedPages.delete(num);
+      renderPageInto(el, num);
+    }
+  });
+  requestAnimationFrame(()=>{
+    const newAnchor = document.querySelector(`.reader-page-item[data-page="${currentVisiblePage}"]`);
+    if(newAnchor){
+      const r = newAnchor.getBoundingClientRect();
+      const wrapTop = wrap.getBoundingClientRect().top;
+      const delta = r.top - wrapTop + anchorFraction * r.height;
+      wrap.querySelector('#reader-scroll') && (document.getElementById('reader-scroll').scrollTop += delta);
+    }
+  });
+  document.getElementById('zoom-level').textContent = readerZoomPercent + '%';
+}
+function setZoom(percent){
+  readerZoomPercent = Math.max(100, Math.min(400, Math.round(percent)));
+  if(readerPdfDoc) reRenderAllForZoom();
+}
+document.getElementById('zoom-in').addEventListener('click', ()=> setZoom(readerZoomPercent + 25));
+document.getElementById('zoom-out').addEventListener('click', ()=> setZoom(readerZoomPercent - 25));
+
+// ---- Mobil: ikki barmoq bilan (pinch) va ikki marta bosib kattalashtirish ----
+(function(){
+  const scrollEl = document.getElementById('reader-scroll');
+  let pinchStartDist = null, pinchStartZoom = 100, liveScale = 1;
+  function dist(t1, t2){ return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); }
+
+  scrollEl.addEventListener('touchstart', (e)=>{
+    if(annotationTool) return;
+    if(e.touches.length === 2){
+      pinchStartDist = dist(e.touches[0], e.touches[1]);
+      pinchStartZoom = readerZoomPercent;
+    }
+  }, { passive:true });
+
+  scrollEl.addEventListener('touchmove', (e)=>{
+    if(annotationTool || !pinchStartDist || e.touches.length !== 2) return;
+    const newDist = dist(e.touches[0], e.touches[1]);
+    liveScale = newDist / pinchStartDist;
+    scrollEl.style.transform = `scale(${liveScale})`;
+    scrollEl.style.transformOrigin = 'center top';
+  }, { passive:true });
+
+  scrollEl.addEventListener('touchend', (e)=>{
+    if(!pinchStartDist) return;
+    if(e.touches.length < 2){
+      scrollEl.style.transform = 'none';
+      const target = Math.max(100, Math.min(400, Math.round(pinchStartZoom * liveScale)));
+      pinchStartDist = null;
+      liveScale = 1;
+      clearTimeout(zoomRerenderTimer);
+      zoomRerenderTimer = setTimeout(()=> setZoom(target), 120);
+    }
+  });
+
+  let lastTap = 0;
+  scrollEl.addEventListener('touchend', (e)=>{
+    if(annotationTool || e.touches.length > 0) return;
+    const now = Date.now();
+    if(now - lastTap < 300){
+      setZoom(readerZoomPercent > 100 ? 100 : 200);
+    }
+    lastTap = now;
+  });
+})();
+
+// ---- Desktop: Ctrl/Cmd + sichqoncha g'ildiragi bilan zoom ----
+document.getElementById('reader-scroll').addEventListener('wheel', (e)=>{
+  if(!e.ctrlKey && !e.metaKey) return;
+  e.preventDefault();
+  setZoom(readerZoomPercent + (e.deltaY < 0 ? 15 : -15));
+}, { passive:false });
+
+// ---- Sahifaga to'g'ridan-to'g'ri o'tish (popover) ----
 document.getElementById('reader-page-text').addEventListener('click', ()=>{
   if(!readerPdfDoc) return;
   const popover = document.getElementById('reader-page-popover');
   const input = document.getElementById('reader-page-input');
-  input.max = readerPdfDoc.numPages;
-  input.value = readerPageNum;
+  input.max = readerNumPages;
+  input.value = currentVisiblePage;
   popover.classList.toggle('open');
   if(popover.classList.contains('open')) input.focus();
 });
@@ -1652,9 +1795,7 @@ function jumpToPage(){
   const input = document.getElementById('reader-page-input');
   let n = parseInt(input.value, 10);
   if(isNaN(n)) return;
-  n = Math.max(1, Math.min(readerPdfDoc.numPages, n));
-  readerPageNum = n;
-  renderReaderPage(readerPageNum);
+  scrollToPage(n, true);
   document.getElementById('reader-page-popover').classList.remove('open');
 }
 document.getElementById('reader-page-go').addEventListener('click', jumpToPage);
@@ -1662,25 +1803,29 @@ document.getElementById('reader-page-input').addEventListener('keydown', (e)=>{
   if(e.key === 'Enter'){ e.preventDefault(); jumpToPage(); }
 });
 document.addEventListener('click', (e)=>{
-  const wrap = document.getElementById('reader-page-jump-wrap');
-  if(wrap && !wrap.contains(e.target)){
-    document.getElementById('reader-page-popover').classList.remove('open');
+  const popover = document.getElementById('reader-page-popover');
+  const textBtn = document.getElementById('reader-page-text');
+  if(popover && !popover.contains(e.target) && e.target !== textBtn){
+    popover.classList.remove('open');
   }
 });
 
-// ---- Klaviatura orqali navigatsiya (kompyuterda) ----
+// ---- Klaviatura: yuqori/pastga (kompyuterda) ----
 document.addEventListener('keydown', (e)=>{
   if(!document.body.classList.contains('reader-mode')) return;
   const tag = (e.target.tagName || '').toLowerCase();
   if(tag === 'input' || tag === 'textarea') return;
   if(document.getElementById('book-reader-screen').style.display !== 'block') return;
-  if(e.key === 'ArrowLeft'){ document.getElementById('reader-prev').click(); }
-  else if(e.key === 'ArrowRight'){ document.getElementById('reader-next').click(); }
+  if(annotationTool) return;
+  const scrollEl = document.getElementById('reader-scroll');
+  if(e.key === 'ArrowDown' || e.key === 'PageDown'){ scrollEl.scrollTop += scrollEl.clientHeight * 0.85; }
+  else if(e.key === 'ArrowUp' || e.key === 'PageUp'){ scrollEl.scrollTop -= scrollEl.clientHeight * 0.85; }
 });
 
 document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
   flushProgressSave();
   setAnnotationTool(null);
+  closeAiSheet();
   document.getElementById('book-reader-screen').style.display = 'none';
   document.getElementById('book-detail-screen').style.display = 'block';
   readerPdfDoc = null;
@@ -1689,6 +1834,7 @@ document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
 document.getElementById('book-back').addEventListener('click', ()=>{
   flushProgressSave();
   setAnnotationTool(null);
+  closeAiSheet();
   activeBook = null;
   readerPdfDoc = null;
   document.getElementById('teacher-layout').classList.remove('book-mode');
@@ -1696,19 +1842,230 @@ document.getElementById('book-back').addEventListener('click', ()=>{
   refreshAllBookViews();
 });
 
-// ---- In-reader AI tutor (floating button + bottom sheet) ----
+// ================= ANNOTATION (chizish tizimi, har sahifa uchun alohida) =================
+let annotationTool = null; // null | 'pen' | 'marker' | 'eraser'
+let pageStrokesCache = {};
+let pageRedoCache = {};
+let isDrawingStroke = false;
+let currentStrokePoints = [];
+let activeDrawCanvas = null;
+let activeDrawPage = null;
+
+function getAnnotationStorageKey(){ return 'nova_annotations_' + (activeBook ? activeBook.id : 'unknown'); }
+function loadPageStrokes(pageNum){
+  try{
+    const all = JSON.parse(localStorage.getItem(getAnnotationStorageKey()) || '{}');
+    return all[pageNum] || [];
+  }catch(e){ return []; }
+}
+function savePageStrokes(pageNum, strokes){
+  try{
+    const all = JSON.parse(localStorage.getItem(getAnnotationStorageKey()) || '{}');
+    all[pageNum] = strokes;
+    localStorage.setItem(getAnnotationStorageKey(), JSON.stringify(all));
+  }catch(e){}
+}
+function getCurrentStrokes(pageNum){
+  if(!pageStrokesCache[pageNum]) pageStrokesCache[pageNum] = loadPageStrokes(pageNum);
+  return pageStrokesCache[pageNum];
+}
+function drawStroke(ctx, stroke, w, h){
+  if(!stroke.points || stroke.points.length < 2) return;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.globalAlpha = stroke.tool === 'marker' ? 0.35 : 1;
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = stroke.width;
+  ctx.beginPath();
+  stroke.points.forEach((p,i)=>{
+    const x = p.x * w, y = p.y * h;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+function redrawAnnotationsFor(pageNum, annCanvas){
+  if(!annCanvas || !annCanvas.width) return;
+  const ctx = annCanvas.getContext('2d');
+  ctx.clearRect(0,0,annCanvas.width, annCanvas.height);
+  getCurrentStrokes(pageNum).forEach(s=> drawStroke(ctx, s, annCanvas.width, annCanvas.height));
+}
+function redrawAnnotations(){
+  document.querySelectorAll('.reader-page-item').forEach(el=>{
+    const num = parseInt(el.dataset.page, 10);
+    const annCanvas = el.querySelector('canvas.page-annotation-canvas');
+    if(annCanvas) redrawAnnotationsFor(num, annCanvas);
+  });
+}
+function setAnnotationTool(tool){
+  annotationTool = tool;
+  const scrollEl = document.getElementById('reader-scroll');
+  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  if(tool){
+    document.getElementById(tool === 'pen' ? 'pen-toggle' : tool + '-toggle').classList.add('active');
+    scrollEl.classList.add('draw-lock');
+    document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=> c.style.pointerEvents = 'auto');
+  }else{
+    scrollEl.classList.remove('draw-lock');
+    document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=> c.style.pointerEvents = 'none');
+  }
+  ['marker-toggle','eraser-toggle','annotation-undo','annotation-redo','annotation-clear','annotation-done'].forEach(id=>{
+    document.getElementById(id).style.display = tool ? 'inline-flex' : 'none';
+  });
+}
+document.getElementById('pen-toggle').addEventListener('click', ()=>{
+  setAnnotationTool(annotationTool ? null : 'pen');
+});
+document.getElementById('marker-toggle').addEventListener('click', ()=>{
+  annotationTool = 'marker';
+  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.getElementById('marker-toggle').classList.add('active');
+});
+document.getElementById('eraser-toggle').addEventListener('click', ()=>{
+  annotationTool = 'eraser';
+  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.getElementById('eraser-toggle').classList.add('active');
+});
+document.getElementById('annotation-done').addEventListener('click', ()=> setAnnotationTool(null));
+
+function pointerPos(canvas, e){
+  const rect = canvas.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+}
+function eraseAt(pageNum, pos){
+  const strokes = getCurrentStrokes(pageNum);
+  const threshold = 0.025;
+  const remaining = strokes.filter(s=> !s.points.some(p=> Math.hypot(p.x-pos.x, p.y-pos.y) < threshold));
+  if(remaining.length !== strokes.length){
+    pageStrokesCache[pageNum] = remaining;
+    savePageStrokes(pageNum, remaining);
+    const item = document.querySelector(`.reader-page-item[data-page="${pageNum}"]`);
+    const annCanvas = item && item.querySelector('canvas.page-annotation-canvas');
+    if(annCanvas) redrawAnnotationsFor(pageNum, annCanvas);
+  }
+}
+document.getElementById('reader-scroll').addEventListener('pointerdown', (e)=>{
+  if(!annotationTool) return;
+  const canvas = e.target.closest('canvas.page-annotation-canvas');
+  if(!canvas) return;
+  e.preventDefault();
+  const item = canvas.closest('.reader-page-item');
+  activeDrawCanvas = canvas;
+  activeDrawPage = parseInt(item.dataset.page, 10);
+  isDrawingStroke = true;
+  const pos = pointerPos(canvas, e);
+  if(annotationTool === 'eraser'){ eraseAt(activeDrawPage, pos); return; }
+  currentStrokePoints = [pos];
+  try{ canvas.setPointerCapture(e.pointerId); }catch(err){}
+});
+document.getElementById('reader-scroll').addEventListener('pointermove', (e)=>{
+  if(!isDrawingStroke || !annotationTool || !activeDrawCanvas) return;
+  const pos = pointerPos(activeDrawCanvas, e);
+  if(annotationTool === 'eraser'){ eraseAt(activeDrawPage, pos); return; }
+  currentStrokePoints.push(pos);
+  const n = currentStrokePoints.length;
+  if(n >= 2){
+    const ctx = activeDrawCanvas.getContext('2d');
+    const w = activeDrawCanvas.width, h = activeDrawCanvas.height;
+    ctx.save();
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.globalAlpha = annotationTool === 'marker' ? 0.35 : 1;
+    ctx.strokeStyle = annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC';
+    ctx.lineWidth = annotationTool === 'marker' ? 14 : 3;
+    ctx.beginPath();
+    const p1 = currentStrokePoints[n-2], p2 = currentStrokePoints[n-1];
+    ctx.moveTo(p1.x*w, p1.y*h); ctx.lineTo(p2.x*w, p2.y*h);
+    ctx.stroke();
+    ctx.restore();
+  }
+});
+function finishStroke(){
+  if(!isDrawingStroke) return;
+  isDrawingStroke = false;
+  if(annotationTool !== 'eraser' && currentStrokePoints.length > 1 && activeDrawPage){
+    const strokes = getCurrentStrokes(activeDrawPage);
+    strokes.push({
+      tool: annotationTool,
+      color: annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC',
+      width: annotationTool === 'marker' ? 14 : 3,
+      points: currentStrokePoints
+    });
+    pageRedoCache[activeDrawPage] = [];
+    savePageStrokes(activeDrawPage, strokes);
+  }
+  currentStrokePoints = [];
+  activeDrawCanvas = null;
+}
+document.getElementById('reader-scroll').addEventListener('pointerup', finishStroke);
+document.getElementById('reader-scroll').addEventListener('pointercancel', ()=>{ isDrawingStroke=false; currentStrokePoints=[]; activeDrawCanvas=null; });
+
+document.getElementById('annotation-undo').addEventListener('click', ()=>{
+  const strokes = getCurrentStrokes(currentVisiblePage);
+  if(!strokes.length) return;
+  const removed = strokes.pop();
+  if(!pageRedoCache[currentVisiblePage]) pageRedoCache[currentVisiblePage] = [];
+  pageRedoCache[currentVisiblePage].push(removed);
+  savePageStrokes(currentVisiblePage, strokes);
+  redrawAnnotations();
+});
+document.getElementById('annotation-redo').addEventListener('click', ()=>{
+  const redoStack = pageRedoCache[currentVisiblePage] || [];
+  if(!redoStack.length) return;
+  const restored = redoStack.pop();
+  getCurrentStrokes(currentVisiblePage).push(restored);
+  savePageStrokes(currentVisiblePage, getCurrentStrokes(currentVisiblePage));
+  redrawAnnotations();
+});
+document.getElementById('annotation-clear').addEventListener('click', ()=>{
+  document.getElementById('annotation-clear-confirm').classList.add('open');
+});
+document.getElementById('annotation-clear-cancel').addEventListener('click', ()=>{
+  document.getElementById('annotation-clear-confirm').classList.remove('open');
+});
+document.getElementById('annotation-clear-confirm-btn').addEventListener('click', ()=>{
+  pageStrokesCache[currentVisiblePage] = [];
+  savePageStrokes(currentVisiblePage, []);
+  redrawAnnotations();
+  document.getElementById('annotation-clear-confirm').classList.remove('open');
+});
+
+// ================= BOOKMARK (sodda, qurilmada saqlanadi) =================
+function getBookmarkStorageKey(){ return 'nova_bookmarks_' + (activeBook ? activeBook.id : 'unknown'); }
+function getBookmarks(){
+  try{ return JSON.parse(localStorage.getItem(getBookmarkStorageKey()) || '[]'); }catch(e){ return []; }
+}
+function isBookmarked(pageNum){ return getBookmarks().includes(pageNum); }
+function updateBookmarkButtonState(){
+  document.getElementById('bookmark-toggle').classList.toggle('active', isBookmarked(currentVisiblePage));
+}
+document.getElementById('bookmark-toggle').addEventListener('click', ()=>{
+  let marks = getBookmarks();
+  if(marks.includes(currentVisiblePage)){
+    marks = marks.filter(p=> p !== currentVisiblePage);
+  }else{
+    marks.push(currentVisiblePage);
+  }
+  try{ localStorage.setItem(getBookmarkStorageKey(), JSON.stringify(marks)); }catch(e){}
+  updateBookmarkButtonState();
+});
+
+// ---- In-reader AI tutor: mobil'da drawer, desktop'da split-view ----
 function openAiSheet(){
   document.getElementById('ai-sheet').classList.add('open');
   document.getElementById('ai-sheet-backdrop').classList.add('open');
   document.getElementById('ai-sheet-title').textContent = activeBook
-    ? `${activeBook.title} • ${readerPageNum}-sahifa`
-    : "Kitobdan so'rash";
+    ? `${activeBook.title} • ${currentVisiblePage}-sahifa`
+    : "Ustoz AI";
+  // Desktop'da panel ochilganda reader kengligi qisqaradi — sahifalarni yangi kenglikka moslab qayta chizamiz
+  setTimeout(()=>{ if(readerPdfDoc) reRenderAllForZoom(); }, 260);
 }
 function closeAiSheet(){
   document.getElementById('ai-sheet').classList.remove('open');
   document.getElementById('ai-sheet-backdrop').classList.remove('open');
+  setTimeout(()=>{ if(readerPdfDoc) reRenderAllForZoom(); }, 260);
 }
 document.getElementById('ai-fab').addEventListener('click', openAiSheet);
+document.getElementById('reader-ai-desktop-btn').addEventListener('click', openAiSheet);
 document.getElementById('ai-sheet-close').addEventListener('click', closeAiSheet);
 document.getElementById('ai-sheet-backdrop').addEventListener('click', closeAiSheet);
 
@@ -1733,7 +2090,7 @@ function appendAiSheetMsg(role, text){
 async function getCurrentPageText(){
   if(!readerPdfDoc) return '';
   try{
-    const page = await readerPdfDoc.getPage(readerPageNum);
+    const page = await readerPdfDoc.getPage(currentVisiblePage);
     const textContent = await page.getTextContent();
     return textContent.items.map(it=>it.str).join(' ').slice(0, 3000);
   }catch(e){ return ''; }
@@ -1753,11 +2110,11 @@ async function sendAiSheetMessage(text){
   win.scrollTop = win.scrollHeight;
 
   const pageText = await getCurrentPageText();
-  let system = `Sen tajribali, mehribon matematika ustozisan. O'zbek tilida javob ber. Foydalanuvchi hozir "${activeBook ? activeBook.title : ''}" kitobining ${readerPageNum}-sahifasini o'qiyapti.`;
+  let system = `Sen tajribali, mehribon matematika ustozisan. O'zbek tilida javob ber. Foydalanuvchi hozir "${activeBook ? activeBook.title : ''}" kitobini o'qiyapti, hozir ${currentVisiblePage}-sahifada (jami ${readerNumPages} sahifa).`;
   if(pageText){
     system += `\n\nShu sahifadagi matn (kontekst uchun): ${pageText}`;
   }
-  system += `\nSavolga shu sahifa kontekstidan foydalanib, aniq va tushunarli javob ber.`;
+  system += `\nAgar savol shu sahifa yoki kitob mavzusi bilan bog'liq bo'lsa, shu kontekstdan foydalanib javob ber. Agar savol umuman boshqa matematik mavzuga oid bo'lsa ("bu sahifada yo'q" deb to'xtab qolma) — o'zingning umumiy matematik bilimingdan foydalanib, baribir to'liq va foydali javob ber. Qisqa, aniq va tushunarli yoz.`;
 
   try{
     const res = await fetch('/api/chat-stream', {
@@ -1812,210 +2169,6 @@ document.getElementById('ai-sheet-input').addEventListener('keydown', (e)=>{
 });
 document.querySelectorAll('#ai-sheet-prompts .chip-btn').forEach(chip=>{
   chip.addEventListener('click', ()=> sendAiSheetMessage(chip.dataset.prompt));
-});
-
-// ================= ZOOM =================
-const ZOOM_STEPS = [75,100,125,150,200];
-function setZoom(percent){
-  readerZoomPercent = Math.max(75, Math.min(200, percent));
-  if(readerPdfDoc) renderReaderPage(readerPageNum);
-}
-document.getElementById('zoom-in').addEventListener('click', ()=>{
-  const next = ZOOM_STEPS.find(z=> z > readerZoomPercent);
-  setZoom(next || 200);
-});
-document.getElementById('zoom-out').addEventListener('click', ()=>{
-  const prev = [...ZOOM_STEPS].reverse().find(z=> z < readerZoomPercent);
-  setZoom(prev || 75);
-});
-document.getElementById('zoom-fit').addEventListener('click', ()=> setZoom(100));
-
-// Mobil'da ikki barmoq bilan (pinch) kattalashtirish
-(function(){
-  const stage = document.getElementById('reader-page-stage');
-  let pinchStartDist = null, pinchStartZoom = 100;
-  function dist(t1, t2){ return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); }
-  stage.addEventListener('touchstart', (e)=>{
-    if(e.touches.length === 2){
-      pinchStartDist = dist(e.touches[0], e.touches[1]);
-      pinchStartZoom = readerZoomPercent;
-    }
-  }, { passive:true });
-  stage.addEventListener('touchmove', (e)=>{
-    if(e.touches.length === 2 && pinchStartDist){
-      const newDist = dist(e.touches[0], e.touches[1]);
-      const ratio = newDist / pinchStartDist;
-      readerZoomPercent = Math.max(75, Math.min(200, Math.round(pinchStartZoom * ratio)));
-      document.getElementById('zoom-level').textContent = readerZoomPercent + '%';
-    }
-  }, { passive:true });
-  stage.addEventListener('touchend', (e)=>{
-    if(e.touches.length < 2 && pinchStartDist){
-      pinchStartDist = null;
-      if(readerPdfDoc) renderReaderPage(readerPageNum);
-    }
-  });
-})();
-
-// ================= ANNOTATION (chizish tizimi) =================
-let annotationTool = null; // null | 'pen' | 'marker' | 'eraser'
-let pageStrokesCache = {};
-let pageRedoCache = {};
-let isDrawingStroke = false;
-let currentStrokePoints = [];
-const annCanvasEl = document.getElementById('reader-annotation-canvas');
-
-function getAnnotationStorageKey(){ return 'nova_annotations_' + (activeBook ? activeBook.id : 'unknown'); }
-function loadPageStrokes(pageNum){
-  try{
-    const all = JSON.parse(localStorage.getItem(getAnnotationStorageKey()) || '{}');
-    return all[pageNum] || [];
-  }catch(e){ return []; }
-}
-function savePageStrokes(pageNum, strokes){
-  try{
-    const all = JSON.parse(localStorage.getItem(getAnnotationStorageKey()) || '{}');
-    all[pageNum] = strokes;
-    localStorage.setItem(getAnnotationStorageKey(), JSON.stringify(all));
-  }catch(e){}
-}
-function getCurrentStrokes(){
-  if(!pageStrokesCache[readerPageNum]) pageStrokesCache[readerPageNum] = loadPageStrokes(readerPageNum);
-  return pageStrokesCache[readerPageNum];
-}
-function drawStroke(ctx, stroke, w, h){
-  if(!stroke.points || stroke.points.length < 2) return;
-  ctx.save();
-  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
-  ctx.globalAlpha = stroke.tool === 'marker' ? 0.35 : 1;
-  ctx.strokeStyle = stroke.color;
-  ctx.lineWidth = stroke.width;
-  ctx.beginPath();
-  stroke.points.forEach((p,i)=>{
-    const x = p.x * w, y = p.y * h;
-    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
-  });
-  ctx.stroke();
-  ctx.restore();
-}
-function redrawAnnotations(){
-  if(!annCanvasEl.width) return;
-  const ctx = annCanvasEl.getContext('2d');
-  ctx.clearRect(0,0,annCanvasEl.width, annCanvasEl.height);
-  getCurrentStrokes().forEach(s=> drawStroke(ctx, s, annCanvasEl.width, annCanvasEl.height));
-}
-function setAnnotationTool(tool){
-  annotationTool = tool;
-  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
-  if(tool){
-    document.getElementById(tool + '-toggle').classList.add('active');
-    annCanvasEl.style.pointerEvents = 'auto';
-  }else{
-    annCanvasEl.style.pointerEvents = 'none';
-  }
-  ['pen-toggle'].forEach(id=> document.getElementById(id).classList.toggle('active', tool === 'pen'));
-  ['marker-toggle','eraser-toggle','annotation-undo','annotation-redo','annotation-clear','annotation-done'].forEach(id=>{
-    document.getElementById(id).style.display = tool ? 'inline-flex' : 'none';
-  });
-}
-document.getElementById('pen-toggle').addEventListener('click', ()=>{
-  setAnnotationTool(annotationTool ? null : 'pen');
-});
-document.getElementById('marker-toggle').addEventListener('click', ()=> setAnnotationTool('marker'));
-document.getElementById('eraser-toggle').addEventListener('click', ()=> setAnnotationTool('eraser'));
-document.getElementById('annotation-done').addEventListener('click', ()=> setAnnotationTool(null));
-
-function pointerPos(e){
-  const rect = annCanvasEl.getBoundingClientRect();
-  return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
-}
-function eraseAt(pos){
-  const strokes = getCurrentStrokes();
-  const threshold = 0.025;
-  const remaining = strokes.filter(s=> !s.points.some(p=> Math.hypot(p.x-pos.x, p.y-pos.y) < threshold));
-  if(remaining.length !== strokes.length){
-    pageStrokesCache[readerPageNum] = remaining;
-    savePageStrokes(readerPageNum, remaining);
-    redrawAnnotations();
-  }
-}
-annCanvasEl.addEventListener('pointerdown', (e)=>{
-  if(!annotationTool) return;
-  e.preventDefault();
-  isDrawingStroke = true;
-  const pos = pointerPos(e);
-  if(annotationTool === 'eraser'){ eraseAt(pos); return; }
-  currentStrokePoints = [pos];
-  try{ annCanvasEl.setPointerCapture(e.pointerId); }catch(err){}
-});
-annCanvasEl.addEventListener('pointermove', (e)=>{
-  if(!isDrawingStroke || !annotationTool) return;
-  const pos = pointerPos(e);
-  if(annotationTool === 'eraser'){ eraseAt(pos); return; }
-  currentStrokePoints.push(pos);
-  const n = currentStrokePoints.length;
-  if(n >= 2){
-    const ctx = annCanvasEl.getContext('2d');
-    const w = annCanvasEl.width, h = annCanvasEl.height;
-    ctx.save();
-    ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.globalAlpha = annotationTool === 'marker' ? 0.35 : 1;
-    ctx.strokeStyle = annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC';
-    ctx.lineWidth = annotationTool === 'marker' ? 14 : 3;
-    ctx.beginPath();
-    const p1 = currentStrokePoints[n-2], p2 = currentStrokePoints[n-1];
-    ctx.moveTo(p1.x*w, p1.y*h); ctx.lineTo(p2.x*w, p2.y*h);
-    ctx.stroke();
-    ctx.restore();
-  }
-});
-function finishStroke(){
-  if(!isDrawingStroke) return;
-  isDrawingStroke = false;
-  if(annotationTool !== 'eraser' && currentStrokePoints.length > 1){
-    const strokes = getCurrentStrokes();
-    strokes.push({
-      tool: annotationTool,
-      color: annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC',
-      width: annotationTool === 'marker' ? 14 : 3,
-      points: currentStrokePoints
-    });
-    pageRedoCache[readerPageNum] = [];
-    savePageStrokes(readerPageNum, strokes);
-  }
-  currentStrokePoints = [];
-}
-annCanvasEl.addEventListener('pointerup', finishStroke);
-annCanvasEl.addEventListener('pointercancel', ()=>{ isDrawingStroke=false; currentStrokePoints=[]; });
-
-document.getElementById('annotation-undo').addEventListener('click', ()=>{
-  const strokes = getCurrentStrokes();
-  if(!strokes.length) return;
-  const removed = strokes.pop();
-  if(!pageRedoCache[readerPageNum]) pageRedoCache[readerPageNum] = [];
-  pageRedoCache[readerPageNum].push(removed);
-  savePageStrokes(readerPageNum, strokes);
-  redrawAnnotations();
-});
-document.getElementById('annotation-redo').addEventListener('click', ()=>{
-  const redoStack = pageRedoCache[readerPageNum] || [];
-  if(!redoStack.length) return;
-  const restored = redoStack.pop();
-  getCurrentStrokes().push(restored);
-  savePageStrokes(readerPageNum, getCurrentStrokes());
-  redrawAnnotations();
-});
-document.getElementById('annotation-clear').addEventListener('click', ()=>{
-  document.getElementById('annotation-clear-confirm').classList.add('open');
-});
-document.getElementById('annotation-clear-cancel').addEventListener('click', ()=>{
-  document.getElementById('annotation-clear-confirm').classList.remove('open');
-});
-document.getElementById('annotation-clear-confirm-btn').addEventListener('click', ()=>{
-  pageStrokesCache[readerPageNum] = [];
-  savePageStrokes(readerPageNum, []);
-  redrawAnnotations();
-  document.getElementById('annotation-clear-confirm').classList.remove('open');
 });
 
 refreshAllBookViews();
