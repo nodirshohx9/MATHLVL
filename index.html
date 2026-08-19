@@ -356,6 +356,29 @@
   .ai-sheet-header span{ font-family: var(--font-display); font-size:15px; font-weight:700; }
   .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; max-height:30vh; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
 
+  /* ---- Reader page stage (PDF canvas + annotation overlay) ---- */
+  .reader-page-stage{ position:relative; display:inline-block; max-width:100%; touch-action: pan-y; }
+  #reader-annotation-canvas{ position:absolute; top:0; left:0; display:none; touch-action:none; }
+  .reader-canvas-wrap{ overflow:auto; touch-action: pan-x pan-y; }
+  .reader-canvas-wrap.zoomed .reader-page-stage{ touch-action:none; }
+
+  /* ---- Zoom + annotation secondary toolbar ---- */
+  .reader-toolbar-secondary{ display:flex; align-items:center; justify-content:space-between; margin-top:10px; gap:10px; flex-wrap:wrap; }
+  .zoom-controls, .annotation-controls{ display:flex; align-items:center; gap:6px; }
+  .zoom-level{ font-family: var(--font-mono); font-size:11.5px; color: var(--text-dim); min-width:40px; text-align:center; }
+  #pen-toggle.active, #marker-toggle.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
+
+  .annotation-clear-confirm{
+    display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
+    background: var(--panel-solid); border:1px solid var(--border); border-radius:14px; padding:16px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:46; width:min(280px,90%); text-align:center;
+  }
+  .annotation-clear-confirm.open{ display:block; }
+  .annotation-clear-confirm p{ font-size:12.5px; color: var(--text-dim); margin:0 0 12px; }
+  .annotation-clear-confirm .ac-row{ display:flex; gap:8px; }
+  .annotation-clear-confirm .ac-row button{ flex:1; font-size:12px; padding:8px; }
+
+
   .reader-page-jump-wrap{ position:relative; display:flex; flex-direction:column; align-items:center; }
   button.reader-page-text{
     background:none; border:none; cursor:pointer; font-family: var(--font-mono); font-size:12.5px;
@@ -665,8 +688,30 @@
                 <div id="reader-loading-text">📖 Kitob tayyorlanmoqda...</div>
                 <button class="ghost-btn" id="reader-retry-btn" style="display:none; margin-top:14px;">Qayta urinish</button>
               </div>
-              <canvas id="reader-canvas" style="display:none;"></canvas>
+              <div class="reader-page-stage" id="reader-page-stage">
+                <canvas id="reader-canvas" style="display:none;"></canvas>
+                <canvas id="reader-annotation-canvas" style="display:none;"></canvas>
+              </div>
             </div>
+
+            <div class="reader-toolbar-secondary">
+              <div class="zoom-controls">
+                <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
+                <span class="zoom-level" id="zoom-level">100%</span>
+                <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
+                <button class="icon-btn" id="zoom-fit" title="Ekranga moslash" aria-label="Ekranga moslash">⤢</button>
+              </div>
+              <div class="annotation-controls">
+                <button class="icon-btn" id="pen-toggle" title="Qalam" aria-label="Qalam">✏</button>
+                <button class="icon-btn" id="marker-toggle" title="Marker" aria-label="Marker" style="display:none;">🖍</button>
+                <button class="icon-btn" id="eraser-toggle" title="O'chirg'ich" aria-label="O'chirg'ich" style="display:none;">🧽</button>
+                <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish" style="display:none;">↶</button>
+                <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish" style="display:none;">↷</button>
+                <button class="icon-btn" id="annotation-clear" title="Sahifani tozalash" aria-label="Sahifani tozalash" style="display:none;">🗑</button>
+                <button class="icon-btn" id="annotation-done" title="Tayyor" aria-label="Tayyor" style="display:none; color:var(--blue);">✓</button>
+              </div>
+            </div>
+
             <div class="reader-controls">
               <button class="icon-btn" id="reader-prev" title="Oldingi sahifa" aria-label="Oldingi sahifa">‹</button>
               <div class="reader-page-jump-wrap">
@@ -690,7 +735,15 @@
               <div id="reader-toc-list"></div>
             </div>
 
-            <button class="ai-fab" id="ai-fab" aria-label="AI'dan so'rash" title="AI'dan so'rash">✨</button>
+            <div class="annotation-clear-confirm" id="annotation-clear-confirm">
+              <p>Bu sahifadagi barcha belgilaringiz o'chirilsinmi?</p>
+              <div class="ac-row">
+                <button class="ghost-btn" id="annotation-clear-cancel">Bekor qilish</button>
+                <button class="ghost-btn" id="annotation-clear-confirm-btn" style="border-color:var(--red); color:var(--red);">Tozalash</button>
+              </div>
+            </div>
+
+            <button class="ai-fab" id="ai-fab" aria-label="Kitob yordamchisi" title="Kitob yordamchisi">✨</button>
           </div>
         </div>
       </div>
@@ -704,13 +757,14 @@
         </div>
         <div class="ai-sheet-chat" id="ai-sheet-chat"></div>
         <div class="quick-prompts" id="ai-sheet-prompts">
-          <button class="chip-btn" data-prompt="Bu sahifani sodda tushuntir">Bu sahifani sodda tushuntir</button>
-          <button class="chip-btn" data-prompt="Menga misol ber">Menga misol ber</button>
-          <button class="chip-btn" data-prompt="Bu formulani tushuntir">Bu formulani tushuntir</button>
+          <button class="chip-btn" data-prompt="Sahifani tushuntir">Sahifani tushuntir</button>
+          <button class="chip-btn" data-prompt="Misolni yechib ko'rsat">Misolni yechib ko'rsat</button>
+          <button class="chip-btn" data-prompt="Formulani tushuntir">Formulani tushuntir</button>
           <button class="chip-btn" data-prompt="Qisqa xulosa qil">Qisqa xulosa qil</button>
+          <button class="chip-btn" data-prompt="Bilimimni tekshir">Bilimimni tekshir</button>
         </div>
         <div class="chat-input-wrap">
-          <textarea id="ai-sheet-input" placeholder="Savolingizni yozing..."></textarea>
+          <textarea id="ai-sheet-input" placeholder="Shu sahifa haqida savol yozing..."></textarea>
           <div class="chat-input-actions">
             <button class="icon-btn send-btn" id="ai-sheet-send" aria-label="Yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
           </div>
@@ -1449,6 +1503,10 @@ function startReading(book){
   readerPdfDoc = null;
   const savedProgress = getBookProgress(book.id);
   readerPageNum = (savedProgress && savedProgress.currentPage) ? savedProgress.currentPage : 1;
+  readerZoomPercent = 100;
+  pageStrokesCache = {};
+  pageRedoCache = {};
+  setAnnotationTool(null);
 
   function showReaderError(){
     loadingTextEl.textContent = "Kitobni ochishda muammo yuz berdi. Qayta urinib ko'ring.";
@@ -1507,23 +1565,38 @@ document.getElementById('reader-retry-btn').addEventListener('click', ()=>{
   if(activeBook) startReading(activeBook);
 });
 
+let readerZoomPercent = 100;
+let readerBaseScale = 1;
 async function renderReaderPage(num){
   if(!readerPdfDoc) return;
   readerRendering = true;
   const page = await readerPdfDoc.getPage(num);
   const canvas = document.getElementById('reader-canvas');
+  const annCanvas = document.getElementById('reader-annotation-canvas');
+  const stage = document.getElementById('reader-page-stage');
   const wrap = document.getElementById('reader-canvas-wrap');
   const maxWidth = Math.min(wrap.clientWidth - 32, 760);
   const baseViewport = page.getViewport({ scale: 1 });
-  const scale = maxWidth / baseViewport.width;
+  readerBaseScale = maxWidth / baseViewport.width;
+  const scale = readerBaseScale * (readerZoomPercent / 100);
   const viewport = page.getViewport({ scale });
   canvas.width = viewport.width;
   canvas.height = viewport.height;
+  canvas.style.width = viewport.width + 'px';
+  canvas.style.height = viewport.height + 'px';
+  annCanvas.width = viewport.width;
+  annCanvas.height = viewport.height;
+  annCanvas.style.width = viewport.width + 'px';
+  annCanvas.style.height = viewport.height + 'px';
+  stage.style.width = viewport.width + 'px';
+  stage.style.height = viewport.height + 'px';
   const ctx = canvas.getContext('2d');
   await page.render({ canvasContext: ctx, viewport }).promise;
   readerRendering = false;
   document.getElementById('reader-loading').style.display = 'none';
   canvas.style.display = 'block';
+  annCanvas.style.display = 'block';
+  document.getElementById('zoom-level').textContent = readerZoomPercent + '%';
   document.getElementById('reader-page-text').textContent = `${num} / ${readerPdfDoc.numPages}`;
   document.getElementById('reader-prev').disabled = num <= 1;
   document.getElementById('reader-next').disabled = num >= readerPdfDoc.numPages;
@@ -1538,6 +1611,8 @@ async function renderReaderPage(num){
   document.querySelectorAll('.reader-toc-item').forEach(el=>{
     el.classList.toggle('active', currentChapter && el.dataset.page == currentChapter.page);
   });
+
+  redrawAnnotations();
 
   // Keyingi sahifani fonda oldindan tayyorlaydi (tezroq o'tish uchun)
   if(num < readerPdfDoc.numPages){
@@ -1605,6 +1680,7 @@ document.addEventListener('keydown', (e)=>{
 
 document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
   flushProgressSave();
+  setAnnotationTool(null);
   document.getElementById('book-reader-screen').style.display = 'none';
   document.getElementById('book-detail-screen').style.display = 'block';
   readerPdfDoc = null;
@@ -1612,6 +1688,7 @@ document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
 
 document.getElementById('book-back').addEventListener('click', ()=>{
   flushProgressSave();
+  setAnnotationTool(null);
   activeBook = null;
   readerPdfDoc = null;
   document.getElementById('teacher-layout').classList.remove('book-mode');
@@ -1735,6 +1812,210 @@ document.getElementById('ai-sheet-input').addEventListener('keydown', (e)=>{
 });
 document.querySelectorAll('#ai-sheet-prompts .chip-btn').forEach(chip=>{
   chip.addEventListener('click', ()=> sendAiSheetMessage(chip.dataset.prompt));
+});
+
+// ================= ZOOM =================
+const ZOOM_STEPS = [75,100,125,150,200];
+function setZoom(percent){
+  readerZoomPercent = Math.max(75, Math.min(200, percent));
+  if(readerPdfDoc) renderReaderPage(readerPageNum);
+}
+document.getElementById('zoom-in').addEventListener('click', ()=>{
+  const next = ZOOM_STEPS.find(z=> z > readerZoomPercent);
+  setZoom(next || 200);
+});
+document.getElementById('zoom-out').addEventListener('click', ()=>{
+  const prev = [...ZOOM_STEPS].reverse().find(z=> z < readerZoomPercent);
+  setZoom(prev || 75);
+});
+document.getElementById('zoom-fit').addEventListener('click', ()=> setZoom(100));
+
+// Mobil'da ikki barmoq bilan (pinch) kattalashtirish
+(function(){
+  const stage = document.getElementById('reader-page-stage');
+  let pinchStartDist = null, pinchStartZoom = 100;
+  function dist(t1, t2){ return Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY); }
+  stage.addEventListener('touchstart', (e)=>{
+    if(e.touches.length === 2){
+      pinchStartDist = dist(e.touches[0], e.touches[1]);
+      pinchStartZoom = readerZoomPercent;
+    }
+  }, { passive:true });
+  stage.addEventListener('touchmove', (e)=>{
+    if(e.touches.length === 2 && pinchStartDist){
+      const newDist = dist(e.touches[0], e.touches[1]);
+      const ratio = newDist / pinchStartDist;
+      readerZoomPercent = Math.max(75, Math.min(200, Math.round(pinchStartZoom * ratio)));
+      document.getElementById('zoom-level').textContent = readerZoomPercent + '%';
+    }
+  }, { passive:true });
+  stage.addEventListener('touchend', (e)=>{
+    if(e.touches.length < 2 && pinchStartDist){
+      pinchStartDist = null;
+      if(readerPdfDoc) renderReaderPage(readerPageNum);
+    }
+  });
+})();
+
+// ================= ANNOTATION (chizish tizimi) =================
+let annotationTool = null; // null | 'pen' | 'marker' | 'eraser'
+let pageStrokesCache = {};
+let pageRedoCache = {};
+let isDrawingStroke = false;
+let currentStrokePoints = [];
+const annCanvasEl = document.getElementById('reader-annotation-canvas');
+
+function getAnnotationStorageKey(){ return 'nova_annotations_' + (activeBook ? activeBook.id : 'unknown'); }
+function loadPageStrokes(pageNum){
+  try{
+    const all = JSON.parse(localStorage.getItem(getAnnotationStorageKey()) || '{}');
+    return all[pageNum] || [];
+  }catch(e){ return []; }
+}
+function savePageStrokes(pageNum, strokes){
+  try{
+    const all = JSON.parse(localStorage.getItem(getAnnotationStorageKey()) || '{}');
+    all[pageNum] = strokes;
+    localStorage.setItem(getAnnotationStorageKey(), JSON.stringify(all));
+  }catch(e){}
+}
+function getCurrentStrokes(){
+  if(!pageStrokesCache[readerPageNum]) pageStrokesCache[readerPageNum] = loadPageStrokes(readerPageNum);
+  return pageStrokesCache[readerPageNum];
+}
+function drawStroke(ctx, stroke, w, h){
+  if(!stroke.points || stroke.points.length < 2) return;
+  ctx.save();
+  ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  ctx.globalAlpha = stroke.tool === 'marker' ? 0.35 : 1;
+  ctx.strokeStyle = stroke.color;
+  ctx.lineWidth = stroke.width;
+  ctx.beginPath();
+  stroke.points.forEach((p,i)=>{
+    const x = p.x * w, y = p.y * h;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.restore();
+}
+function redrawAnnotations(){
+  if(!annCanvasEl.width) return;
+  const ctx = annCanvasEl.getContext('2d');
+  ctx.clearRect(0,0,annCanvasEl.width, annCanvasEl.height);
+  getCurrentStrokes().forEach(s=> drawStroke(ctx, s, annCanvasEl.width, annCanvasEl.height));
+}
+function setAnnotationTool(tool){
+  annotationTool = tool;
+  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  if(tool){
+    document.getElementById(tool + '-toggle').classList.add('active');
+    annCanvasEl.style.pointerEvents = 'auto';
+  }else{
+    annCanvasEl.style.pointerEvents = 'none';
+  }
+  ['pen-toggle'].forEach(id=> document.getElementById(id).classList.toggle('active', tool === 'pen'));
+  ['marker-toggle','eraser-toggle','annotation-undo','annotation-redo','annotation-clear','annotation-done'].forEach(id=>{
+    document.getElementById(id).style.display = tool ? 'inline-flex' : 'none';
+  });
+}
+document.getElementById('pen-toggle').addEventListener('click', ()=>{
+  setAnnotationTool(annotationTool ? null : 'pen');
+});
+document.getElementById('marker-toggle').addEventListener('click', ()=> setAnnotationTool('marker'));
+document.getElementById('eraser-toggle').addEventListener('click', ()=> setAnnotationTool('eraser'));
+document.getElementById('annotation-done').addEventListener('click', ()=> setAnnotationTool(null));
+
+function pointerPos(e){
+  const rect = annCanvasEl.getBoundingClientRect();
+  return { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+}
+function eraseAt(pos){
+  const strokes = getCurrentStrokes();
+  const threshold = 0.025;
+  const remaining = strokes.filter(s=> !s.points.some(p=> Math.hypot(p.x-pos.x, p.y-pos.y) < threshold));
+  if(remaining.length !== strokes.length){
+    pageStrokesCache[readerPageNum] = remaining;
+    savePageStrokes(readerPageNum, remaining);
+    redrawAnnotations();
+  }
+}
+annCanvasEl.addEventListener('pointerdown', (e)=>{
+  if(!annotationTool) return;
+  e.preventDefault();
+  isDrawingStroke = true;
+  const pos = pointerPos(e);
+  if(annotationTool === 'eraser'){ eraseAt(pos); return; }
+  currentStrokePoints = [pos];
+  try{ annCanvasEl.setPointerCapture(e.pointerId); }catch(err){}
+});
+annCanvasEl.addEventListener('pointermove', (e)=>{
+  if(!isDrawingStroke || !annotationTool) return;
+  const pos = pointerPos(e);
+  if(annotationTool === 'eraser'){ eraseAt(pos); return; }
+  currentStrokePoints.push(pos);
+  const n = currentStrokePoints.length;
+  if(n >= 2){
+    const ctx = annCanvasEl.getContext('2d');
+    const w = annCanvasEl.width, h = annCanvasEl.height;
+    ctx.save();
+    ctx.lineJoin='round'; ctx.lineCap='round';
+    ctx.globalAlpha = annotationTool === 'marker' ? 0.35 : 1;
+    ctx.strokeStyle = annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC';
+    ctx.lineWidth = annotationTool === 'marker' ? 14 : 3;
+    ctx.beginPath();
+    const p1 = currentStrokePoints[n-2], p2 = currentStrokePoints[n-1];
+    ctx.moveTo(p1.x*w, p1.y*h); ctx.lineTo(p2.x*w, p2.y*h);
+    ctx.stroke();
+    ctx.restore();
+  }
+});
+function finishStroke(){
+  if(!isDrawingStroke) return;
+  isDrawingStroke = false;
+  if(annotationTool !== 'eraser' && currentStrokePoints.length > 1){
+    const strokes = getCurrentStrokes();
+    strokes.push({
+      tool: annotationTool,
+      color: annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC',
+      width: annotationTool === 'marker' ? 14 : 3,
+      points: currentStrokePoints
+    });
+    pageRedoCache[readerPageNum] = [];
+    savePageStrokes(readerPageNum, strokes);
+  }
+  currentStrokePoints = [];
+}
+annCanvasEl.addEventListener('pointerup', finishStroke);
+annCanvasEl.addEventListener('pointercancel', ()=>{ isDrawingStroke=false; currentStrokePoints=[]; });
+
+document.getElementById('annotation-undo').addEventListener('click', ()=>{
+  const strokes = getCurrentStrokes();
+  if(!strokes.length) return;
+  const removed = strokes.pop();
+  if(!pageRedoCache[readerPageNum]) pageRedoCache[readerPageNum] = [];
+  pageRedoCache[readerPageNum].push(removed);
+  savePageStrokes(readerPageNum, strokes);
+  redrawAnnotations();
+});
+document.getElementById('annotation-redo').addEventListener('click', ()=>{
+  const redoStack = pageRedoCache[readerPageNum] || [];
+  if(!redoStack.length) return;
+  const restored = redoStack.pop();
+  getCurrentStrokes().push(restored);
+  savePageStrokes(readerPageNum, getCurrentStrokes());
+  redrawAnnotations();
+});
+document.getElementById('annotation-clear').addEventListener('click', ()=>{
+  document.getElementById('annotation-clear-confirm').classList.add('open');
+});
+document.getElementById('annotation-clear-cancel').addEventListener('click', ()=>{
+  document.getElementById('annotation-clear-confirm').classList.remove('open');
+});
+document.getElementById('annotation-clear-confirm-btn').addEventListener('click', ()=>{
+  pageStrokesCache[readerPageNum] = [];
+  savePageStrokes(readerPageNum, []);
+  redrawAnnotations();
+  document.getElementById('annotation-clear-confirm').classList.remove('open');
 });
 
 refreshAllBookViews();
