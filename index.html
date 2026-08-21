@@ -311,12 +311,11 @@
 
   .reader-header-title{ font-family: var(--font-display); font-size:15px; flex:1; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 8px; }
 
-  .reader-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; }
+  .reader-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; position:relative; }
   .reader-header .back-link{ margin-bottom:0; flex:none; }
-  .reader-ai-desktop-btn{ display:none; flex:none; }
 
   .reader-body{ display:flex; gap:0; align-items:stretch; height: min(72vh, 780px); border:1px solid var(--border-soft); border-radius:14px; overflow:hidden; }
-  .reader-main{ flex:1; min-width:0; display:flex; flex-direction:column; }
+  .reader-main{ flex:1; min-width:0; display:flex; flex-direction:column; position:relative; }
 
   .reader-canvas-wrap{
     position:relative; background: rgba(0,0,0,0.25); flex:1; min-width:0;
@@ -325,7 +324,7 @@
   .reader-loading{ font-family: var(--font-mono); font-size:13px; color: var(--text-dim); text-align:center; margin:auto; }
 
   .reader-scroll{
-    flex:1; overflow-y:auto; overflow-x:hidden; padding: 16px 0; display:flex; flex-direction:column; align-items:center; gap:14px;
+    flex:1; overflow-y:auto; overflow-x:hidden; padding: 16px 0 76px; display:flex; flex-direction:column; align-items:center; gap:14px;
     -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
   .reader-scroll.draw-lock{ overflow-y:hidden; touch-action:none; }
@@ -333,29 +332,44 @@
   .reader-page-item canvas.page-canvas{ display:block; width:100%; height:100%; }
   .reader-page-item canvas.page-annotation-canvas{ position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; }
 
-  .ai-fab{
-    position:absolute; bottom:16px; right:14px; width:52px; height:52px; border-radius:50%;
-    background: linear-gradient(120deg, var(--blue), #6FC3FF); border:none; color:var(--space-1);
-    font-size:20px; cursor:pointer; box-shadow: 0 8px 24px rgba(61,169,252,0.4); z-index:45;
-    display:flex; align-items:center; justify-content:center;
+  /* ---- Yagona sarlavha menyusi: sahifaga o'tish + (faqat desktop) zoom ---- */
+  .reader-menu-popover{
+    display:none; position:absolute; top: 52px; right: 0; z-index:60;
+    background: var(--panel-solid); border:1px solid var(--border); border-radius:12px; padding:8px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4); min-width:180px;
   }
-
-  /* ---- Secondary toolbar: pen, bookmark, page indicator, annotation sub-tools, zoom ---- */
-  .reader-toolbar-secondary{ display:flex; align-items:center; gap:8px; padding:10px 12px; background: var(--panel-solid); border-top:1px solid var(--border-soft); flex-wrap:wrap; }
-  #pen-toggle.active, #marker-toggle.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
-  #bookmark-toggle.active{ color: var(--gold); border-color: var(--gold); }
-  .annotation-controls{ display:flex; align-items:center; gap:6px; }
-  .zoom-controls{ display:none; align-items:center; gap:6px; margin-left:auto; }
+  .reader-menu-popover.open{ display:block; }
+  .reader-menu-item{
+    display:block; width:100%; text-align:left; background:none; border:none; color: var(--text);
+    font-family: var(--font-body); font-size:13px; padding:10px 12px; border-radius:8px; cursor:pointer;
+  }
+  .reader-menu-item:hover{ background: rgba(255,255,255,0.06); }
+  .reader-menu-zoom{ display:none; align-items:center; justify-content:center; gap:8px; padding:8px 4px 2px; border-top:1px solid var(--border-soft); margin-top:4px; }
   .zoom-level{ font-family: var(--font-mono); font-size:11.5px; color: var(--text-dim); min-width:38px; text-align:center; }
 
-  button.reader-page-text{
-    background:none; border:none; cursor:pointer; font-family: var(--font-mono); font-size:12.5px;
-    color: var(--text-dim); min-width:60px; text-align:center; padding:6px 10px; border-radius:8px;
+  /* ---- Pastdagi yagona suzuvchi panel: ✏️ 🔖 ✨ ---- */
+  .reader-floating-bar{
+    position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:45;
+    display:flex; align-items:center; gap:10px; background: var(--panel-solid); border:1px solid var(--border);
+    border-radius:999px; padding:8px 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   }
-  button.reader-page-text:hover{ background: rgba(255,255,255,0.05); color: var(--text); }
+  .reader-floating-bar .icon-btn{ width:42px; height:42px; }
+  #pen-toggle.active, #marker-toggle.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
+  #bookmark-toggle.active{ color: var(--gold); border-color: var(--gold); }
+  .ai-fab{
+    background: linear-gradient(120deg, var(--blue), #6FC3FF) !important; border:none !important; color:var(--space-1) !important;
+  }
+
+  /* ---- Chizish uchun kontekstual asboblar paneli (faqat qalam yoqilganda ko'rinadi) ---- */
+  .annotation-toolbar{
+    display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%); z-index:46;
+    align-items:center; gap:6px; background: var(--panel-solid); border:1px solid var(--border);
+    border-radius:999px; padding:8px 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+  }
+  .annotation-toolbar.open{ display:flex; }
 
   .reader-page-popover{
-    display:none; position:absolute; bottom:60px; left:50%; transform: translateX(-50%);
+    display:none; position:absolute; bottom:70px; left:50%; transform: translateX(-50%);
     background: var(--panel-solid); border:1px solid var(--border); border-radius:12px; padding:12px;
     box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:50; white-space:nowrap;
   }
@@ -370,7 +384,7 @@
   .annotation-clear-confirm{
     display:none; position:absolute; bottom:70px; left:50%; transform:translateX(-50%);
     background: var(--panel-solid); border:1px solid var(--border); border-radius:14px; padding:16px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:46; width:min(280px,90%); text-align:center;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4); z-index:47; width:min(280px,90%); text-align:center;
   }
   .annotation-clear-confirm.open{ display:block; }
   .annotation-clear-confirm p{ font-size:12.5px; color: var(--text-dim); margin:0 0 12px; }
@@ -392,9 +406,7 @@
   .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
 
   @media (min-width: 900px){
-    .ai-fab{ display:none; }
-    .reader-ai-desktop-btn{ display:flex; }
-    .zoom-controls{ display:flex; }
+    .reader-menu-zoom{ display:flex; }
     .ai-panel{
       position:static; transform:none; display:none; width:320px; flex:none; height:auto;
       border-left:1px solid var(--border-soft); box-shadow:none; border-radius:0;
@@ -688,7 +700,17 @@
             <div class="reader-header">
               <button class="back-link" id="reader-back-to-detail" aria-label="Orqaga">&larr;</button>
               <div class="reader-header-title" id="reader-header-title"></div>
-              <button class="icon-btn reader-ai-desktop-btn" id="reader-ai-desktop-btn" title="Ustoz AI" aria-label="Ustoz AI">✨</button>
+              <button class="icon-btn" id="reader-menu-btn" title="Ko'proq" aria-label="Ko'proq">⋮</button>
+            </div>
+
+            <div class="reader-menu-popover" id="reader-menu-popover">
+              <button class="reader-menu-item" id="menu-page-jump-btn">🔢 Sahifaga o'tish</button>
+              <button class="reader-menu-item" id="menu-clear-page-btn">🗑 Sahifadagi belgilarni tozalash</button>
+              <div class="reader-menu-zoom" id="reader-menu-zoom">
+                <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
+                <span class="zoom-level" id="zoom-level">100%</span>
+                <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
+              </div>
             </div>
 
             <div class="reader-body" id="reader-body">
@@ -700,10 +722,8 @@
                 </div>
                 <div class="reader-scroll" id="reader-scroll"></div>
 
-                <button class="ai-fab" id="ai-fab" aria-label="Kitob yordamchisi" title="Kitob yordamchisi">✨</button>
-
                 <div class="reader-page-popover" id="reader-page-popover">
-                  <div class="reader-page-popover-label">Sahifaga o'tish</div>
+                  <div class="reader-page-popover-label">Sahifaga o'tish (<span id="reader-page-popover-total"></span> sahifadan)</div>
                   <div class="reader-page-popover-row">
                     <input type="number" id="reader-page-input" min="1">
                     <button class="glow-btn" id="reader-page-go" style="padding:8px 16px; font-size:13px;">O'tish</button>
@@ -719,23 +739,19 @@
                 </div>
                 </div>
 
-                <div class="reader-toolbar-secondary" id="reader-toolbar-secondary">
-                <button class="icon-btn" id="pen-toggle" title="Yozish" aria-label="Yozish">✏</button>
-                <button class="icon-btn" id="bookmark-toggle" title="Belgilash" aria-label="Belgilash">🔖</button>
-                <button class="reader-page-text" id="reader-page-text" title="Sahifaga o'tish">— / —</button>
-                <div class="annotation-controls" id="annotation-controls">
-                  <button class="icon-btn" id="marker-toggle" title="Marker" aria-label="Marker" style="display:none;">🖍</button>
-                  <button class="icon-btn" id="eraser-toggle" title="O'chirg'ich" aria-label="O'chirg'ich" style="display:none;">🧽</button>
-                  <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish" style="display:none;">↶</button>
-                  <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish" style="display:none;">↷</button>
-                  <button class="icon-btn" id="annotation-clear" title="Sahifani tozalash" aria-label="Sahifani tozalash" style="display:none;">🗑</button>
-                  <button class="icon-btn" id="annotation-done" title="Tayyor" aria-label="Tayyor" style="display:none; color:var(--blue);">✓</button>
+                <div class="annotation-toolbar" id="annotation-toolbar">
+                  <button class="icon-btn active" id="pen-tool-btn" title="Qalam" aria-label="Qalam">✏️</button>
+                  <button class="icon-btn" id="marker-toggle" title="Marker" aria-label="Marker">🖍</button>
+                  <button class="icon-btn" id="eraser-toggle" title="O'chirg'ich" aria-label="O'chirg'ich">🧽</button>
+                  <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish">↶</button>
+                  <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish">↷</button>
+                  <button class="icon-btn" id="annotation-done" title="Tayyor" aria-label="Tayyor" style="color:var(--blue);">✓</button>
                 </div>
-                <div class="zoom-controls" id="zoom-controls">
-                  <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
-                  <span class="zoom-level" id="zoom-level">100%</span>
-                  <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
-                </div>
+
+                <div class="reader-floating-bar" id="reader-floating-bar">
+                  <button class="icon-btn" id="pen-toggle" title="Yozish" aria-label="Yozish">✏️</button>
+                  <button class="icon-btn" id="bookmark-toggle" title="Belgilash" aria-label="Belgilash">🔖</button>
+                  <button class="icon-btn ai-fab" id="ai-fab" title="Ustoz AI" aria-label="Ustoz AI">✨</button>
                 </div>
               </div>
 
@@ -1216,22 +1232,34 @@ function getAllBookProgress(){
 function getBookProgress(bookId){
   return getAllBookProgress()[bookId] || null;
 }
-function saveBookProgress(bookId, currentPage, totalPages){
+function saveBookProgress(bookId, currentPage, totalPages, pageOffset){
   try{
     const all = getAllBookProgress();
-    all[bookId] = { currentPage, totalPages, progressPercent: Math.round((currentPage / totalPages) * 100), updatedAt: Date.now() };
+    all[bookId] = {
+      currentPage, totalPages, pageOffset: pageOffset || 0,
+      progressPercent: Math.round((currentPage / totalPages) * 100), updatedAt: Date.now()
+    };
     localStorage.setItem(BOOK_PROGRESS_KEY, JSON.stringify(all));
   }catch(e){}
+}
+function getCurrentPageScrollOffset(){
+  const item = document.querySelector(`.reader-page-item[data-page="${currentVisiblePage}"]`);
+  const wrap = document.getElementById('reader-canvas-wrap');
+  if(!item || !wrap) return 0;
+  const r = item.getBoundingClientRect();
+  const wrapTop = wrap.getBoundingClientRect().top;
+  if(r.height <= 0) return 0;
+  return Math.max(0, Math.min(1, (wrapTop - r.top) / r.height));
 }
 let progressSaveTimer = null;
 function scheduleProgressSave(bookId, currentPage, totalPages){
   clearTimeout(progressSaveTimer);
-  progressSaveTimer = setTimeout(()=> saveBookProgress(bookId, currentPage, totalPages), 500);
+  progressSaveTimer = setTimeout(()=> saveBookProgress(bookId, currentPage, totalPages, getCurrentPageScrollOffset()), 500);
 }
 function flushProgressSave(){
   clearTimeout(progressSaveTimer);
   if(activeBook && readerPdfDoc){
-    saveBookProgress(activeBook.id, readerPageNum, readerPdfDoc.numPages);
+    saveBookProgress(activeBook.id, readerPageNum, readerPdfDoc.numPages, getCurrentPageScrollOffset());
   }
 }
 document.addEventListener('visibilitychange', ()=>{
@@ -1490,7 +1518,6 @@ function startReading(book){
   loadingTextEl.textContent = '📖 Kitob tayyorlanmoqda...';
   retryBtn.style.display = 'none';
   scrollEl.innerHTML = '';
-  document.getElementById('reader-page-text').textContent = '— / —';
   readerPdfDoc = null;
   readerZoomPercent = 100;
   pageStrokesCache = {};
@@ -1530,9 +1557,19 @@ function startReading(book){
       loadingEl.style.display = 'none';
       setupPageObserver();
 
-      // Bir necha freym kutib, so'ng saqlangan sahifaga sakrash (layout tayyor bo'lishi uchun)
+      // Bir necha freym kutib, so'ng saqlangan sahifaga (va uning ichidagi joyga) sakrash
       requestAnimationFrame(()=>{
         scrollToPage(readerPageNum, false);
+        if(savedProgress && savedProgress.pageOffset){
+          requestAnimationFrame(()=>{
+            const item = document.querySelector(`.reader-page-item[data-page="${readerPageNum}"]`);
+            const wrap = document.getElementById('reader-canvas-wrap');
+            if(item && wrap){
+              const scrollEl = document.getElementById('reader-scroll');
+              scrollEl.scrollTop += savedProgress.pageOffset * item.getBoundingClientRect().height;
+            }
+          });
+        }
       });
     }catch(renderErr){
       console.error('PDF sahifasini tayyorlashda xato:', renderErr);
@@ -1621,8 +1658,7 @@ function updateCurrentVisiblePage(){
 }
 
 function updatePageIndicator(){
-  document.getElementById('reader-page-text').textContent = readerNumPages
-    ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
+  // Doimiy sahifa yorlig'i olib tashlandi (faqat "Sahifaga o'tish" oynasida ko'rsatiladi)
 }
 
 // ---- Bitta sahifani render qilish ----
@@ -1832,15 +1868,24 @@ document.getElementById('reader-scroll').addEventListener('wheel', (e)=>{
   setZoom(readerZoomPercent + (e.deltaY < 0 ? 15 : -15));
 }, { passive:false });
 
-// ---- Sahifaga to'g'ridan-to'g'ri o'tish (popover) ----
-document.getElementById('reader-page-text').addEventListener('click', ()=>{
+// ---- Sarlavha ⋮ menyusi ----
+document.getElementById('reader-menu-btn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('reader-menu-popover').classList.toggle('open');
+});
+
+// ---- Sahifaga to'g'ridan-to'g'ri o'tish (popover, ⋮ menyudan ochiladi) ----
+document.getElementById('menu-page-jump-btn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('reader-menu-popover').classList.remove('open');
   if(!readerPdfDoc) return;
   const popover = document.getElementById('reader-page-popover');
   const input = document.getElementById('reader-page-input');
   input.max = readerNumPages;
   input.value = currentVisiblePage;
-  popover.classList.toggle('open');
-  if(popover.classList.contains('open')) input.focus();
+  document.getElementById('reader-page-popover-total').textContent = readerNumPages;
+  popover.classList.add('open');
+  input.focus();
 });
 function jumpToPage(){
   if(!readerPdfDoc) return;
@@ -1856,9 +1901,13 @@ document.getElementById('reader-page-input').addEventListener('keydown', (e)=>{
 });
 document.addEventListener('click', (e)=>{
   const popover = document.getElementById('reader-page-popover');
-  const textBtn = document.getElementById('reader-page-text');
-  if(popover && !popover.contains(e.target) && e.target !== textBtn){
+  if(popover && popover.classList.contains('open') && !popover.contains(e.target)){
     popover.classList.remove('open');
+  }
+  const menuPopover = document.getElementById('reader-menu-popover');
+  const menuBtn = document.getElementById('reader-menu-btn');
+  if(menuPopover && menuPopover.classList.contains('open') && !menuPopover.contains(e.target) && e.target !== menuBtn){
+    menuPopover.classList.remove('open');
   }
 });
 
@@ -1956,30 +2005,36 @@ function redrawAnnotations(){
 function setAnnotationTool(tool){
   annotationTool = tool;
   const scrollEl = document.getElementById('reader-scroll');
-  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.querySelectorAll('#pen-toggle,#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
   if(tool){
-    document.getElementById(tool === 'pen' ? 'pen-toggle' : tool + '-toggle').classList.add('active');
+    document.getElementById(tool === 'pen' ? 'pen-tool-btn' : tool + '-toggle').classList.add('active');
     scrollEl.classList.add('draw-lock');
     document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=> c.style.pointerEvents = 'auto');
+    document.getElementById('annotation-toolbar').classList.add('open');
+    document.getElementById('reader-floating-bar').style.display = 'none';
   }else{
     scrollEl.classList.remove('draw-lock');
     document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=> c.style.pointerEvents = 'none');
+    document.getElementById('annotation-toolbar').classList.remove('open');
+    document.getElementById('reader-floating-bar').style.display = 'flex';
   }
-  ['marker-toggle','eraser-toggle','annotation-undo','annotation-redo','annotation-clear','annotation-done'].forEach(id=>{
-    document.getElementById(id).style.display = tool ? 'inline-flex' : 'none';
-  });
 }
 document.getElementById('pen-toggle').addEventListener('click', ()=>{
   setAnnotationTool(annotationTool ? null : 'pen');
 });
+document.getElementById('pen-tool-btn').addEventListener('click', ()=>{
+  annotationTool = 'pen';
+  document.querySelectorAll('#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.getElementById('pen-tool-btn').classList.add('active');
+});
 document.getElementById('marker-toggle').addEventListener('click', ()=>{
   annotationTool = 'marker';
-  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.querySelectorAll('#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
   document.getElementById('marker-toggle').classList.add('active');
 });
 document.getElementById('eraser-toggle').addEventListener('click', ()=>{
   annotationTool = 'eraser';
-  document.querySelectorAll('#pen-toggle,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.querySelectorAll('#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
   document.getElementById('eraser-toggle').classList.add('active');
 });
 document.getElementById('annotation-done').addEventListener('click', ()=> setAnnotationTool(null));
@@ -2072,7 +2127,9 @@ document.getElementById('annotation-redo').addEventListener('click', ()=>{
   savePageStrokes(currentVisiblePage, getCurrentStrokes(currentVisiblePage));
   redrawAnnotations();
 });
-document.getElementById('annotation-clear').addEventListener('click', ()=>{
+document.getElementById('menu-clear-page-btn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('reader-menu-popover').classList.remove('open');
   document.getElementById('annotation-clear-confirm').classList.add('open');
 });
 document.getElementById('annotation-clear-cancel').addEventListener('click', ()=>{
@@ -2121,7 +2178,6 @@ function closeAiSheet(){
   setTimeout(()=>{ if(readerPdfDoc) reRenderAllForZoom(); }, 260);
 }
 document.getElementById('ai-fab').addEventListener('click', openAiSheet);
-document.getElementById('reader-ai-desktop-btn').addEventListener('click', openAiSheet);
 document.getElementById('ai-sheet-close').addEventListener('click', closeAiSheet);
 document.getElementById('ai-sheet-backdrop').addEventListener('click', closeAiSheet);
 
