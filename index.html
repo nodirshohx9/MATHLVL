@@ -318,19 +318,19 @@
   .reader-main{ flex:1; min-width:0; display:flex; flex-direction:column; position:relative; }
 
   .reader-canvas-wrap{
-    position:relative; background: rgba(0,0,0,0.25); flex:1; min-width:0;
-    display:flex; flex-direction:column;
+    position:relative; background: rgba(0,0,0,0.25); flex:1; min-width:0; min-height:0;
+    display:flex; flex-direction:column; overflow:hidden;
   }
   .reader-loading{ font-family: var(--font-mono); font-size:13px; color: var(--text-dim); text-align:center; margin:auto; }
 
   .reader-scroll{
-    flex:1; overflow-y:auto; overflow-x:hidden; padding: 16px 0 76px; display:flex; flex-direction:column; align-items:center; gap:14px;
+    flex:1; min-height:0; overflow-y:auto; overflow-x:hidden; padding: 16px 0 76px; display:flex; flex-direction:column; align-items:center; gap:14px;
     -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
   .reader-scroll.draw-lock{ overflow-y:hidden; touch-action:none; }
   .reader-page-item{ position:relative; flex:none; background:#fff; border-radius:6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow:hidden; }
   .reader-page-item canvas.page-canvas{ display:block; width:100%; height:100%; }
-  .reader-page-item canvas.page-annotation-canvas{ position:absolute; top:0; left:0; width:100%; height:100%; touch-action:none; }
+  .reader-page-item canvas.page-annotation-canvas{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; touch-action:pan-y; }
 
   /* ---- Yagona sarlavha menyusi: sahifaga o'tish + (faqat desktop) zoom ---- */
   .reader-menu-popover{
@@ -1715,6 +1715,8 @@ async function renderPageInto(item, num, forceRerender){
     if(!annCanvas){
       annCanvas = document.createElement('canvas');
       annCanvas.className = 'page-annotation-canvas';
+      annCanvas.style.pointerEvents = annotationTool ? 'auto' : 'none';
+      annCanvas.style.touchAction = annotationTool ? 'none' : 'pan-y';
       item.appendChild(annCanvas);
     }
     // Canvas o'lchamini FAQAT oldingi render to'liq bekor qilingandan keyin yangilaymiz
@@ -2009,12 +2011,16 @@ function setAnnotationTool(tool){
   if(tool){
     document.getElementById(tool === 'pen' ? 'pen-tool-btn' : tool + '-toggle').classList.add('active');
     scrollEl.classList.add('draw-lock');
-    document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=> c.style.pointerEvents = 'auto');
+    document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=>{
+      c.style.pointerEvents = 'auto'; c.style.touchAction = 'none';
+    });
     document.getElementById('annotation-toolbar').classList.add('open');
     document.getElementById('reader-floating-bar').style.display = 'none';
   }else{
     scrollEl.classList.remove('draw-lock');
-    document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=> c.style.pointerEvents = 'none');
+    document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=>{
+      c.style.pointerEvents = 'none'; c.style.touchAction = 'pan-y';
+    });
     document.getElementById('annotation-toolbar').classList.remove('open');
     document.getElementById('reader-floating-bar').style.display = 'flex';
   }
