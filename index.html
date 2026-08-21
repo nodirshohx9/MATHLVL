@@ -328,6 +328,15 @@
     -webkit-overflow-scrolling: touch; overscroll-behavior: contain;
   }
   .reader-scroll.draw-lock{ overflow-y:hidden; touch-action:none; }
+  .reader-scroll.zoomed-pan{ overflow-x:auto; align-items:flex-start; cursor:grab; }
+  .reader-scroll.zoomed-pan.draw-lock{ overflow-x:hidden; cursor:default; }
+
+  /* ---- Nozik, tema bilan mos scrollbar (katta oq default scrollbar o'rniga) ---- */
+  .reader-scroll{ scrollbar-width: thin; scrollbar-color: rgba(120,150,255,0.35) transparent; }
+  .reader-scroll::-webkit-scrollbar{ width:8px; height:8px; }
+  .reader-scroll::-webkit-scrollbar-track{ background: transparent; }
+  .reader-scroll::-webkit-scrollbar-thumb{ background: rgba(120,150,255,0.35); border-radius:8px; }
+  .reader-scroll::-webkit-scrollbar-thumb:hover{ background: rgba(120,150,255,0.55); }
   .reader-page-item{ position:relative; flex:none; background:#fff; border-radius:6px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); overflow:hidden; }
   .reader-page-item canvas.page-canvas{ display:block; width:100%; height:100%; }
   .reader-page-item canvas.page-annotation-canvas{ position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; touch-action:pan-y; }
@@ -354,7 +363,7 @@
     border-radius:999px; padding:8px 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.4);
   }
   .reader-floating-bar .icon-btn{ width:42px; height:42px; }
-  #pen-toggle.active, #marker-toggle.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
+  #pen-toggle.active, #pen-tool-btn.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
   #bookmark-toggle.active{ color: var(--gold); border-color: var(--gold); }
   .ai-fab{
     background: linear-gradient(120deg, var(--blue), #6FC3FF) !important; border:none !important; color:var(--space-1) !important;
@@ -741,7 +750,6 @@
 
                 <div class="annotation-toolbar" id="annotation-toolbar">
                   <button class="icon-btn active" id="pen-tool-btn" title="Qalam" aria-label="Qalam">✏️</button>
-                  <button class="icon-btn" id="marker-toggle" title="Marker" aria-label="Marker">🖍</button>
                   <button class="icon-btn" id="eraser-toggle" title="O'chirg'ich" aria-label="O'chirg'ich">🧽</button>
                   <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish">↶</button>
                   <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish">↷</button>
@@ -1811,12 +1819,37 @@ function reRenderAllForZoom(){
 }
 function setZoom(percent){
   readerZoomPercent = Math.max(100, Math.min(400, Math.round(percent)));
+  document.getElementById('reader-scroll').classList.toggle('zoomed-pan', readerZoomPercent > 100);
   if(!readerPdfDoc) return;
   clearTimeout(zoomDebounceTimer);
   zoomDebounceTimer = setTimeout(()=> reRenderAllForZoom(), 80);
 }
 document.getElementById('zoom-in').addEventListener('click', ()=> setZoom(readerZoomPercent + 25));
 document.getElementById('zoom-out').addEventListener('click', ()=> setZoom(readerZoomPercent - 25));
+
+// ---- Desktop: kattalashtirilganda sichqonchani bosib ushlab surish (pan) ----
+(function(){
+  const scrollEl = document.getElementById('reader-scroll');
+  let isPanning = false, panStartX = 0, panStartY = 0, panScrollLeft = 0, panScrollTop = 0;
+  scrollEl.addEventListener('mousedown', (e)=>{
+    if(annotationTool || readerZoomPercent <= 100) return;
+    isPanning = true;
+    panStartX = e.clientX; panStartY = e.clientY;
+    panScrollLeft = scrollEl.scrollLeft; panScrollTop = scrollEl.scrollTop;
+    scrollEl.style.cursor = 'grabbing';
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', (e)=>{
+    if(!isPanning) return;
+    scrollEl.scrollLeft = panScrollLeft - (e.clientX - panStartX);
+    scrollEl.scrollTop = panScrollTop - (e.clientY - panStartY);
+  });
+  window.addEventListener('mouseup', ()=>{
+    if(!isPanning) return;
+    isPanning = false;
+    scrollEl.style.cursor = '';
+  });
+})();
 
 // ---- Mobil: ikki barmoq bilan (pinch) va ikki marta bosib kattalashtirish ----
 (function(){
@@ -2007,7 +2040,7 @@ function redrawAnnotations(){
 function setAnnotationTool(tool){
   annotationTool = tool;
   const scrollEl = document.getElementById('reader-scroll');
-  document.querySelectorAll('#pen-toggle,#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.querySelectorAll('#pen-toggle,#pen-tool-btn,#eraser-toggle').forEach(b=> b.classList.remove('active'));
   if(tool){
     document.getElementById(tool === 'pen' ? 'pen-tool-btn' : tool + '-toggle').classList.add('active');
     scrollEl.classList.add('draw-lock');
@@ -2030,17 +2063,12 @@ document.getElementById('pen-toggle').addEventListener('click', ()=>{
 });
 document.getElementById('pen-tool-btn').addEventListener('click', ()=>{
   annotationTool = 'pen';
-  document.querySelectorAll('#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.querySelectorAll('#pen-tool-btn,#eraser-toggle').forEach(b=> b.classList.remove('active'));
   document.getElementById('pen-tool-btn').classList.add('active');
-});
-document.getElementById('marker-toggle').addEventListener('click', ()=>{
-  annotationTool = 'marker';
-  document.querySelectorAll('#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
-  document.getElementById('marker-toggle').classList.add('active');
 });
 document.getElementById('eraser-toggle').addEventListener('click', ()=>{
   annotationTool = 'eraser';
-  document.querySelectorAll('#pen-tool-btn,#marker-toggle,#eraser-toggle').forEach(b=> b.classList.remove('active'));
+  document.querySelectorAll('#pen-tool-btn,#eraser-toggle').forEach(b=> b.classList.remove('active'));
   document.getElementById('eraser-toggle').classList.add('active');
 });
 document.getElementById('annotation-done').addEventListener('click', ()=> setAnnotationTool(null));
@@ -2086,9 +2114,9 @@ document.getElementById('reader-scroll').addEventListener('pointermove', (e)=>{
     const w = activeDrawCanvas.width, h = activeDrawCanvas.height;
     ctx.save();
     ctx.lineJoin='round'; ctx.lineCap='round';
-    ctx.globalAlpha = annotationTool === 'marker' ? 0.35 : 1;
-    ctx.strokeStyle = annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC';
-    ctx.lineWidth = annotationTool === 'marker' ? 14 : 3;
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = '#3DA9FC';
+    ctx.lineWidth = 3;
     ctx.beginPath();
     const p1 = currentStrokePoints[n-2], p2 = currentStrokePoints[n-1];
     ctx.moveTo(p1.x*w, p1.y*h); ctx.lineTo(p2.x*w, p2.y*h);
@@ -2102,9 +2130,9 @@ function finishStroke(){
   if(annotationTool !== 'eraser' && currentStrokePoints.length > 1 && activeDrawPage){
     const strokes = getCurrentStrokes(activeDrawPage);
     strokes.push({
-      tool: annotationTool,
-      color: annotationTool === 'marker' ? '#FFC93C' : '#3DA9FC',
-      width: annotationTool === 'marker' ? 14 : 3,
+      tool: 'pen',
+      color: '#3DA9FC',
+      width: 3,
       points: currentStrokePoints
     });
     pageRedoCache[activeDrawPage] = [];
