@@ -65,6 +65,54 @@
 
   .app{ position: relative; z-index: 2; max-width: 1080px; margin: 0 auto; padding: 22px 24px 80px; }
 
+  /* ---- Desktop sidebar (faqat katta ekranlarda) ---- */
+  .app-shell{ display:block; }
+  .app-sidebar{ display:none; }
+  @media (min-width: 900px){
+    .app-shell{ display:flex; align-items:flex-start; min-height:100vh; }
+    .app-sidebar{
+      display:flex; flex-direction:column; width:220px; flex:none; min-height:100vh;
+      background: var(--panel-solid); border-right:1px solid var(--border); padding:20px 14px; position:sticky; top:0;
+    }
+    .app-sidebar .sidebar-logo{ display:flex; align-items:center; gap:8px; padding:6px 10px 22px; cursor:pointer; }
+    .app-sidebar .sidebar-logo img{ height:24px; }
+    .app-sidebar .sidebar-logo span{ font-family: var(--font-display); font-weight:800; font-size:16px; }
+    .sidebar-nav-item{
+      display:flex; align-items:center; gap:10px; padding:11px 12px; border-radius:10px; cursor:pointer;
+      font-size:13.5px; font-weight:600; color: var(--text-dim); margin-bottom:4px; border:none; background:none;
+      width:100%; text-align:left; font-family:var(--font-body); transition: all .15s ease;
+    }
+    .sidebar-nav-item:hover{ background: rgba(255,255,255,0.04); color: var(--text); }
+    .sidebar-nav-item.active{ background: var(--blue-soft); color: var(--blue); }
+    .sidebar-nav-item .ic{ font-size:15px; flex:none; width:18px; text-align:center; }
+    .sidebar-plus-card{
+      margin-top:18px; background: linear-gradient(135deg, rgba(255,201,60,0.14), rgba(255,201,60,0.04));
+      border:1px solid rgba(255,201,60,0.3); border-radius:14px; padding:14px; cursor:pointer;
+    }
+    .sidebar-plus-card .spc-title{ font-family:var(--font-display); font-weight:700; font-size:13px; color: var(--gold); display:flex; align-items:center; gap:6px; }
+    .sidebar-plus-card .spc-sub{ font-size:11.5px; color: var(--text-dim); margin-top:4px; line-height:1.4; }
+    .sidebar-plus-card .spc-btn{
+      margin-top:10px; width:100%; background: var(--gold); color:#2A1E00; border:none; font-weight:800;
+      font-size:12px; padding:8px; border-radius:999px; cursor:pointer;
+    }
+    .sidebar-help-link{ margin-top:14px; padding:10px 12px; font-size:12.5px; color: var(--text-dim); cursor:pointer; }
+    .sidebar-help-link:hover{ color: var(--text); }
+    .sidebar-footer{
+      margin-top:auto; display:flex; align-items:center; gap:10px; padding:12px 10px 4px;
+      border-top:1px solid var(--border-soft); cursor:pointer;
+    }
+    .sidebar-footer-avatar{
+      width:32px; height:32px; border-radius:50%; background: linear-gradient(135deg, var(--blue), var(--gold));
+      display:flex; align-items:center; justify-content:center; font-size:13px; font-weight:800; color: var(--space-1); flex:none; overflow:hidden;
+    }
+    .sidebar-footer-avatar img{ width:100%; height:100%; object-fit:cover; }
+    .sidebar-footer-text .sft-name{ font-size:12.5px; font-weight:700; }
+    .sidebar-footer-text .sft-plan{ font-size:11px; color: var(--text-dim); }
+
+    /* Sidebar mavjud bo'lganda mobil/eski header ustunini yashiramiz */
+    header.topbar{ display:none; }
+  }
+
   /* ---------- Header / Nav ---------- */
   header.topbar{
     display:flex; align-items:center; justify-content:space-between;
@@ -311,6 +359,10 @@
 
   .reader-header-title{ font-family: var(--font-display); font-size:15px; flex:1; text-align:center; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding:0 8px; }
 
+  .reader-shell{ display:flex; gap:0; }
+  .reader-sidebar{ display:none; }
+  .reader-main-col{ flex:1; min-width:0; }
+
   .reader-header{ display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; gap:8px; position:relative; }
   .reader-header .back-link{ margin-bottom:0; flex:none; }
 
@@ -353,7 +405,13 @@
     font-family: var(--font-body); font-size:13px; padding:10px 12px; border-radius:8px; cursor:pointer;
   }
   .reader-menu-item:hover{ background: rgba(255,255,255,0.06); }
-  .reader-menu-zoom{ display:none; align-items:center; justify-content:center; gap:8px; padding:8px 4px 2px; border-top:1px solid var(--border-soft); margin-top:4px; }
+  .reader-header-desktop-controls{ display:none; align-items:center; gap:10px; flex:none; }
+  .zoom-controls-inline{ display:flex; align-items:center; gap:4px; }
+  .ai-desktop-btn{
+    display:flex; align-items:center; gap:6px; background: linear-gradient(120deg, var(--blue), #6FC3FF);
+    color: var(--space-1); border:none; font-family: var(--font-body); font-weight:800; font-size:12.5px;
+    padding: 8px 14px; border-radius: 999px; cursor:pointer;
+  }
   .zoom-level{ font-family: var(--font-mono); font-size:11.5px; color: var(--text-dim); min-width:38px; text-align:center; }
 
   /* ---- Pastdagi yagona suzuvchi panel: ✏️ 🔖 ✨ ---- */
@@ -364,7 +422,6 @@
   }
   .reader-floating-bar .icon-btn{ width:42px; height:42px; }
   #pen-toggle.active, #pen-tool-btn.active, #eraser-toggle.active{ background: var(--blue); border-color: var(--blue); color: var(--space-1); }
-  #bookmark-toggle.active{ color: var(--gold); border-color: var(--gold); }
   .ai-fab{
     background: linear-gradient(120deg, var(--blue), #6FC3FF) !important; border:none !important; color:var(--space-1) !important;
   }
@@ -413,9 +470,26 @@
   .ai-panel-header{ display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
   .ai-panel-header span{ font-family: var(--font-display); font-size:15px; font-weight:700; }
   .ai-sheet-chat{ flex:1; overflow-y:auto; min-height:80px; display:flex; flex-direction:column; gap:10px; margin-bottom:8px; }
+  .ai-panel-hint{ margin:auto; text-align:center; color: var(--text-dim); font-size:13.5px; padding:0 20px; }
 
   @media (min-width: 900px){
-    .reader-menu-zoom{ display:flex; }
+    .reader-header-desktop-controls{ display:flex; }
+    .reader-menu-btn, #reader-menu-btn{ display:none; }
+    .ai-fab{ display:none; }
+    .reader-sidebar{
+      display:flex; flex-direction:column; width:200px; flex:none; padding:18px 12px;
+      border-right:1px solid var(--border-soft); margin-right:22px;
+    }
+    .reader-sidebar-logo{ font-family: var(--font-display); font-weight:800; font-size:18px; letter-spacing:.04em; padding:6px 10px 20px; }
+    .reader-sidebar-nav{ display:flex; flex-direction:column; gap:3px; }
+    .reader-sidebar-item{
+      display:flex; align-items:center; gap:10px; background:none; border:none; color: var(--text-dim);
+      font-family: var(--font-body); font-weight:600; font-size:13.5px; padding:10px 12px; border-radius:10px;
+      cursor:pointer; text-align:left;
+    }
+    .reader-sidebar-item:hover{ background: rgba(255,255,255,0.04); color: var(--text); }
+    .reader-sidebar-item.active{ background: var(--blue-soft); color: var(--blue); }
+    .reader-sidebar-item .rs-ic{ width:18px; text-align:center; font-size:15px; }
     .ai-panel{
       position:static; transform:none; display:none; width:320px; flex:none; height:auto;
       border-left:1px solid var(--border-soft); box-shadow:none; border-radius:0;
@@ -602,6 +676,34 @@
 <div class="stars" id="stars"></div>
 <div class="floaters" id="floaters"></div>
 
+<div class="app-shell">
+  <aside class="app-sidebar">
+    <div class="sidebar-logo" id="sidebar-logo-btn">
+      <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12 2l3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7z' fill='%233DA9FC'/%3E%3C/svg%3E" alt="Nova">
+      <span>NOVA</span>
+    </div>
+    <button class="sidebar-nav-item active" data-sidebar-tab="home"><span class="ic">⌂</span>Bosh sahifa</button>
+    <button class="sidebar-nav-item" data-sidebar-tab="teacher" data-scroll-to="book-grid"><span class="ic">📚</span>Kitoblar</button>
+    <button class="sidebar-nav-item" data-sidebar-tab="teacher" data-scroll-to="chat-window"><span class="ic">✨</span>Ustoz AI</button>
+    <button class="sidebar-nav-item" data-sidebar-tab="mocktest"><span class="ic">📝</span>Mock Test</button>
+    <button class="sidebar-nav-item" data-sidebar-tab="profile"><span class="ic">♟</span>Profil</button>
+
+    <div class="sidebar-plus-card" id="sidebar-plus-card">
+      <div class="spc-title">👑 NOVA PLUS</div>
+      <div class="spc-sub">Imkoniyatlaringizni kengaytiring</div>
+      <button class="spc-btn">Ko'rish</button>
+    </div>
+    <div class="sidebar-help-link">❓ Yordam</div>
+
+    <div class="sidebar-footer" id="sidebar-footer">
+      <div class="sidebar-footer-avatar" id="sidebar-footer-avatar">?</div>
+      <div class="sidebar-footer-text">
+        <div class="sft-name" id="sidebar-footer-name">Mehmon</div>
+        <div class="sft-plan" id="sidebar-footer-plan">Bepul plan</div>
+      </div>
+    </div>
+  </aside>
+
 <div class="app">
 
   <header class="topbar">
@@ -706,20 +808,35 @@
           </div>
 
           <div id="book-reader-screen" style="display:none;">
+            <div class="reader-shell">
+              <aside class="reader-sidebar" id="reader-sidebar">
+                <div class="reader-sidebar-logo">NOVA</div>
+                <nav class="reader-sidebar-nav">
+                  <button class="reader-sidebar-item" data-reader-nav="home"><span class="rs-ic">⌂</span>Bosh sahifa</button>
+                  <button class="reader-sidebar-item active" data-reader-nav="books"><span class="rs-ic">📚</span>Kitoblar</button>
+                  <button class="reader-sidebar-item" data-reader-nav="teacher"><span class="rs-ic">✨</span>Ustoz AI</button>
+                  <button class="reader-sidebar-item" data-reader-nav="profile"><span class="rs-ic">👤</span>Profil</button>
+                </nav>
+              </aside>
+              <div class="reader-main-col">
             <div class="reader-header">
               <button class="back-link" id="reader-back-to-detail" aria-label="Orqaga">&larr;</button>
               <div class="reader-header-title" id="reader-header-title"></div>
+              <div class="reader-header-desktop-controls" id="reader-header-desktop-controls">
+                <button class="reader-page-text" id="reader-page-text-desktop" title="Sahifaga o'tish">— / —</button>
+                <div class="zoom-controls-inline">
+                  <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
+                  <span class="zoom-level" id="zoom-level">100%</span>
+                  <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
+                </div>
+                <button class="ai-desktop-btn" id="ai-desktop-btn">✨ Ustoz AI</button>
+              </div>
               <button class="icon-btn" id="reader-menu-btn" title="Ko'proq" aria-label="Ko'proq">⋮</button>
             </div>
 
             <div class="reader-menu-popover" id="reader-menu-popover">
               <button class="reader-menu-item" id="menu-page-jump-btn">🔢 Sahifaga o'tish</button>
               <button class="reader-menu-item" id="menu-clear-page-btn">🗑 Sahifadagi belgilarni tozalash</button>
-              <div class="reader-menu-zoom" id="reader-menu-zoom">
-                <button class="icon-btn" id="zoom-out" title="Kichraytirish" aria-label="Kichraytirish">−</button>
-                <span class="zoom-level" id="zoom-level">100%</span>
-                <button class="icon-btn" id="zoom-in" title="Kattalashtirish" aria-label="Kattalashtirish">+</button>
-              </div>
             </div>
 
             <div class="reader-body" id="reader-body">
@@ -758,7 +875,6 @@
 
                 <div class="reader-floating-bar" id="reader-floating-bar">
                   <button class="icon-btn" id="pen-toggle" title="Yozish" aria-label="Yozish">✏️</button>
-                  <button class="icon-btn" id="bookmark-toggle" title="Belgilash" aria-label="Belgilash">🔖</button>
                   <button class="icon-btn ai-fab" id="ai-fab" title="Ustoz AI" aria-label="Ustoz AI">✨</button>
                 </div>
               </div>
@@ -769,12 +885,8 @@
                   <span id="ai-sheet-title">Ustoz AI</span>
                   <button class="icon-btn" id="ai-sheet-close" aria-label="Yopish">✕</button>
                 </div>
-                <div class="ai-sheet-chat" id="ai-sheet-chat"></div>
-                <div class="quick-prompts" id="ai-sheet-prompts">
-                  <button class="chip-btn" data-prompt="Shu sahifani tushuntir">Shu sahifani tushuntir</button>
-                  <button class="chip-btn" data-prompt="Misolni tushuntir">Misolni tushuntir</button>
-                  <button class="chip-btn" data-prompt="Formulani tushuntir">Formulani tushuntir</button>
-                  <button class="chip-btn" data-prompt="Savol ber">Savol ber</button>
+                <div class="ai-sheet-chat" id="ai-sheet-chat">
+                  <div class="ai-panel-hint" id="ai-panel-hint">Kitob bo'yicha nimani tushuntirib beray?</div>
                 </div>
                 <div class="chat-input-wrap">
                   <textarea id="ai-sheet-input" placeholder="Savolingizni yozing..."></textarea>
@@ -782,6 +894,7 @@
                     <button class="icon-btn send-btn" id="ai-sheet-send" aria-label="Yuborish"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M3 11L21 3L13 21L11 13L3 11Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round" fill="currentColor"/></svg></button>
                   </div>
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -1659,14 +1772,14 @@ function updateCurrentVisiblePage(){
       if(document.getElementById('ai-sheet').classList.contains('open')){
         document.getElementById('ai-sheet-title').textContent = `${activeBook ? activeBook.title : ''} • ${num}-sahifa`;
       }
-      updateBookmarkButtonState();
     }
   }
   garbageCollectFarPages();
 }
 
 function updatePageIndicator(){
-  // Doimiy sahifa yorlig'i olib tashlandi (faqat "Sahifaga o'tish" oynasida ko'rsatiladi)
+  const el = document.getElementById('reader-page-text-desktop');
+  if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
 }
 
 // ---- Bitta sahifani render qilish ----
@@ -1777,7 +1890,6 @@ function scrollToPage(num, smooth){
   currentVisiblePage = num;
   readerPageNum = num;
   updatePageIndicator();
-  updateBookmarkButtonState();
 }
 
 // ================= ZOOM =================
@@ -1909,10 +2021,8 @@ document.getElementById('reader-menu-btn').addEventListener('click', (e)=>{
   document.getElementById('reader-menu-popover').classList.toggle('open');
 });
 
-// ---- Sahifaga to'g'ridan-to'g'ri o'tish (popover, ⋮ menyudan ochiladi) ----
-document.getElementById('menu-page-jump-btn').addEventListener('click', (e)=>{
-  e.stopPropagation();
-  document.getElementById('reader-menu-popover').classList.remove('open');
+// ---- Sahifaga to'g'ridan-to'g'ri o'tish (popover, ⋮ menyu yoki desktop yorlig'idan ochiladi) ----
+function openPageJumpPopover(){
   if(!readerPdfDoc) return;
   const popover = document.getElementById('reader-page-popover');
   const input = document.getElementById('reader-page-input');
@@ -1921,6 +2031,15 @@ document.getElementById('menu-page-jump-btn').addEventListener('click', (e)=>{
   document.getElementById('reader-page-popover-total').textContent = readerNumPages;
   popover.classList.add('open');
   input.focus();
+}
+document.getElementById('menu-page-jump-btn').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  document.getElementById('reader-menu-popover').classList.remove('open');
+  openPageJumpPopover();
+});
+document.getElementById('reader-page-text-desktop').addEventListener('click', (e)=>{
+  e.stopPropagation();
+  openPageJumpPopover();
 });
 function jumpToPage(){
   if(!readerPdfDoc) return;
@@ -2176,25 +2295,6 @@ document.getElementById('annotation-clear-confirm-btn').addEventListener('click'
   document.getElementById('annotation-clear-confirm').classList.remove('open');
 });
 
-// ================= BOOKMARK (sodda, qurilmada saqlanadi) =================
-function getBookmarkStorageKey(){ return 'nova_bookmarks_' + (activeBook ? activeBook.id : 'unknown'); }
-function getBookmarks(){
-  try{ return JSON.parse(localStorage.getItem(getBookmarkStorageKey()) || '[]'); }catch(e){ return []; }
-}
-function isBookmarked(pageNum){ return getBookmarks().includes(pageNum); }
-function updateBookmarkButtonState(){
-  document.getElementById('bookmark-toggle').classList.toggle('active', isBookmarked(currentVisiblePage));
-}
-document.getElementById('bookmark-toggle').addEventListener('click', ()=>{
-  let marks = getBookmarks();
-  if(marks.includes(currentVisiblePage)){
-    marks = marks.filter(p=> p !== currentVisiblePage);
-  }else{
-    marks.push(currentVisiblePage);
-  }
-  try{ localStorage.setItem(getBookmarkStorageKey(), JSON.stringify(marks)); }catch(e){}
-  updateBookmarkButtonState();
-});
 
 // ---- In-reader AI tutor: mobil'da drawer, desktop'da split-view ----
 function openAiSheet(){
@@ -2212,6 +2312,33 @@ function closeAiSheet(){
   setTimeout(()=>{ if(readerPdfDoc) reRenderAllForZoom(); }, 260);
 }
 document.getElementById('ai-fab').addEventListener('click', openAiSheet);
+document.getElementById('ai-desktop-btn').addEventListener('click', openAiSheet);
+
+// ---- Reader sidebar navigatsiyasi (faqat desktop) ----
+document.querySelectorAll('.reader-sidebar-item').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    const target = btn.dataset.readerNav;
+    flushProgressSave();
+    setAnnotationTool(null);
+    closeAiSheet();
+    cancelAllPageRenders();
+    if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
+    activeBook = null;
+    readerPdfDoc = null;
+    document.getElementById('teacher-layout').classList.remove('book-mode');
+    document.body.classList.remove('reader-mode');
+    if(target === 'books'){
+      activateTab('teacher');
+      refreshAllBookViews();
+    }else if(target === 'home'){
+      activateTab('home');
+    }else if(target === 'teacher'){
+      activateTab('teacher');
+    }else if(target === 'profile'){
+      activateTab('profile');
+    }
+  });
+});
 document.getElementById('ai-sheet-close').addEventListener('click', closeAiSheet);
 document.getElementById('ai-sheet-backdrop').addEventListener('click', closeAiSheet);
 
@@ -2244,8 +2371,9 @@ async function getCurrentPageText(){
 
 async function sendAiSheetMessage(text){
   if(!text) return;
+  const hintEl = document.getElementById('ai-panel-hint');
+  if(hintEl) hintEl.style.display = 'none';
   appendAiSheetMsg('user', text);
-  document.getElementById('ai-sheet-prompts').style.display = 'none';
 
   const typingDiv = document.createElement('div');
   typingDiv.className = 'msg teacher';
@@ -2312,9 +2440,6 @@ document.getElementById('ai-sheet-input').addEventListener('keydown', (e)=>{
     e.preventDefault();
     document.getElementById('ai-sheet-send').click();
   }
-});
-document.querySelectorAll('#ai-sheet-prompts .chip-btn').forEach(chip=>{
-  chip.addEventListener('click', ()=> sendAiSheetMessage(chip.dataset.prompt));
 });
 
 refreshAllBookViews();
