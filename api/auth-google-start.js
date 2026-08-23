@@ -1,5 +1,7 @@
 import crypto from 'crypto';
 
+const GOOGLE_REDIRECT_URI = 'https://mathlvl.com/api/auth-google-callback';
+
 export default async function handler(req, res) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
   if (!clientId) {
@@ -7,11 +9,10 @@ export default async function handler(req, res) {
     return;
   }
 
-  const proto = req.headers['x-forwarded-proto'] || 'https';
-  const redirectUri = `${proto}://${req.headers.host}/api/auth-google-callback`;
+  const redirectUri = GOOGLE_REDIRECT_URI;
   const state = crypto.randomBytes(16).toString('hex');
 
-  const url = new URL(req.url, `https://${req.headers.host}`);
+  const url = new URL(req.url, 'https://mathlvl.com');
   const redeemCode = url.searchParams.get('redeem') || '';
 
   const cookiesToSet = [`nova_oauth_state=${state}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=600`];
