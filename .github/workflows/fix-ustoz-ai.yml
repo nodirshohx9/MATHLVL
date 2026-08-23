@@ -1,0 +1,66 @@
+name: Fix Ustoz AI controls
+
+on:
+  push:
+    paths:
+      - '.github/workflows/fix-ustoz-ai.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch chat controls
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          old = """  const typingDiv = appendTypingBubble();
+            btn.disabled = true;
+          """
+          new = """  const typingDiv = appendTypingBubble();
+            // Yuborish tugmasi javob paytida Stop vazifasini bajaradi, shuning uchun disabled bo'lmasin.
+            btn.disabled = false;
+          """
+          if old not in s:
+              raise SystemExit('Ustoz AI send-button target topilmadi')
+          s = s.replace(old, new, 1)
+
+          old_final = """  }finally{
+              btn.textContent = '➤';
+              btn.classList.remove('stop-state');
+              btn.title = \"Yuborish\";
+              chatAbortController = null;
+            }
+          }
+          """
+          new_final = """  }finally{
+              btn.textContent = '➤';
+              btn.classList.remove('stop-state');
+              btn.title = \"Yuborish\";
+              btn.disabled = false;
+              chatAbortController = null;
+            }
+          }
+          """
+          if old_final not in s:
+              raise SystemExit('Ustoz AI finally target topilmadi')
+          s = s.replace(old_final, new_final, 1)
+
+          # Tugma form ichida bo'lsa ham browser submit qilmasligi uchun type=button ni kafolatlaymiz.
+          s = s.replace('id=\"chat-send\"', 'id=\"chat-send\" type=\"button\"', 1) if 'id=\"chat-send\" type=\"button\"' not in s else s
+
+          p.write_text(s, encoding='utf-8')
+
+      - name: Commit fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html
+          git commit -m "Fix Ustoz AI mouse and mobile send/stop controls"
+          git push
