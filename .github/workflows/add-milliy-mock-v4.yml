@@ -2,18 +2,54 @@ name: Apply Milliy Sertifikat mock tests
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/add-milliy-mock-v4.yml'
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
       - name: Apply Mock Test patch
         run: python scripts/apply_milliy_mock.py
+
+      - name: Remove leftover legacy Mock Test code
+        shell: python
+        run: |
+          from pathlib import Path
+
+          p = Path('index.html')
+          s = p.read_text(encoding='utf-8')
+
+          start_marker = '// ================= MILLIY SERTIFIKAT MOCK TEST ================='
+          start = s.find(start_marker)
+          if start < 0:
+              raise SystemExit('Yangi Mock Test bloki topilmadi')
+
+          results_anchor = s.find("const mockResultsBtn=", start)
+          if results_anchor < 0:
+              results_anchor = s.find("const mockResultsBtn =", start)
+          if results_anchor < 0:
+              raise SystemExit('Mock natijalar bloki topilmadi')
+
+          final_call = s.find('renderMockTestList();', results_anchor)
+          if final_call < 0:
+              raise SystemExit('Mock yakuniy render chaqiruvi topilmadi')
+          final_end = final_call + len('renderMockTestList();')
+
+          next_section = s.find('\n// =================', final_end)
+          if next_section < 0:
+              raise SystemExit('Mock Testdan keyingi JS bo‘limi topilmadi')
+
+          # Eski Mock Test kodining patchdan keyin qolib ketgan dumini olib tashlaymiz.
+          s = s[:final_end] + '\n\n' + s[next_section:]
+          p.write_text(s, encoding='utf-8')
 
       - name: Syntax check
         shell: python
