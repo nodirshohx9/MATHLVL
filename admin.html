@@ -230,7 +230,7 @@
 <!-- ================= AUTH GATE ================= -->
 <div class="gate-wrap" id="admin-gate">
   <div class="brand">
-    <div class="word">NOVA</div>
+    <div class="word">MATHLVL</div>
     <div class="tag">Administrator paneli</div>
   </div>
   <div class="card">
@@ -248,7 +248,7 @@
 <div id="admin-shell" style="display:none;">
 
   <div class="mobile-topbar">
-    <div class="brand"><div class="word">NOVA ADMIN</div></div>
+    <div class="brand"><div class="word">MATHLVL ADMIN</div></div>
     <button class="hamburger" id="sidebar-toggle" aria-label="Menyu">☰</button>
   </div>
   <div class="sidebar-backdrop" id="sidebar-backdrop"></div>
@@ -257,7 +257,7 @@
     <aside class="sidebar" id="sidebar">
       <div class="brand">
         <div>
-          <div class="word">NOVA ADMIN</div>
+          <div class="word">MATHLVL ADMIN</div>
           <span class="tag">Boshqaruv paneli</span>
         </div>
       </div>
@@ -266,7 +266,7 @@
       <button class="nav-item" data-page="gift"><span class="ic">🎁</span>Plus sovg'a</button>
       <button class="nav-item" data-page="settings"><span class="ic">⚙</span>Sozlamalar</button>
       <div class="sidebar-foot">
-        <a href="/">&larr; Nova saytiga qaytish</a>
+        <a href="/">&larr; MATHLVL saytiga qaytish</a>
       </div>
     </aside>
 
@@ -276,7 +276,7 @@
       <section class="page active" id="page-dashboard">
         <div class="page-header">
           <h1>Boshqaruv</h1>
-          <p>NOVA kutubxonasining umumiy holati.</p>
+          <p>MATHLVL kutubxonasining umumiy holati.</p>
         </div>
         <div class="stat-grid">
           <div class="stat-card"><div class="n" id="stat-total-books">—</div><div class="l">Jami kitoblar</div></div>
@@ -300,7 +300,7 @@
         <div class="page-header page-header-row">
           <div>
             <h1>Kitoblar</h1>
-            <p>NOVA kutubxonasidagi kitoblarni boshqaring.</p>
+            <p>MATHLVL kutubxonasidagi kitoblarni boshqaring.</p>
           </div>
           <button class="glow-btn" id="show-add-form-btn">+ Yangi kitob</button>
         </div>
@@ -312,7 +312,7 @@
             <select id="filter-type"><option value="">Barcha turlar</option><option value="TEXTBOOK">Darslik</option><option value="SUPPLEMENTARY">Qo'shimcha kitob</option></select>
             <select id="filter-subject"><option value="">Barcha fanlar</option><option>Matematika</option><option>Algebra</option><option>Geometriya</option></select>
             <select id="filter-grade"><option value="">Barcha sinflar</option><option>5-sinf</option><option>6-sinf</option><option>7-sinf</option><option>8-sinf</option><option>9-sinf</option><option>10-sinf</option><option>11-sinf</option></select>
-            <select id="filter-access"><option value="">Barcha access</option><option value="FREE">Bepul</option><option value="PLUS">NOVA Plus</option><option value="PURCHASE">Alohida sotiladi</option><option value="PLUS_OR_PURCHASE">Plus yoki sotib olish</option></select>
+            <select id="filter-access"><option value="">Barcha access</option><option value="FREE">Bepul</option><option value="PLUS">MATHLVL Plus</option><option value="PURCHASE">Alohida sotiladi</option><option value="PLUS_OR_PURCHASE">Plus yoki sotib olish</option></select>
           </div>
 
           <table class="book-table">
@@ -389,7 +389,7 @@
                     <div class="a-sub">Hamma o'qiy oladi</div>
                   </div>
                   <div class="access-card" data-access="PLUS">
-                    <div class="a-title">⭐ NOVA Plus</div>
+                    <div class="a-title">⭐ MATHLVL Plus</div>
                     <div class="a-sub">Plus obunasi bilan</div>
                   </div>
                   <div class="access-card" data-access="PURCHASE">
@@ -458,7 +458,7 @@
       <section class="page" id="page-gift">
         <div class="page-header">
           <h1>Plus sovg'a</h1>
-          <p>NOVA Plus obuna kodi (QR) yaratish.</p>
+          <p>MATHLVL Plus obuna kodi (QR) yaratish.</p>
         </div>
         <div class="card" style="max-width:460px;">
           <div class="field">
@@ -649,7 +649,7 @@ document.querySelectorAll('.access-card').forEach(card=>{
 
 function accessBadgeHtml(accessType, price){
   if(accessType === 'FREE') return '<span class="preview-badge badge-free" id="preview-badge">🟢 Bepul</span>';
-  if(accessType === 'PLUS') return '<span class="preview-badge badge-plus" id="preview-badge">⭐ NOVA Plus</span>';
+  if(accessType === 'PLUS') return '<span class="preview-badge badge-plus" id="preview-badge">⭐ MATHLVL Plus</span>';
   if(accessType === 'PURCHASE') return '<span class="preview-badge badge-purchase" id="preview-badge">💎 Alohida sotiladi</span>';
   return '<span id="preview-badge"><span class="preview-badge badge-plus">⭐ Plus</span> <span class="preview-badge badge-purchase" style="margin-left:4px;">💎 Xarid</span></span>';
 }
@@ -1025,7 +1025,7 @@ document.getElementById('gift-create-btn').addEventListener('click', async ()=>{
     resultEl.style.display = 'block';
     document.getElementById('gift-code-text').textContent = data.code;
     document.getElementById('gift-meta-text').textContent =
-      `NOVA Plus — ${planLabel(durationDays)} • ${maxRedemptions} marta ishlatiladi • ${expiresInDays} kun ichida aktivlashtirilishi kerak`;
+      `MATHLVL Plus — ${planLabel(durationDays)} • ${maxRedemptions} marta ishlatiladi • ${expiresInDays} kun ichida aktivlashtirilishi kerak`;
 
     const qrEl = document.getElementById('gift-qr');
     qrEl.innerHTML = '';
