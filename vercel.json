@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python scripts/apply_milliy_mock_v2.py",
+  "buildCommand": "python scripts/replace_mock_official.py",
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" }
