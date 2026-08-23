@@ -1,4 +1,6 @@
 {
+  "buildCommand": "python scripts/apply_milliy_mock_v2.py",
+  "outputDirectory": ".",
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" }
   ]
