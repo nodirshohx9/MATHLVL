@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python scripts/replace_mock_official.py",
+  "buildCommand": "python scripts/build_official_mock.py",
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" }
