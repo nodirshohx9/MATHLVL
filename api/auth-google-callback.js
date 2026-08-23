@@ -1,5 +1,7 @@
 import crypto from 'crypto';
 
+const GOOGLE_REDIRECT_URI = 'https://mathlvl.com/api/auth-google-callback';
+
 function parseCookies(header) {
   const cookies = {};
   (header || '').split(';').forEach(pair => {
@@ -20,7 +22,7 @@ function signSession(payload, secret) {
 
 export default async function handler(req, res) {
   try {
-    const url = new URL(req.url, `https://${req.headers.host}`);
+    const url = new URL(req.url, 'https://mathlvl.com');
     const code = url.searchParams.get('code');
     const state = url.searchParams.get('state');
     const cookies = parseCookies(req.headers.cookie);
@@ -31,8 +33,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    const proto = req.headers['x-forwarded-proto'] || 'https';
-    const redirectUri = `${proto}://${req.headers.host}/api/auth-google-callback`;
+    const redirectUri = GOOGLE_REDIRECT_URI;
 
     const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
       method: 'POST',
