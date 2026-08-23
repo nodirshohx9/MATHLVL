@@ -1,0 +1,53 @@
+name: Apply official-format Milliy sertifikat mock
+
+on:
+  push:
+    paths:
+      - 'scripts/replace_mock_official.py'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Replace mock test block
+        run: python scripts/replace_mock_official.py
+      - name: Check inline JavaScript syntax
+        shell: bash
+        run: |
+          python - <<'PY'
+          import re, pathlib
+          text = pathlib.Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S|re.I)
+          out = []
+          for i, s in enumerate(scripts):
+              if 'type="module"' in s[:100]:
+                  continue
+              p = pathlib.Path(f'/tmp/mathlvl-inline-{i}.js')
+              p.write_text(s, encoding='utf-8')
+              out.append(str(p))
+          print('\n'.join(out))
+          PY
+          for f in /tmp/mathlvl-inline-*.js; do node --check "$f"; done
+      - name: Commit patched index
+        shell: bash
+        run: |
+          if git diff --quiet -- index.html; then
+            echo 'No changes needed'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add index.html
+          git commit -m 'Use real Milliy sertifikat mock structure'
+          git push
