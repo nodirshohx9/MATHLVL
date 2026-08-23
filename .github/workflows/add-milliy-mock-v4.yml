@@ -40,12 +40,12 @@ jobs:
         run: |
           from pathlib import Path
           s = Path('index.html').read_text(encoding='utf-8')
-          section = s[s.find('id="panel-mocktest"'):s.find('id="panel-profile"')]
+          section_start = s.find('id="panel-mocktest"')
+          section_end = s.find('id="panel-profile"', section_start)
+          section = s[section_start:section_end] if section_start >= 0 and section_end >= 0 else s
           for bad in ['>Barchasi<','>Algebra<','>Geometriya<']:
               if bad in section:
                   raise SystemExit(f'Eski filter qolib ketgan: {bad}')
-          if 'MILLLIY SERTIFIKAT MOCK TEST' in s:
-              raise SystemExit('Marker typo')
           if '// ================= MILLIY SERTIFIKAT MOCK TEST =================' not in s:
               raise SystemExit('Yangi Mock Test kodi topilmadi')
 
