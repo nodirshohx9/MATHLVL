@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     paths:
-      - 'scripts/apply_milliy_mock_v2.py'
+      - 'scripts/replace_mock_official.py'
       - '.github/workflows/add-milliy-mock-v4.yml'
 
 permissions:
@@ -17,8 +17,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Apply Mock Test patch
-        run: python scripts/apply_milliy_mock_v2.py
+      - name: Apply official-format Mock Test patch
+        run: python scripts/replace_mock_official.py
 
       - name: Syntax check
         shell: python
@@ -35,24 +35,31 @@ jobs:
                   print(r.stderr)
                   raise SystemExit('JS syntax xatosi')
 
-      - name: Verify Mock Test cleanup
+      - name: Verify official structure
         shell: python
         run: |
           from pathlib import Path
           s = Path('index.html').read_text(encoding='utf-8')
+          required = [
+              '35 ta yopiq + 10 ta ochiq',
+              '55 ta javob elementi',
+              "minutes:150",
+              "open:[",
+          ]
+          for x in required:
+              if x not in s:
+                  raise SystemExit(f'Kutilgan yangi format topilmadi: {x}')
           section_start = s.find('id="panel-mocktest"')
           section_end = s.find('id="panel-profile"', section_start)
           section = s[section_start:section_end] if section_start >= 0 and section_end >= 0 else s
           for bad in ['>Barchasi<','>Algebra<','>Geometriya<']:
               if bad in section:
                   raise SystemExit(f'Eski filter qolib ketgan: {bad}')
-          if '// ================= MILLIY SERTIFIKAT MOCK TEST =================' not in s:
-              raise SystemExit('Yangi Mock Test kodi topilmadi')
 
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add index.html
-          git commit -m "Apply working Milliy Sertifikat mock tests" || exit 0
+          git commit -m "Use real Milliy sertifikat mock structure" || exit 0
           git push
