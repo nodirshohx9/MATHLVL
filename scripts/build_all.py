@@ -10,6 +10,7 @@ STEPS = [
     'scripts/final_cleanup.py',
     'scripts/finish_sync.py',
     'scripts/final_polish.py',
+    'scripts/mock_history_sync.py',
 ]
 
 for step in STEPS:
