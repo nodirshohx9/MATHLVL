@@ -131,6 +131,10 @@ export default async function handler(req, res) {
       const action = req.query.action;
 
       if (action === 'open') {
+        // This response can contain the real PDF URL, so never let a browser/CDN cache it.
+        res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+        res.setHeader('Pragma', 'no-cache');
+
         const id = String(req.query.id || '');
         if (!id) return res.status(400).json({ error: 'id kerak' });
 
