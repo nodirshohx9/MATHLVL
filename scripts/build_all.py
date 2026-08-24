@@ -1,0 +1,18 @@
+import subprocess
+import sys
+
+STEPS = [
+    'scripts/build_official_mock.py',
+    'scripts/inject_auth_gate.py',
+    'scripts/remove_apple_auth.py',
+    'scripts/fix_solver_auth.py',
+    'scripts/product_hardening.py',
+    'scripts/final_cleanup.py',
+    'scripts/finish_sync.py',
+]
+
+for step in STEPS:
+    print(f'==> {step}', flush=True)
+    subprocess.run([sys.executable, step], check=True)
+
+print('MATHLVL production build tayyor.', flush=True)
