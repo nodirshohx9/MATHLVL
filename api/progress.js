@@ -22,7 +22,7 @@ function verifySession(cookieVal, secret) {
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
-    if (!payload.exp || payload.exp < Date.now()) return null;
+    if (!payload.email || !payload.exp || payload.exp < Date.now()) return null;
     return payload;
   } catch {
     return null;
@@ -43,10 +43,11 @@ async function redisCommand(command) {
   return data.result;
 }
 
-function progressKey(email) {
-  const id = crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 32);
-  return `mathlvl:book-progress:${id}`;
+function userHash(email) {
+  return crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 32);
 }
+function progressKey(email) { return `mathlvl:book-progress:${userHash(email)}`; }
+function mockKey(email) { return `mathlvl:mock-history:${userHash(email)}`; }
 
 function cleanProgress(input) {
   const bookId = String(input?.bookId || '').trim();
@@ -59,6 +60,46 @@ function cleanProgress(input) {
   return { bookId, currentPage, totalPages, pageOffset, progressPercent, updatedAt };
 }
 
+function cleanMockResult(input) {
+  const title = String(input?.title || '').trim().slice(0, 140);
+  const total = Math.max(1, Math.min(200, Math.floor(Number(input?.total) || 1)));
+  const correct = Math.max(0, Math.min(total, Math.floor(Number(input?.correct) || 0)));
+  const answered = Math.max(0, Math.min(total, Math.floor(Number(input?.answered) || 0)));
+  const atDate = new Date(input?.at || Date.now());
+  if (!title || Number.isNaN(atDate.getTime())) return null;
+  return { title, correct, total, answered, percent: Math.round(correct / total * 100), at: atDate.toISOString() };
+}
+
+async function getMockHistory(email) {
+  const key = mockKey(email);
+  const flat = await redisCommand(['HGETALL', key]);
+  const results = [];
+  for (let i = 0; i < (flat || []).length; i += 2) {
+    try { results.push(JSON.parse(flat[i + 1])); } catch {}
+  }
+  results.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+  return results.slice(0, 50);
+}
+
+async function saveMockHistory(email, input) {
+  const result = cleanMockResult(input);
+  if (!result) return null;
+  const key = mockKey(email);
+  const id = crypto.createHash('sha256').update(`${result.title}|${result.at}`).digest('hex').slice(0, 24);
+  await redisCommand(['HSET', key, id, JSON.stringify({ id, ...result })]);
+
+  const flat = await redisCommand(['HGETALL', key]);
+  if ((flat || []).length / 2 > 60) {
+    const rows = [];
+    for (let i = 0; i < flat.length; i += 2) {
+      try { rows.push({ id: flat[i], ...JSON.parse(flat[i + 1]) }); } catch {}
+    }
+    rows.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    for (const old of rows.slice(50)) await redisCommand(['HDEL', key, old.id]);
+  }
+  return { id, ...result };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'private, no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
@@ -67,13 +108,23 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Server sozlanmagan' });
   }
 
-  const cookies = parseCookies(req.headers.cookie);
-  const session = verifySession(cookies.nova_session, process.env.SESSION_SECRET);
-  if (!session?.email) return res.status(401).json({ error: 'not_logged_in' });
+  const session = verifySession(parseCookies(req.headers.cookie).nova_session, process.env.SESSION_SECRET);
+  if (!session) return res.status(401).json({ error: 'not_logged_in' });
 
-  const key = progressKey(session.email);
+  const action = String(req.query?.action || 'books');
 
   try {
+    if (action === 'mock-history') {
+      if (req.method === 'GET') return res.status(200).json({ results: await getMockHistory(session.email) });
+      if (req.method === 'POST') {
+        const result = await saveMockHistory(session.email, req.body);
+        if (!result) return res.status(400).json({ error: 'Natija noto‘g‘ri' });
+        return res.status(201).json({ ok: true, result });
+      }
+      return res.status(405).json({ error: "Bu metod qo'llab-quvvatlanmaydi" });
+    }
+
+    const key = progressKey(session.email);
     if (req.method === 'GET') {
       const flat = await redisCommand(['HGETALL', key]);
       const progress = {};
