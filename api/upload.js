@@ -11,26 +11,32 @@ function parseCookies(header) {
   return cookies;
 }
 
-function verifyAdmin(req) {
-  const token = parseCookies(req.headers.cookie).mathlvl_admin;
-  const secret = process.env.SESSION_SECRET;
-  if (!token || !secret) return false;
+function verifySignedCookie(token, secret) {
+  if (!token || !secret) return null;
   const [data, sig] = token.split('.');
-  if (!data || !sig) return false;
+  if (!data || !sig) return null;
   const expected = crypto.createHmac('sha256', secret).update(data).digest('hex');
-  if (sig.length !== expected.length) return false;
-  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return false;
+  if (sig.length !== expected.length) return null;
+  if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
-    return payload.role === 'admin' && payload.exp > Date.now();
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return payload;
   } catch {
-    return false;
+    return null;
   }
 }
 
 export default async function handler(req, res) {
-  if (!verifyAdmin(req)) {
-    return res.status(401).json({ error: 'Admin ruxsati kerak' });
+  const cookies = parseCookies(req.headers.cookie);
+  const secret = process.env.SESSION_SECRET;
+  const admin = verifySignedCookie(cookies.mathlvl_admin, secret);
+  const user = verifySignedCookie(cookies.nova_session, secret);
+  const isAdmin = admin?.role === 'admin';
+  const isLoggedInUser = !!user?.email;
+
+  if (!isAdmin && !isLoggedInUser) {
+    return res.status(401).json({ error: 'Avval tizimga kiring' });
   }
 
   try {
@@ -38,12 +44,15 @@ export default async function handler(req, res) {
       body: req.body,
       request: req,
       onBeforeGenerateToken: async () => ({
-        allowedContentTypes: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
+        // Admin: kitob PDF + rasmlar. Oddiy foydalanuvchi: faqat to'lov cheki rasmlari.
+        allowedContentTypes: isAdmin
+          ? ['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+          : ['image/jpeg', 'image/png', 'image/webp'],
         addRandomSuffix: true,
-        maximumSizeInBytes: 200 * 1024 * 1024
+        maximumSizeInBytes: isAdmin ? 200 * 1024 * 1024 : 10 * 1024 * 1024
       }),
       onUploadCompleted: async ({ blob }) => {
-        console.log('Blob yuklandi:', blob.url);
+        console.log('Blob yuklandi:', blob.url, isAdmin ? 'admin' : 'user');
       }
     });
     return res.status(200).json(jsonResponse);
