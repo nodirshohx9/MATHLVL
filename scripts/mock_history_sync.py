@@ -11,7 +11,7 @@ addition = r'''function clearMockDraft(){
 }
 async function syncMockHistoryFromServer(){
   try{
-    const res = await fetch('/api/mock-history', {credentials:'include',cache:'no-store'});
+    const res = await fetch('/api/progress?action=mock-history', {credentials:'include',cache:'no-store'});
     if(!res.ok) return;
     const data = await res.json();
     let local = [];
@@ -27,17 +27,16 @@ async function syncMockHistoryFromServer(){
       .slice(0,50);
     localStorage.setItem('mathlvl_mock_results', JSON.stringify(results));
 
-    // Migrate older device-local results into the signed-in account.
     const remoteKeys = new Set((data.results || []).map(item=>`${item.title}|${item.at}`));
     await Promise.all(local.filter(item=>item?.title && item?.at && !remoteKeys.has(`${item.title}|${item.at}`)).slice(0,20).map(item=>
-      fetch('/api/mock-history', {
+      fetch('/api/progress?action=mock-history', {
         method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)
       }).catch(()=>{})
     ));
   }catch(e){}
 }
 function saveMockResultToServer(result){
-  fetch('/api/mock-history', {
+  fetch('/api/progress?action=mock-history', {
     method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(result)
   }).catch(()=>{});
 }'''
@@ -63,7 +62,7 @@ s = s.replace(boot_anchor, '''  await loadBooks();
   await Promise.all([syncBookProgressFromServer(), syncMockHistoryFromServer()]);
   refreshDashboard();''', 1)
 
-for token in ('/api/mock-history', 'syncMockHistoryFromServer', 'saveMockResultToServer(result)'):
+for token in ('/api/progress?action=mock-history', 'syncMockHistoryFromServer', 'saveMockResultToServer(result)'):
     if token not in s:
         raise SystemExit(f'mock history sync missing: {token}')
 
