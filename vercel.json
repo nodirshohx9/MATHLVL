@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python scripts/build_official_mock.py && python scripts/inject_auth_gate.py && python scripts/remove_apple_auth.py && python scripts/fix_solver_auth.py && python scripts/product_hardening.py && python scripts/final_cleanup.py",
+  "buildCommand": "python scripts/build_official_mock.py && python scripts/inject_auth_gate.py && python scripts/remove_apple_auth.py && python scripts/fix_solver_auth.py && python scripts/product_hardening.py && python scripts/final_cleanup.py && python scripts/finish_sync.py",
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" }
