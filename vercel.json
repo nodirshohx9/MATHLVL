@@ -1,5 +1,5 @@
 {
-  "buildCommand": "python scripts/build_official_mock.py",
+  "buildCommand": "python scripts/build_official_mock.py && python scripts/inject_auth_gate.py",
   "outputDirectory": ".",
   "rewrites": [
     { "source": "/admin", "destination": "/admin.html" }
