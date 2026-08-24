@@ -12,6 +12,23 @@ if start_marker in s and end_marker in s:
     b = s.index(end_marker, a) + len(end_marker)
     s = s[:a] + s[b:]
 
+# The base page already contains Google + Apple buttons in the Profile screen.
+# Wire the existing Apple button to the real OAuth route instead of the old placeholder alert.
+old_apple_handler = '''document.getElementById('apple-btn').addEventListener('click', ()=>{
+  alert("Apple orqali kirish hozircha mavjud emas.");
+});'''
+new_apple_handler = '''document.getElementById('apple-btn').addEventListener('click', ()=>{
+  window.location.href = '/api/auth-apple-start';
+});'''
+if old_apple_handler in s:
+    s = s.replace(old_apple_handler, new_apple_handler, 1)
+
+s = s.replace(
+    "Google hisobingiz orqali kiring — o'qish jarayoningiz saqlanadi.",
+    "Google yoki Apple orqali kiring — o'qish jarayoningiz saqlanadi.",
+    1
+)
+
 block = r'''<!-- MATHLVL_AUTH_GATE_START -->
 <style>
   #mathlvl-guest-login{
@@ -54,16 +71,21 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
   .mathlvl-auth-icon svg{ width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
   .mathlvl-auth-title{ margin:0 0 8px; font:800 21px 'Sora',sans-serif; color:#EDF1FF; letter-spacing:-.02em; }
   .mathlvl-auth-copy{ margin:0 0 22px; color:#9AA2C6; font:500 13.5px/1.65 'Inter',sans-serif; }
-  .mathlvl-auth-actions{ display:flex; gap:10px; }
-  .mathlvl-auth-primary,.mathlvl-auth-secondary{
-    min-height:44px; border-radius:12px; padding:0 16px; cursor:pointer;
-    font:750 13px 'Inter',sans-serif;
+  .mathlvl-auth-actions{ display:grid; gap:10px; }
+  .mathlvl-auth-provider,.mathlvl-auth-secondary{
+    width:100%; min-height:46px; border-radius:12px; padding:0 16px; cursor:pointer;
+    font:750 13px 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; gap:9px;
   }
-  .mathlvl-auth-primary{
-    flex:1; border:1px solid #3DA9FC; background:#3DA9FC; color:#07101B;
+  .mathlvl-auth-provider svg{ width:18px; height:18px; flex:none; }
+  .mathlvl-auth-google{
+    border:1px solid #3DA9FC; background:#3DA9FC; color:#07101B;
     box-shadow:0 10px 24px rgba(61,169,252,.18);
   }
-  .mathlvl-auth-secondary{ border:1px solid rgba(255,255,255,.1); background:transparent; color:#AAB1CE; }
+  .mathlvl-auth-apple{
+    border:1px solid rgba(255,255,255,.18); background:#fff; color:#080B13;
+  }
+  .mathlvl-auth-apple svg{ fill:currentColor; }
+  .mathlvl-auth-secondary{ border:1px solid rgba(255,255,255,.1); background:transparent; color:#AAB1CE; min-height:42px; }
   .mathlvl-auth-note{ margin-top:13px; color:#717A9F; font:500 11px/1.5 'Inter',sans-serif; text-align:center; }
   .mathlvl-auth-close{
     position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:10px;
@@ -73,12 +95,10 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
   @media(max-width:700px){
     #mathlvl-guest-login{ top:12px; right:12px; min-height:38px; padding:0 13px; border-radius:11px; }
     .mathlvl-auth-card{ padding:24px 20px 20px; border-radius:20px; }
-    .mathlvl-auth-actions{ flex-direction:column; }
-    .mathlvl-auth-secondary{ order:2; }
   }
 </style>
 
-<button id="mathlvl-guest-login" type="button" aria-label="MATHLVL hisobiga kirish">
+<button id="mathlvl-guest-login" type="button" aria-label="MATHLVL hisobiga kirish yoki ro‘yxatdan o‘tish">
   <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
   <span>Kirish</span>
 </button>
@@ -89,13 +109,20 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
     <div class="mathlvl-auth-icon">
       <svg viewBox="0 0 24 24"><path d="M12 3a5 5 0 0 0-5 5v3l-2 3h14l-2-3V8a5 5 0 0 0-5-5Z"/><path d="M10 18h4"/></svg>
     </div>
-    <h2 class="mathlvl-auth-title" id="mathlvl-auth-title">Hisob bilan davom eting</h2>
-    <p class="mathlvl-auth-copy" id="mathlvl-auth-copy">Natijalaringiz va progress saqlanishi uchun avval hisobga kiring.</p>
+    <h2 class="mathlvl-auth-title" id="mathlvl-auth-title">Kirish yoki ro‘yxatdan o‘tish</h2>
+    <p class="mathlvl-auth-copy" id="mathlvl-auth-copy">Progressingiz saqlanishi uchun hisob bilan davom eting.</p>
     <div class="mathlvl-auth-actions">
-      <button class="mathlvl-auth-primary" id="mathlvl-auth-google" type="button">Google bilan davom etish</button>
+      <button class="mathlvl-auth-provider mathlvl-auth-google" id="mathlvl-auth-google" type="button">
+        <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.05-1.2-.15-1.8H9v3.4h4.8c-.2 1.1-.85 2-1.8 2.6v2.2h2.9c1.7-1.55 2.7-3.85 2.7-6.4z"/><path fill="#34A853" d="M9 18c2.4 0 4.45-.8 5.9-2.15l-2.9-2.2c-.8.55-1.85.85-3 .85-2.3 0-4.25-1.55-4.95-3.65H1.05v2.3C2.5 15.95 5.5 18 9 18z"/><path fill="#FBBC05" d="M4.05 10.85c-.2-.55-.3-1.15-.3-1.85s.1-1.3.3-1.85V4.85H1.05C.4 6.15 0 7.55 0 9s.4 2.85 1.05 4.15l3-2.3z"/><path fill="#EA4335" d="M9 3.58c1.3 0 2.5.45 3.4 1.35l2.55-2.55C13.45.9 11.4 0 9 0 5.5 0 2.5 2.05 1.05 4.85l3 2.3C4.75 5.05 6.7 3.58 9 3.58z"/></svg>
+        <span>Google bilan davom etish</span>
+      </button>
+      <button class="mathlvl-auth-provider mathlvl-auth-apple" id="mathlvl-auth-apple" type="button">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M11.2 0c.1 1-.3 2-1 2.7-.7.7-1.7 1.2-2.6 1.1-.1-1 .3-2 1-2.7C9.3.4 10.3-.1 11.2 0zM13.9 11.5c-.3.8-.5 1.1-1 1.8-.7 1-1.6 2.2-2.8 2.2-1.1 0-1.4-.7-2.8-.7-1.5 0-1.8.7-2.9.7-1.2 0-2-1.1-2.7-2.1C.1 11.6-.7 8.4.6 6.3c.7-1.1 1.9-1.8 3-1.8 1.2 0 1.9.7 2.9.7 1 0 1.5-.7 2.9-.7 1 0 2 .5 2.7 1.4-2.4 1.3-2 4.6.8 5.6z"/></svg>
+        <span>Apple bilan davom etish</span>
+      </button>
       <button class="mathlvl-auth-secondary" id="mathlvl-auth-later" type="button">Hozir emas</button>
     </div>
-    <div class="mathlvl-auth-note">Google bilan kirish ro‘yxatdan o‘tish va kirishni bitta qadamda bajaradi.</div>
+    <div class="mathlvl-auth-note">Alohida ro‘yxatdan o‘tish formasi shart emas — Google yoki Apple orqali birinchi kirishda hisob avtomatik yaratiladi.</div>
   </div>
 </div>
 
@@ -111,11 +138,11 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
   const copy = document.getElementById('mathlvl-auth-copy');
 
   const messages = {
-    generic: ['Hisob bilan davom eting', 'Natijalaringiz va progress saqlanishi uchun avval hisobga kiring.'],
-    teacher: ['Ustoz AI uchun hisob kerak', 'Suhbatlaringiz xavfsiz saqlanishi va Ustoz AI’dan to‘liq foydalanish uchun avval kiring.'],
-    mock: ['Mock testni boshlash uchun kiring', 'Natijangiz, tarixingiz va keyinchalik Ustoz AI tahlili saqlanishi uchun hisob bilan davom eting.'],
-    book: ['O‘qishni boshlash uchun kiring', 'Oxirgi o‘qilgan sahifa va kitob progressi saqlanishi uchun avval hisobga kiring.'],
-    plus: ['PLUS uchun hisob kerak', 'Obuna, xarid va sovg‘alarni hisobingizga bog‘lash uchun avval kiring.']
+    generic: ['Kirish yoki ro‘yxatdan o‘tish', 'Progressingiz va hisob ma’lumotlaringiz saqlanishi uchun Google yoki Apple orqali davom eting.'],
+    teacher: ['Ustoz AI’dan foydalanish uchun kiring', 'Ustoz AI suhbatlari va progress saqlanishi uchun kiring yoki ro‘yxatdan o‘ting.'],
+    mock: ['Mock testni boshlash uchun kiring', 'Natijangiz va test tarixingiz saqlanishi uchun kiring yoki ro‘yxatdan o‘ting.'],
+    book: ['O‘qishni boshlash uchun kiring', 'Oxirgi o‘qilgan sahifa va kitob progressi saqlanishi uchun kiring yoki ro‘yxatdan o‘ting.'],
+    plus: ['MATHLVL Plus uchun hisob kerak', 'Obuna, xarid va sovg‘alarni hisobingizga bog‘lash uchun kiring yoki ro‘yxatdan o‘ting.']
   };
 
   function openGate(feature='generic', tab='home'){
@@ -133,9 +160,18 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
     document.documentElement.style.overflow = '';
   }
 
-  function goGoogle(){
+  function rememberPendingTab(){
     try { localStorage.setItem(pendingKey, pendingTab || 'home'); } catch(_e){}
+  }
+
+  function goGoogle(){
+    rememberPendingTab();
     window.location.assign('/api/auth-google-start');
+  }
+
+  function goApple(){
+    rememberPendingTab();
+    window.location.assign('/api/auth-apple-start');
   }
 
   function updateGuestButton(){
@@ -184,8 +220,7 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
     return false;
   };
 
-  // Soft-gate the feature, not the marketing/discovery page.
-  // Guests can browse books and mock tests; actual use asks them to sign in.
+  // Guests can browse discovery pages. Actual protected actions ask them to sign in/register.
   document.addEventListener('click', (event) => {
     if(!authState.ready || authState.loggedIn) return;
     const target = event.target.closest('button,a,[role="button"],.dash-quick-card,.sidebar-nav-item,.bottom-nav-item');
@@ -236,6 +271,7 @@ block = r'''<!-- MATHLVL_AUTH_GATE_START -->
 
   guestLogin.addEventListener('click', () => openGate('generic','home'));
   document.getElementById('mathlvl-auth-google').addEventListener('click', goGoogle);
+  document.getElementById('mathlvl-auth-apple').addEventListener('click', goApple);
   document.getElementById('mathlvl-auth-later').addEventListener('click', closeGate);
   document.getElementById('mathlvl-auth-close').addEventListener('click', closeGate);
   gate.addEventListener('click', (e) => { if(e.target === gate) closeGate(); });
@@ -254,4 +290,4 @@ if '</body>' not in s:
 
 s = s.replace('</body>', block + '\n</body>', 1)
 index.write_text(s, encoding='utf-8')
-print('Injected polished MATHLVL guest auth gate')
+print('Injected Google + Apple MATHLVL auth gate')
