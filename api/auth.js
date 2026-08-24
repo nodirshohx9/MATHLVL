@@ -12,7 +12,7 @@ function parseCookies(header) {
   return cookies;
 }
 function verifySession(cookieVal, secret) {
-  if (!cookieVal) return null;
+  if (!cookieVal || !secret) return null;
   const parts = cookieVal.split('.');
   if (parts.length !== 2) return null;
   const [data, sig] = parts;
@@ -23,14 +23,18 @@ function verifySession(cookieVal, secret) {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
     if (!payload.exp || payload.exp < Date.now()) return null;
     return payload;
-  } catch (e) {
+  } catch {
     return null;
   }
 }
 
-// GET  /api/auth        -> joriy sessiya ma'lumotini qaytaradi (avvalgi /api/me)
-// POST /api/auth        -> chiqish (avvalgi /api/logout)
+// GET  /api/auth -> joriy sessiya ma'lumotini qaytaradi
+// POST /api/auth -> chiqish
 export default async function handler(req, res) {
+  // Sessiya holati hech qachon CDN/brauzer keshida qolmasin.
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+
   if (req.method === 'GET') {
     const cookies = parseCookies(req.headers.cookie);
     const session = verifySession(cookies.nova_session, process.env.SESSION_SECRET);
@@ -46,9 +50,9 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    res.setHeader('Set-Cookie', `nova_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0`);
+    res.setHeader('Set-Cookie', 'nova_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
     return res.status(200).json({ ok: true });
   }
 
-  res.status(405).json({ error: "Bu metod qo'llab-quvvatlanmaydi" });
+  return res.status(405).json({ error: "Bu metod qo'llab-quvvatlanmaydi" });
 }
