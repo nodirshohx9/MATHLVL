@@ -9,6 +9,7 @@ STEPS = [
     'scripts/product_hardening.py',
     'scripts/final_cleanup.py',
     'scripts/finish_sync.py',
+    'scripts/final_polish.py',
 ]
 
 for step in STEPS:
