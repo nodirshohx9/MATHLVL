@@ -11,6 +11,7 @@ STEPS = [
     'scripts/finish_sync.py',
     'scripts/final_polish.py',
     'scripts/mock_history_sync.py',
+    'scripts/telegram_support_link.py',
 ]
 
 for step in STEPS:
