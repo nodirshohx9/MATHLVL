@@ -12,6 +12,7 @@ STEPS = [
     'scripts/final_polish.py',
     'scripts/mock_history_sync.py',
     'scripts/telegram_support_link.py',
+    'scripts/remove_support_inbox.py',
 ]
 
 for step in STEPS:
