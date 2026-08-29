@@ -13,6 +13,7 @@ STEPS = [
     'scripts/mock_history_sync.py',
     'scripts/telegram_support_link.py',
     'scripts/remove_support_inbox.py',
+    'scripts/mobile_reader_ai_fix.py',
 ]
 
 for step in STEPS:
