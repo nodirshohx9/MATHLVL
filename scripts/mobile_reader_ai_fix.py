@@ -129,6 +129,35 @@ mobile_css = r'''
 }
 
 @media (max-width: 600px){
+  /* Continue-reading card: the global mobile glow-button width must not overlap the book info. */
+  .dash-continue-row{
+    display:grid !important;
+    grid-template-columns:52px minmax(0,1fr) !important;
+    gap:12px !important;
+    align-items:center !important;
+  }
+  .dash-continue-cover{
+    grid-column:1 !important;
+    grid-row:1 !important;
+    width:52px !important;
+    height:70px !important;
+  }
+  .dash-continue-info{
+    grid-column:2 !important;
+    grid-row:1 !important;
+    min-width:0 !important;
+  }
+  .dash-continue-title{
+    overflow-wrap:anywhere;
+  }
+  #dash-continue-btn{
+    grid-column:1 / -1 !important;
+    grid-row:2 !important;
+    width:100% !important;
+    min-width:0 !important;
+    margin:0 !important;
+  }
+
   .ai-panel{
     width:100vw !important;
     border-left:0 !important;
@@ -152,10 +181,12 @@ required = [
     "height:100dvh !important;",
     "document.body.classList.toggle('ai-drawer-open', !isDesktopReader);",
     "if(isDesktopReader){",
+    ".dash-continue-row{",
+    "#dash-continue-btn{",
 ]
 for token in required:
     if token not in s:
         raise SystemExit(f'Mobile reader fix missing: {token}')
 
 p.write_text(s, encoding='utf-8')
-print('Mobile reader + in-book Ustoz AI fix applied.')
+print('Mobile reader + in-book Ustoz AI + continue card fixes applied.')
