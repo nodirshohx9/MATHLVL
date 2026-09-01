@@ -14,6 +14,7 @@ STEPS = [
     'scripts/telegram_support_link.py',
     'scripts/remove_support_inbox.py',
     'scripts/mobile_reader_ai_fix.py',
+    'scripts/mock_modern_ui.py',
 ]
 
 for step in STEPS:
