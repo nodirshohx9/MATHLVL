@@ -16,6 +16,7 @@ STEPS = [
     'scripts/mobile_reader_ai_fix.py',
     'scripts/mock_modern_ui.py',
     'scripts/mobile_sidebar_nav.py',
+    'scripts/mobile_sidebar_nav_polish.py',
 ]
 
 for step in STEPS:
