@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MATHLVL — matematika platformasi</title>
+<title>MATHLVL — matematika koinoti</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -3175,7 +3175,7 @@ document.getElementById('dash-quick-mocktest').addEventListener('click', ()=> ac
 })();
 
 // ================= MILLIY SERTIFIKAT MOCK TEST =================
-const mockTestData = [
+let mockTestData = [
   {
     id:'ms1', title:'Matematika — Milliy sertifikat Mock #1', minutes:90,
     questions:[
@@ -3232,6 +3232,22 @@ let mockTimerId = null;
 function renderMockMath(el){
   if(!el || typeof renderMathInElement !== 'function') return;
   try{ renderMathInElement(el,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]}); }catch(e){}
+}
+
+
+async function loadMockTests(){
+  try{
+    const res = await fetch('/api/mocks');
+    const data = await res.json();
+    if(res.ok && Array.isArray(data.mocks)){
+      const byId = new Map(mockTestData.map(test => [test.id, test]));
+      data.mocks.forEach(test => {
+        if(test && test.id && Array.isArray(test.questions)) byId.set(test.id, test);
+      });
+      mockTestData = Array.from(byId.values());
+    }
+  }catch(e){}
+  renderMockTestList();
 }
 
 function renderMockTestList(){
@@ -3390,7 +3406,7 @@ if(mockResultsBtn){
   });
 }
 
-renderMockTestList();
+loadMockTests();
 
 </script>
 </div>

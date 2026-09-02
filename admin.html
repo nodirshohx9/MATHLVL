@@ -218,6 +218,25 @@
     .book-cards-mobile{ display:block; }
     .filters-row input, .filters-row select{ flex:1 1 45%; min-width:0; }
   }
+
+  /* ---------- Mock test admin ---------- */
+  .mock-admin-list{ display:grid; gap:10px; }
+  .mock-admin-item{ display:flex; align-items:center; gap:12px; padding:13px 14px; border:1px solid var(--border); border-radius:12px; background:rgba(255,255,255,.025); }
+  .mock-admin-info{ flex:1; min-width:0; }
+  .mock-admin-title{ font-weight:700; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .mock-admin-meta{ color:var(--text-dim); font-size:11.5px; margin-top:4px; }
+  .mock-admin-actions{ display:flex; gap:7px; flex-wrap:wrap; }
+  .mock-question-card{ border:1px solid var(--border); border-radius:12px; padding:14px; margin-top:12px; background:rgba(255,255,255,.025); }
+  .mock-question-head{ display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:12px; }
+  .mock-question-number{ font-family:var(--font-display); font-weight:700; font-size:13px; }
+  .mock-options-grid{ display:grid; grid-template-columns:1fr 1fr; gap:9px; margin-top:10px; }
+  .mock-correct-row{ display:flex; align-items:center; gap:10px; margin-top:10px; color:var(--text-dim); font-size:12px; }
+  .mock-correct-row select{ width:auto; min-width:130px; }
+  @media(max-width:640px){
+    .mock-admin-item{ align-items:flex-start; flex-direction:column; }
+    .mock-admin-actions{ width:100%; }
+    .mock-options-grid{ grid-template-columns:1fr; }
+  }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
@@ -263,6 +282,7 @@
       </div>
       <button class="nav-item active" data-page="dashboard"><span class="ic">⌂</span>Boshqaruv</button>
       <button class="nav-item" data-page="books"><span class="ic">📚</span>Kitoblar</button>
+      <button class="nav-item" data-page="mocks"><span class="ic">📝</span>Mock testlar</button>
       <button class="nav-item" data-page="gift"><span class="ic">🎁</span>Plus sovg'a</button>
       <button class="nav-item" data-page="settings"><span class="ic">⚙</span>Sozlamalar</button>
       <div class="sidebar-foot">
@@ -282,6 +302,7 @@
           <div class="stat-card"><div class="n" id="stat-total-books">—</div><div class="l">Jami kitoblar</div></div>
           <div class="stat-card"><div class="n" id="stat-free-books">—</div><div class="l">Bepul kitoblar</div></div>
           <div class="stat-card"><div class="n" id="stat-plus-books">—</div><div class="l">Plus kitoblar</div></div>
+          <div class="stat-card"><div class="n" id="stat-total-mocks">—</div><div class="l">Mock testlar</div></div>
           <div class="stat-card"><div class="n" id="stat-pending-payments">—</div><div class="l">Kutilayotgan to'lovlar</div></div>
         </div>
         <div class="card">
@@ -289,6 +310,7 @@
           <p style="color:var(--text-dim); font-size:12.5px; margin:0 0 14px;">Eng ko'p ishlatiladigan bo'limlarga o'tish.</p>
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button class="glow-btn" onclick="goToPage('books')">+ Yangi kitob</button>
+            <button class="glow-btn" onclick="goToPage('mocks')">+ Yangi mock test</button>
             <button class="ghost-btn" onclick="goToPage('gift')">🎁 Plus sovg'a yaratish</button>
             <button class="ghost-btn" onclick="goToPage('settings')">⚙ Sozlamalar</button>
           </div>
@@ -454,6 +476,56 @@
         </div>
       </section>
 
+
+      <!-- ============ MOCK TESTLAR ============ -->
+      <section class="page" id="page-mocks">
+        <div class="page-header page-header-row">
+          <div>
+            <h1>Mock testlar</h1>
+            <p>Saytdagi mock testlarni qo'shing va boshqaring.</p>
+          </div>
+          <button class="glow-btn" id="show-mock-form-btn">+ Yangi mock test</button>
+        </div>
+
+        <div class="card" id="mock-list-section" style="margin-bottom:20px;">
+          <div class="mock-admin-list" id="mock-admin-list">
+            <div class="empty-state"><div class="e-icon">📝</div><div class="e-text">Yuklanmoqda...</div></div>
+          </div>
+        </div>
+
+        <div class="card" id="mock-form-section" style="display:none;">
+          <h2 id="mock-form-title" style="font-family:var(--font-display);font-size:17px;margin:0 0 18px;">Yangi mock test</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label class="req" for="mock-title">Test nomi</label>
+              <input id="mock-title" type="text" maxlength="140" placeholder="Masalan: Milliy sertifikat Mock #4">
+            </div>
+            <div class="field">
+              <label class="req" for="mock-minutes">Vaqt (daqiqa)</label>
+              <input id="mock-minutes" type="number" min="1" max="300" value="90">
+            </div>
+          </div>
+          <div class="field">
+            <label style="display:flex;align-items:center;gap:9px;cursor:pointer;">
+              <input id="mock-published" type="checkbox" checked style="width:auto;">
+              Darhol saytda ko'rinsin
+            </label>
+          </div>
+
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;">
+            <h3 style="font-family:var(--font-display);font-size:15px;margin:0;">Savollar</h3>
+            <button class="ghost-btn" id="add-mock-question-btn" type="button">+ Savol qo'shish</button>
+          </div>
+          <div id="mock-question-builder"></div>
+
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-top:18px;">
+            <button class="glow-btn" id="save-mock-btn" type="button">Mock testni saqlash</button>
+            <button class="ghost-btn" id="cancel-mock-form-btn" type="button">Bekor qilish</button>
+          </div>
+          <div class="status" id="mock-status"></div>
+        </div>
+      </section>
+
       <!-- ============ PLUS SOVG'A ============ -->
       <section class="page" id="page-gift">
         <div class="page-header">
@@ -573,6 +645,7 @@ document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>
       document.getElementById('admin-shell').style.display = 'block';
       statusEl.textContent = '';
       refreshBookList();
+      refreshMockList();
       loadPaymentSettingsAdmin();
       refreshPaymentsList();
     }else{
@@ -980,6 +1053,202 @@ function updateDashboardStats(){
   document.getElementById('stat-free-books').textContent = booksCache.filter(b=> b.accessType === 'FREE' || !b.accessType).length;
   document.getElementById('stat-plus-books').textContent = booksCache.filter(b=> b.accessType === 'PLUS' || b.accessType === 'PLUS_OR_PURCHASE').length;
 }
+
+
+// ================= MOCK TEST ADMIN =================
+let adminMocks = [];
+let editingMockId = null;
+
+async function loadAdminMocks(){
+  const res = await fetch('/api/mocks', { cache: 'no-store' });
+  const data = await res.json();
+  if(!res.ok) throw new Error(data.error || "Mock testlarni yuklab bo'lmadi");
+  return Array.isArray(data.mocks) ? data.mocks : [];
+}
+
+function renderAdminMocks(){
+  const wrap = document.getElementById('mock-admin-list');
+  if(!wrap) return;
+  if(!adminMocks.length){
+    wrap.innerHTML = '<div class="empty-state"><div class="e-icon">📝</div><div class="e-text">Hozircha admin orqali qo‘shilgan mock test yo‘q.</div></div>';
+    return;
+  }
+  wrap.innerHTML = adminMocks.map(function(mock){
+    var status = mock.published === false ? 'Qoralama' : 'Saytda ko‘rinadi';
+    return '<div class="mock-admin-item">' +
+      '<div class="mock-admin-info">' +
+        '<div class="mock-admin-title">' + escapeHtml(mock.title) + '</div>' +
+        '<div class="mock-admin-meta">' + (mock.questions || []).length + ' ta savol • ' + Number(mock.minutes || 90) + ' daqiqa • ' + status + '</div>' +
+      '</div>' +
+      '<div class="mock-admin-actions">' +
+        '<button class="ghost-btn mock-edit-btn" type="button" data-id="' + mock.id + '">✎ Tahrirlash</button>' +
+        '<button class="ghost-btn mock-delete-btn" type="button" data-id="' + mock.id + '" style="color:var(--red);">🗑 O‘chirish</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+async function refreshMockList(){
+  const wrap = document.getElementById('mock-admin-list');
+  try{
+    adminMocks = await loadAdminMocks();
+    renderAdminMocks();
+    const stat = document.getElementById('stat-total-mocks');
+    if(stat) stat.textContent = adminMocks.length;
+  }catch(error){
+    if(wrap) wrap.innerHTML = '<div class="empty-state"><div class="e-icon">⚠</div><div class="e-text">' + escapeHtml(error.message) + '</div></div>';
+    const stat = document.getElementById('stat-total-mocks');
+    if(stat) stat.textContent = '—';
+  }
+}
+
+function renumberMockQuestions(){
+  document.querySelectorAll('#mock-question-builder .mock-question-card').forEach(function(card, index){
+    card.querySelector('.mock-question-number').textContent = (index + 1) + '-savol';
+  });
+}
+
+function addMockQuestion(question){
+  var item = question || { q:'', o:['','','',''], a:0 };
+  var card = document.createElement('div');
+  card.className = 'mock-question-card';
+  card.innerHTML =
+    '<div class="mock-question-head">' +
+      '<div class="mock-question-number">Savol</div>' +
+      '<button class="icon-action danger mock-remove-question" type="button" title="Savolni o‘chirish">🗑</button>' +
+    '</div>' +
+    '<div class="field" style="margin-bottom:0;">' +
+      '<label class="req">Savol matni</label>' +
+      '<textarea class="mock-q-text" rows="3" placeholder="Savolni kiriting. Formula uchun $...$ ishlatishingiz mumkin."></textarea>' +
+    '</div>' +
+    '<div class="mock-options-grid">' +
+      '<input class="mock-option" type="text" placeholder="A varianti">' +
+      '<input class="mock-option" type="text" placeholder="B varianti">' +
+      '<input class="mock-option" type="text" placeholder="C varianti">' +
+      '<input class="mock-option" type="text" placeholder="D varianti">' +
+    '</div>' +
+    '<div class="mock-correct-row">' +
+      '<span>To‘g‘ri javob:</span>' +
+      '<select class="mock-correct"><option value="0">A</option><option value="1">B</option><option value="2">C</option><option value="3">D</option></select>' +
+    '</div>';
+
+  card.querySelector('.mock-q-text').value = item.q || '';
+  card.querySelectorAll('.mock-option').forEach(function(input, index){
+    input.value = item.o && item.o[index] ? item.o[index] : '';
+  });
+  card.querySelector('.mock-correct').value = String(Number.isInteger(Number(item.a)) ? Number(item.a) : 0);
+  card.querySelector('.mock-remove-question').addEventListener('click', function(){
+    card.remove();
+    if(!document.querySelector('#mock-question-builder .mock-question-card')) addMockQuestion();
+    renumberMockQuestions();
+  });
+  document.getElementById('mock-question-builder').appendChild(card);
+  renumberMockQuestions();
+}
+
+function openMockForm(mock){
+  editingMockId = mock ? mock.id : null;
+  document.getElementById('mock-form-title').textContent = mock ? 'Mock testni tahrirlash' : 'Yangi mock test';
+  document.getElementById('mock-title').value = mock ? (mock.title || '') : '';
+  document.getElementById('mock-minutes').value = mock ? Number(mock.minutes || 90) : 90;
+  document.getElementById('mock-published').checked = mock ? mock.published !== false : true;
+  document.getElementById('mock-status').textContent = '';
+  document.getElementById('mock-question-builder').innerHTML = '';
+  var questions = mock && Array.isArray(mock.questions) && mock.questions.length ? mock.questions : [{q:'',o:['','','',''],a:0}];
+  questions.forEach(addMockQuestion);
+  document.getElementById('mock-form-section').style.display = 'block';
+  document.getElementById('mock-form-section').scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function closeMockForm(){
+  editingMockId = null;
+  document.getElementById('mock-form-section').style.display = 'none';
+  document.getElementById('mock-status').textContent = '';
+}
+
+function collectMockQuestions(){
+  var cards = Array.from(document.querySelectorAll('#mock-question-builder .mock-question-card'));
+  if(!cards.length) throw new Error("Kamida 1 ta savol qo‘shing");
+  return cards.map(function(card, index){
+    var q = card.querySelector('.mock-q-text').value.trim();
+    var options = Array.from(card.querySelectorAll('.mock-option')).map(function(input){ return input.value.trim(); });
+    var answer = Number(card.querySelector('.mock-correct').value);
+    if(!q) throw new Error((index + 1) + "-savol matnini kiriting");
+    if(options.some(function(option){ return !option; })) throw new Error((index + 1) + "-savolning 4 ta variantini to‘ldiring");
+    return { q:q, o:options, a:answer };
+  });
+}
+
+document.getElementById('show-mock-form-btn').addEventListener('click', function(){ openMockForm(null); });
+document.getElementById('add-mock-question-btn').addEventListener('click', function(){ addMockQuestion(); });
+document.getElementById('cancel-mock-form-btn').addEventListener('click', closeMockForm);
+
+document.getElementById('mock-admin-list').addEventListener('click', async function(event){
+  var editButton = event.target.closest('.mock-edit-btn');
+  var deleteButton = event.target.closest('.mock-delete-btn');
+
+  if(editButton){
+    var mock = adminMocks.find(function(item){ return item.id === editButton.dataset.id; });
+    if(mock) openMockForm(mock);
+    return;
+  }
+
+  if(deleteButton){
+    var selected = adminMocks.find(function(item){ return item.id === deleteButton.dataset.id; });
+    if(!selected || !confirm('“' + selected.title + '” mock testi o‘chirilsinmi?')) return;
+    deleteButton.disabled = true;
+    try{
+      var res = await fetch('/api/mocks', {
+        method:'DELETE',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({id:selected.id})
+      });
+      var data = await res.json();
+      if(!res.ok) throw new Error(data.error || "O‘chirish amalga oshmadi");
+      await refreshMockList();
+    }catch(error){
+      alert('Xatolik: ' + error.message);
+      deleteButton.disabled = false;
+    }
+  }
+});
+
+document.getElementById('save-mock-btn').addEventListener('click', async function(){
+  var button = document.getElementById('save-mock-btn');
+  var status = document.getElementById('mock-status');
+  status.classList.remove('err');
+  try{
+    var title = document.getElementById('mock-title').value.trim();
+    var minutes = Number(document.getElementById('mock-minutes').value);
+    if(title.length < 3) throw new Error("Mock test nomini kiriting");
+    if(!minutes || minutes < 1 || minutes > 300) throw new Error("Vaqt 1–300 daqiqa oralig‘ida bo‘lsin");
+    var payload = {
+      title:title,
+      minutes:minutes,
+      published:document.getElementById('mock-published').checked,
+      questions:collectMockQuestions()
+    };
+    if(editingMockId) payload.id = editingMockId;
+
+    button.disabled = true;
+    status.textContent = 'Saqlanmoqda...';
+    var res = await fetch('/api/mocks', {
+      method:editingMockId ? 'PUT' : 'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if(!res.ok) throw new Error(data.error || "Saqlash amalga oshmadi");
+    status.textContent = 'Mock test muvaffaqiyatli saqlandi.';
+    await refreshMockList();
+    setTimeout(closeMockForm, 700);
+  }catch(error){
+    status.textContent = 'Xatolik: ' + error.message;
+    status.classList.add('err');
+  }finally{
+    button.disabled = false;
+  }
+});
 
 // ================= GIFT / PLUS =================
 let selectedGiftDays = '30';
