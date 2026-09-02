@@ -17,6 +17,7 @@ STEPS = [
     'scripts/mock_modern_ui.py',
     'scripts/mobile_sidebar_nav.py',
     'scripts/mobile_sidebar_nav_polish.py',
+    'scripts/mobile_sidebar_label_cleanup.py',
 ]
 
 for step in STEPS:
