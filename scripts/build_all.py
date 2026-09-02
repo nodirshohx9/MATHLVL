@@ -6,6 +6,7 @@ STEPS = [
     'scripts/inject_auth_gate.py',
     'scripts/remove_apple_auth.py',
     'scripts/fix_solver_auth.py',
+    'scripts/title_build_compat.py',
     'scripts/product_hardening.py',
     'scripts/final_cleanup.py',
     'scripts/finish_sync.py',
@@ -20,6 +21,7 @@ STEPS = [
     'scripts/mobile_sidebar_label_cleanup.py',
     'scripts/gift_qr_cleanup.py',
     'scripts/mock_pdf_admin.py',
+    'scripts/title_finalize.py',
 ]
 
 for step in STEPS:
