@@ -14,7 +14,7 @@ replacement = r'''// ================= MILLIY SERTIFIKAT MOCK TEST =============
 // Format is based on BBA/UZBMB's published mathematics national-certificate structure:
 // 35 closed questions + 10 open questions, each open question has A/B parts = 55 scored response elements.
 // Time: 150 minutes. Questions below are original MATHLVL practice questions, not copied official items.
-const mockTestData = [
+let mockTestData = [
   {
     id:'ms-full-1',
     title:'Matematika — Milliy sertifikat Mock #1',
@@ -106,6 +106,28 @@ function isMockAnswerCorrect(given, expected){
 }
 
 function mockTotalQuestions(t){ return t.closed.length + t.open.length; }
+function mockTotalElements(t){
+  return t.closed.length + t.open.reduce((total, question) => total + question.parts.length, 0);
+}
+function normalizeStoredMock(test){
+  if(Array.isArray(test.closed) && Array.isArray(test.open)) return test;
+  const closed = Array.isArray(test.questions) ? test.questions : [];
+  return { ...test, closed, open:[], closedCount:closed.length, openCount:0 };
+}
+async function loadMockTests(){
+  try{
+    const res = await fetch('/api/mocks');
+    const data = await res.json();
+    if(res.ok && Array.isArray(data.mocks)){
+      const byId = new Map(mockTestData.map(test => [test.id, test]));
+      data.mocks.map(normalizeStoredMock).forEach(test => {
+        if(test && test.id && test.closed.length) byId.set(test.id, test);
+      });
+      mockTestData = Array.from(byId.values());
+    }
+  }catch(e){}
+  renderMockTestList();
+}
 function mockAnsweredElements(){
   if(!activeMock) return 0;
   const closed = mockClosedAnswers.filter(v => v !== null).length;
@@ -125,8 +147,8 @@ function renderMockTestList(){
       <div class="mt-card-icon" style="background:rgba(61,169,252,.14);color:var(--blue);">π</div>
       <div class="mt-card-body">
         <div class="mt-card-title">${t.title}</div>
-        <div class="mt-card-meta">45 ta topshiriq • 55 ta javob elementi • 150 daqiqa</div>
-        <div class="mt-card-result">35 ta yopiq + 10 ta ochiq (A/B qismlar). BBA formatiga mos mashq varianti.</div>
+        <div class="mt-card-meta">${mockTotalQuestions(t)} ta topshiriq • ${mockTotalElements(t)} ta javob elementi • ${t.minutes} daqiqa</div>
+        <div class="mt-card-result">${t.open.length ? `${t.closed.length} ta yopiq + ${t.open.length} ta ochiq (A/B qismlar). BBA formatiga mos mashq varianti.` : `${t.closed.length} ta yopiq savoldan iborat MATHLVL mock testi.`}</div>
       </div>
       <button class="glow-btn mt-card-start" type="button" data-mt-start="${t.id}">Boshlash</button>
     </div>`).join('');
@@ -175,7 +197,7 @@ function renderMockQuestion(){
       </div>
       <div id="mock-question-text" style="font-size:17px;line-height:1.65;font-weight:600;margin:20px 0;"></div>
       <div id="mock-answer-area"></div>
-      <div style="font-size:11.5px;color:var(--text-dim);margin-top:18px;">Javob berilgan: ${mockAnsweredElements()}/55 element</div>
+      <div style="font-size:11.5px;color:var(--text-dim);margin-top:18px;">Javob berilgan: ${mockAnsweredElements()}/${mockTotalElements(activeMock)} element</div>
       <div id="mock-nav-grid" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:14px;"></div>
       <div style="display:flex;gap:10px;margin-top:18px;flex-wrap:wrap;">
         <button class="ghost-btn" id="mock-prev" type="button" ${mockIndex===0?'disabled':''}>← Oldingi</button>
@@ -263,7 +285,7 @@ function finishMockTest(autoFinish){
     if(isMockAnswerCorrect(mockOpenAnswers[qi][pi], p.ans)) correctOpen++;
   }));
   const correct = correctClosed + correctOpen;
-  const totalElements = 55;
+  const totalElements = mockTotalElements(activeMock);
   const answered = mockAnsweredElements();
   const percent = Math.round(correct / totalElements * 100);
   const result = {title:activeMock.title,correct,total:totalElements,answered,percent,at:new Date().toISOString()};
@@ -279,7 +301,7 @@ function finishMockTest(autoFinish){
       <div style="font-size:42px;">${percent>=70?'🏆':percent>=50?'📈':'📚'}</div>
       <h3>Mashq natijasi: ${correct}/${totalElements}</h3>
       <div style="font-size:30px;font-weight:800;color:var(--blue);">${percent}%</div>
-      <div style="color:var(--text-dim);margin:8px 0 8px;">Yopiq: ${correctClosed}/35 • Ochiq A/B: ${correctOpen}/20 • Javob berilgan: ${answered}/55${autoFinish?' • Vaqt tugadi':''}</div>
+      <div style="color:var(--text-dim);margin:8px 0 8px;">Yopiq: ${correctClosed}/${activeMock.closed.length} • Ochiq A/B: ${correctOpen}/${totalElements-activeMock.closed.length} • Javob berilgan: ${answered}/${totalElements}${autoFinish?' • Vaqt tugadi':''}</div>
       <div style="max-width:650px;margin:0 auto 20px;font-size:12px;line-height:1.55;color:var(--text-dim);">Bu MATHLVL mashq ko‘rsatkichi. Rasmiy Milliy sertifikat natijasi oddiy foiz bilan emas, BBAning statistik baholash usuli (Rash modeli) asosida hisoblanadi.</div>
       <button class="glow-btn" id="mock-back-list" type="button">Mock testlarga qaytish</button>
     </div>`;
@@ -303,6 +325,7 @@ if(mockResultsBtn){
   });
 }
 
+loadMockTests();
 renderMockTestList();'''
 
 pattern = re.compile(re.escape(start) + r'.*?' + re.escape(end), re.S)
