@@ -40,8 +40,8 @@ official_block = s[start:good_end]
 required = [
     'function finishMockTest(autoFinish)',
     results_marker,
-    '35 ta yopiq + 10 ta ochiq',
-    '55 ta javob elementi',
+    'async function loadMockTests()',
+    'function mockTotalElements(t)',
     'minutes:150',
 ]
 for token in required:
