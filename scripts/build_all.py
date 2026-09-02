@@ -18,6 +18,7 @@ STEPS = [
     'scripts/mobile_sidebar_nav.py',
     'scripts/mobile_sidebar_nav_polish.py',
     'scripts/mobile_sidebar_label_cleanup.py',
+    'scripts/gift_qr_cleanup.py',
 ]
 
 for step in STEPS:
