@@ -16,9 +16,9 @@ def replace_once(text, old, new, label):
 s = INDEX.read_text(encoding="utf-8")
 
 # SEO / social preview
-title_anchor = "<title>MATHLVL — matematika platformasi</title>"
+title_anchor = "<title>MATHLVL — matematika koinoti</title>"
 if '<meta name="description"' not in s:
-    seo = '''<title>MATHLVL — matematika platformasi</title>
+    seo = '''<title>MATHLVL — matematika koinoti</title>
 <meta name="description" content="MATHLVL — matematika o‘rganish, Ustoz AI, Milliy sertifikat mock testlari va interaktiv kitoblar uchun platforma.">
 <link rel="canonical" href="https://mathlvl.com/">
 <meta name="theme-color" content="#0A0E1F">
