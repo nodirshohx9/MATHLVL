@@ -23,6 +23,7 @@ STEPS = [
     'scripts/mock_pdf_admin.py',
     'scripts/title_finalize.py',
     'scripts/light_mode_contrast_fix.py',
+    'scripts/mock_mobile_redesign.py',
 ]
 
 for step in STEPS:
