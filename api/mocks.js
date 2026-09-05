@@ -65,6 +65,37 @@ function cleanPage(value) {
   return Number.isInteger(n) && n > 0 && n < 10000 ? n : null;
 }
 
+function cleanBbox(value) {
+  if (!Array.isArray(value) || value.length !== 4) return null;
+  const box = value.map(v => Number(v));
+  if (box.some(v => !Number.isFinite(v))) return null;
+  const [y1, x1, y2, x2] = box.map(v => Math.max(0, Math.min(1000, Math.round(v))));
+  if (y2 <= y1 + 8 || x2 <= x1 + 8) return null;
+  return [y1, x1, y2, x2];
+}
+
+function cleanVisual(value, fallbackPage) {
+  const present = Boolean(value?.present);
+  const page = cleanPage(value?.page) || fallbackPage || null;
+  const bbox = cleanBbox(value?.bbox);
+  const kind = cleanText(value?.kind || '', 80);
+  return { present, page, bbox, kind };
+}
+
+function isAllowedBlobUrl(rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    return url.protocol === 'https:' && (url.hostname === 'blob.vercel-storage.com' || url.hostname.endsWith('.blob.vercel-storage.com'));
+  } catch {
+    return false;
+  }
+}
+
+function cleanImageUrl(value) {
+  const url = cleanText(value, 1000);
+  return url && isAllowedBlobUrl(url) ? url : '';
+}
+
 function normalizeClosed(item, index, strictAnswers) {
   const q = cleanText(item?.q, 3000);
   const o = Array.isArray(item?.o) ? item.o.slice(0, 4).map(v => cleanText(v, 800)) : [];
@@ -77,14 +108,19 @@ function normalizeClosed(item, index, strictAnswers) {
   if (strictAnswers && (!Number.isInteger(a) || a < 0 || a > 3)) {
     throw new Error(`${index + 1}-yopiq savol uchun to'g'ri javobni belgilang`);
   }
+  const sourcePage = cleanPage(item?.sourcePage);
+  const visual = cleanVisual(item?.visual, sourcePage);
   return {
     q,
     o,
     a: Number.isInteger(a) && a >= 0 && a <= 3 ? a : null,
     topic: cleanTopic(item?.topic),
-    sourcePage: cleanPage(item?.sourcePage),
+    sourcePage,
     confidence: Math.max(0, Math.min(1, Number(item?.confidence) || 0)),
-    needsReview: Boolean(item?.needsReview)
+    needsReview: Boolean(item?.needsReview),
+    visual,
+    imageUrl: cleanImageUrl(item?.imageUrl),
+    imageAlt: cleanText(item?.imageAlt || visual.kind || '', 220)
   };
 }
 
@@ -107,13 +143,18 @@ function normalizeOpen(item, index, strictAnswers) {
       needsReview: Boolean(part?.needsReview)
     };
   });
+  const sourcePage = cleanPage(item?.sourcePage);
+  const visual = cleanVisual(item?.visual, sourcePage);
   return {
     q,
     parts,
     topic: cleanTopic(item?.topic),
-    sourcePage: cleanPage(item?.sourcePage),
+    sourcePage,
     confidence: Math.max(0, Math.min(1, Number(item?.confidence) || 0)),
-    needsReview: Boolean(item?.needsReview)
+    needsReview: Boolean(item?.needsReview),
+    visual,
+    imageUrl: cleanImageUrl(item?.imageUrl),
+    imageAlt: cleanText(item?.imageAlt || visual.kind || '', 220)
   };
 }
 
@@ -162,15 +203,6 @@ function normalizeMock(input, existing = {}) {
   };
 }
 
-function isAllowedBlobUrl(rawUrl) {
-  try {
-    const url = new URL(rawUrl);
-    return url.protocol === 'https:' && (url.hostname === 'blob.vercel-storage.com' || url.hostname.endsWith('.blob.vercel-storage.com'));
-  } catch {
-    return false;
-  }
-}
-
 function extractJson(text) {
   const trimmed = String(text || '').trim();
   try { return JSON.parse(trimmed); } catch {}
@@ -203,24 +235,25 @@ Siz MATHLVL admin import tizimisiz. Berilgan matematika mock PDFni elektron test
 Kutiladigan format: O‘zbekiston matematika Milliy sertifikat mashq varianti — 35 ta yopiq savol va 10 ta ochiq savol. Har bir ochiq savolda A va B qism bor. Jami 45 topshiriq va 55 baholanadigan javob elementi.
 
 MUHIM QOIDALAR:
-1) PDFdagi savol matnini va formulalarni mazmunini o‘zgartirmang. Matematik formulalarni imkon qadar LaTeX ($...$) ko‘rinishida yozing.
+1) PDFdagi savol matnini va formulalarni mazmunini o‘zgartirmang. Matematik formulalarni LaTeX ($...$) ko‘rinishida yozing. Oddiy matnni LaTeX ichiga tiqmang.
 2) Yopiq savollarda aynan 4 variantni A/B/C/D tartibida qaytaring. "a" 0=A, 1=B, 2=C, 3=D.
 3) To‘g‘ri javob PDFdagi JAVOBLAR KALITI yoki aniq ko‘rsatilgan javobdan topilsa kiriting. Javob kaliti yo‘q yoki ishonchsiz bo‘lsa HECH QACHON o‘zingiz yechib/taxmin qilib to‘ldirmang: a=null yoki ans="" qoldiring, needsReview=true qiling va warningsga yozing.
 4) Har savolga qisqa topic yozing: masalan "Kvadrat tenglama", "Trigonometriya", "Planimetriya".
 5) sourcePage — savol joylashgan PDF sahifasi (1 dan boshlab).
-6) Chizma/rasm zarur bo‘lsa needsReview=true va warningsga "N-savol: chizma/rasmni tekshiring" deb yozing. Matndan ko‘rinadigan ma’lumotni saqlang, rasm ichidagi ko‘rinmagan qiymatni to‘qimang.
-7) Savollar soni PDFda 35+10 bo‘lmasa topilganlarini qaytaring va warningsga aniq sonini yozing.
-8) Faqat JSON qaytaring. Hech qanday izoh yoki markdown yozmang.
+6) Agar savolni yechish uchun chizma, grafik, jadval, koordinata rasmi yoki boshqa vizual kerak bo‘lsa visual.present=true qiling. visual.page — shu vizual turgan sahifa. visual.bbox — FAQAT kerakli rasm/chizma hududining [ymin,xmin,ymax,xmax] koordinatasi, sahifaning yuqori chapidan boshlab 0..1000 oralig‘ida normallashtirilgan. Savol matni va variantlarni bbox ichiga keraksiz qo‘shmang. visual.kind qisqa tur: "geometriya chizmasi", "grafik", "jadval" kabi. imageAlt — rasm nimani ko‘rsatishini qisqa yozing. Vizual zarur bo‘lsa needsReview=true qiling, lekin rasm ichidagi qiymatlarni o‘zingiz to‘qimang.
+7) Agar vizual borligini bilsangiz-u bboxni ishonchli aniqlay olmasangiz visual.present=true, visual.bbox=null qiling va warningsga yozing.
+8) Savollar soni PDFda 35+10 bo‘lmasa topilganlarini qaytaring va warningsga aniq sonini yozing.
+9) Faqat JSON qaytaring. Hech qanday izoh yoki markdown yozmang.
 
 JSON SHAKLI:
 {
   "title": "${cleanText(fallbackTitle || '', 120)}",
   "minutes": 150,
   "closed": [
-    {"q":"...","o":["...","...","...","..."],"a":0,"topic":"...","sourcePage":1,"confidence":0.95,"needsReview":false}
+    {"q":"...","o":["...","...","...","..."],"a":0,"topic":"...","sourcePage":1,"confidence":0.95,"needsReview":false,"visual":{"present":false,"page":1,"bbox":null,"kind":""},"imageAlt":""}
   ],
   "open": [
-    {"q":"...","topic":"...","sourcePage":10,"confidence":0.95,"needsReview":false,"parts":[
+    {"q":"...","topic":"...","sourcePage":10,"confidence":0.95,"needsReview":false,"visual":{"present":true,"page":10,"bbox":[250,120,620,880],"kind":"grafik"},"imageAlt":"Funksiya grafigi","parts":[
       {"label":"A","ask":"...","ans":"...","confidence":0.95,"needsReview":false},
       {"label":"B","ask":"...","ans":"...","confidence":0.95,"needsReview":false}
     ]}
@@ -238,7 +271,7 @@ JSON SHAKLI:
       ]
     }],
     generationConfig: {
-      maxOutputTokens: 20000,
+      maxOutputTokens: 24000,
       responseMimeType: 'application/json',
       thinkingConfig: { thinkingBudget: 0 }
     }
@@ -266,10 +299,14 @@ JSON SHAKLI:
   }
   closed.forEach((q, i) => {
     if (q.a === null) warnings.push(`${i + 1}-savol: javob kaliti topilmadi — admin tekshirishi kerak.`);
+    if (q.visual?.present && !q.visual?.bbox) warnings.push(`${i + 1}-savol: rasm/chizma bor, lekin avtomatik kesish hududi topilmadi — admin qo‘lda biriktirsin.`);
   });
-  open.forEach((q, i) => q.parts.forEach(part => {
-    if (!part.ans) warnings.push(`${i + 36}-savol ${part.label}: javob topilmadi — admin tekshirishi kerak.`);
-  }));
+  open.forEach((q, i) => {
+    q.parts.forEach(part => {
+      if (!part.ans) warnings.push(`${i + 36}-savol ${part.label}: javob topilmadi — admin tekshirishi kerak.`);
+    });
+    if (q.visual?.present && !q.visual?.bbox) warnings.push(`${i + 36}-savol: rasm/chizma bor, lekin avtomatik kesish hududi topilmadi — admin qo‘lda biriktirsin.`);
+  });
 
   return {
     title: cleanText(parsed.title || fallbackTitle || 'Milliy sertifikat Mock', 140),
