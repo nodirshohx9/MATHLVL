@@ -27,6 +27,7 @@ STEPS = [
     'scripts/mock_pdf_media_fix.py',
     'scripts/mock_pdf_formula_fidelity.py',
     'scripts/mock_pdf_resilience.py',
+    'scripts/mock_answer_key_grid_fix.py',
 ]
 
 for step in STEPS:
