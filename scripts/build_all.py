@@ -25,6 +25,7 @@ STEPS = [
     'scripts/light_mode_contrast_fix.py',
     'scripts/mock_mobile_redesign.py',
     'scripts/mock_pdf_media_fix.py',
+    'scripts/mock_pdf_formula_fidelity.py',
 ]
 
 for step in STEPS:
