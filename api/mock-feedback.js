@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash';
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -69,6 +70,64 @@ function cleanText(value, max = 400) {
   return String(value ?? '').replace(/\s+/g, ' ').trim().slice(0, max);
 }
 
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isTransientGeminiError(status, message = '') {
+  const text = String(message).toLowerCase();
+  return [429, 500, 502, 503, 504].includes(Number(status)) ||
+    text.includes('high demand') ||
+    text.includes('overloaded') ||
+    text.includes('temporarily unavailable') ||
+    text.includes('try again later');
+}
+
+async function requestGemini(apiKey, model, prompt) {
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{ role: 'user', parts: [{ text: prompt }] }],
+      generationConfig: {
+        maxOutputTokens: 1200,
+        thinkingConfig: { thinkingBudget: 0 }
+      }
+    })
+  });
+  const data = await response.json().catch(() => ({}));
+  return { response, data };
+}
+
+async function getGeminiFeedback(apiKey, prompt) {
+  const attempts = [
+    { model: GEMINI_MODEL, delay: 0 },
+    { model: GEMINI_MODEL, delay: 450 },
+    { model: GEMINI_FALLBACK_MODEL, delay: 800 }
+  ];
+
+  let last = null;
+  for (let i = 0; i < attempts.length; i++) {
+    const attempt = attempts[i];
+    if (attempt.delay) await sleep(attempt.delay);
+
+    const result = await requestGemini(apiKey, attempt.model, prompt);
+    const message = result.data?.error?.message || '';
+    last = { ...result, model: attempt.model, message };
+
+    if (result.response.ok) {
+      if (i > 0) console.warn(`MOCK FEEDBACK recovered on attempt ${i + 1} using ${attempt.model}`);
+      return last;
+    }
+
+    console.error(`MOCK FEEDBACK GEMINI ${attempt.model}:`, message || result.response.status);
+    if (!isTransientGeminiError(result.response.status, message)) break;
+  }
+
+  return last;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: "Faqat POST so'rovlar qabul qilinadi" });
@@ -126,25 +185,17 @@ Javobni 4 qisqa bo'limda ber:
 
 Savollar ro'yxatidan mavzu chiqarish mumkin bo'lmasa, taxminni fakt sifatida aytma. O'quvchini kamsitma va rasmiy sertifikat bali deb ko'rsatma.`;
 
-    const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-    const geminiRes = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{ role: 'user', parts: [{ text: prompt }] }],
-        generationConfig: {
-          maxOutputTokens: 1200,
-          thinkingConfig: { thinkingBudget: 0 }
-        }
-      })
-    });
-    const data = await geminiRes.json().catch(() => ({}));
-    if (!geminiRes.ok) {
-      console.error('MOCK FEEDBACK GEMINI:', data.error?.message || geminiRes.status);
-      return res.status(502).json({ error: 'Ustoz AI tahlilini olishda xatolik' });
+    const result = await getGeminiFeedback(apiKey, prompt);
+    if (!result?.response?.ok) {
+      const transient = isTransientGeminiError(result?.response?.status, result?.message);
+      return res.status(transient ? 503 : 502).json({
+        error: transient
+          ? 'Ustoz AI hozir band. Bir ozdan keyin yana urinib ko‘ring.'
+          : 'Ustoz AI tahlilini olishda xatolik'
+      });
     }
 
-    const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
+    const text = (result.data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
     if (!text) return res.status(502).json({ error: 'Ustoz AI bo‘sh javob qaytardi' });
     return res.status(200).json({ feedback: text });
   } catch (err) {
