@@ -91,7 +91,7 @@ async function requestGemini(apiKey, model, prompt) {
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        maxOutputTokens: 1200,
+        maxOutputTokens: 10000,
         thinkingConfig: { thinkingBudget: 0 }
       }
     })
@@ -154,36 +154,72 @@ export default async function handler(req, res) {
     const title = cleanText(body.title, 160);
     const correct = Math.max(0, Number(body.correct) || 0);
     const total = Math.max(1, Math.min(100, Number(body.total) || 55));
-    const wrong = Array.isArray(body.wrong) ? body.wrong.slice(0, 40).map(item => ({
-      question: cleanText(item.question, 300),
-      given: cleanText(item.given, 120) || 'javob berilmagan',
-      expected: cleanText(item.expected, 120),
-      section: cleanText(item.section, 40)
-    })) : [];
+    const answered = Math.max(0, Math.min(total, Number(body.answered) || 0));
 
-    const mistakes = wrong.length
-      ? wrong.map((item, i) =>
-          `${i + 1}. [${item.section || 'savol'}] ${item.question}\nBerilgan: ${item.given}\nTo'g'ri: ${item.expected}`
-        ).join('\n\n')
-      : "Xato javoblar ro'yxati bo'sh.";
+    const items = Array.isArray(body.items)
+      ? body.items.slice(0, 60).map((item, index) => ({
+          label: cleanText(item.label, 20) || String(index + 1),
+          section: cleanText(item.section, 40) || 'Savol',
+          question: cleanText(item.question, 500),
+          given: cleanText(item.given, 180) || 'javob berilmagan',
+          expected: cleanText(item.expected, 180),
+          isCorrect: item.isCorrect === true
+        }))
+      : (Array.isArray(body.wrong) ? body.wrong.slice(0, 60).map((item, index) => ({
+          label: String(index + 1),
+          section: cleanText(item.section, 40) || 'Savol',
+          question: cleanText(item.question, 500),
+          given: cleanText(item.given, 180) || 'javob berilmagan',
+          expected: cleanText(item.expected, 180),
+          isCorrect: false
+        })) : []);
+
+    if (!items.length) {
+      return res.status(400).json({ error: 'Tahlil uchun savollar topilmadi.' });
+    }
+
+    const reviewSource = items.map(item =>
+      `[${item.label}] [${item.section}] [${item.isCorrect ? 'TO_GRI' : 'XATO_YOKI_JAVOBSIZ'}]\nSavol: ${item.question}\nFoydalanuvchi javobi: ${item.given}\nTo'g'ri javob: ${item.expected}`
+    ).join('\n\n');
 
     const prompt = `Sen MATHLVL platformasidagi Ustoz AI matematika ustozisan.
-O'zbek tilida, o'quvchiga tushunarli va aniq yoz.
-Bu rasmiy BBA bali emas, faqat MATHLVL mock mashq natijasiga asoslangan tahlil.
+O'zbek tilida, o'quvchiga tushunarli, ixcham va aniq yoz.
+Bu rasmiy BBA bali emas, faqat MATHLVL mock mashq natijasiga asoslangan o'quv tahlili.
 
 Test: ${title}
 Natija: ${correct}/${total}
+Javob berilgan: ${answered}/${total}
 
-Xato yoki javobsiz elementlar:
-${mistakes}
+Quyida testdagi BARCHA baholanadigan javob elementlari bor:
+${reviewSource}
 
-Javobni 4 qisqa bo'limda ber:
-1) Qisqa xulosa — natijaning ma'nosi.
-2) Asosiy xatolar — 3-6 ta eng muhim tushuncha/mavzu.
-3) Nimalarni takrorlash kerak — aniq mavzular.
-4) Keyingi qadam — 3 bandli qisqa tayyorlanish rejasi.
+HAR BIR elementni berilgan tartibda birma-bir ko'rib chiq. Hech birini tashlab ketma.
+Har biri uchun aynan shu formatdan foydalan:
 
-Savollar ro'yxatidan mavzu chiqarish mumkin bo'lmasa, taxminni fakt sifatida aytma. O'quvchini kamsitma va rasmiy sertifikat bali deb ko'rsatma.`;
+### <label>-savol — ✅ To'g'ri
+yoki
+### <label>-savol — ❌ Xato
+yoki foydalanuvchi javob bermagan bo'lsa:
+### <label>-savol — ◻️ Javobsiz
+
+**Savol:** savolning mazmunini qisqa va tushunarli ko'rsat.
+**Sizning javobingiz:** foydalanuvchi javobi.
+**To'g'ri javob:** to'g'ri javob.
+**Yechish yo'li:** 2-4 ta qisqa matematik qadam bilan qanday ishlanishini ko'rsat.
+
+To'g'ri ishlangan savollarda ham yechish yo'lini yoz, lekin juda qisqa qil.
+Xato yoki javobsiz savollarda qayerda adashish mumkinligini bir jumlada tushuntir.
+Formulalarni Markdown/LaTeX bilan yozish mumkin.
+Savol matnida ma'lumot yetishmasa, o'zingdan shart yoki son to'qima.
+
+Barcha savollar tugagach:
+## Qisqa xulosa
+- 2-4 jumlada umumiy natijani ayt.
+- Xatolarga qarab 2-5 ta sust mavzuni sanab o't.
+- Keyingi mashg'ulot uchun 3 ta aniq tavsiya ber.
+- Rasmiy sertifikat bali deb ko'rsatma va o'quvchini kamsitma.
+
+Javobni imkon qadar ixcham saqla, lekin barcha elementlar bo'lishi shart.`;
 
     const result = await getGeminiFeedback(apiKey, prompt);
     if (!result?.response?.ok) {
