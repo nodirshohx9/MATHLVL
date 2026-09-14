@@ -91,6 +91,7 @@ html[data-theme="light"] #qr-scanner-wrap{background:rgba(245,248,255,.85)}
   const input = document.getElementById('manual-redeem-input');
   const scanBtn = document.getElementById('qr-scan-btn');
   const overlay = document.getElementById('redeem-screen-overlay');
+  const oldHelp = document.getElementById('sidebar-help-open');
 
   function openGift(){
     if(typeof openRedeemScreen === 'function') openRedeemScreen();
@@ -118,6 +119,17 @@ html[data-theme="light"] #qr-scanner-wrap{background:rgba(245,248,255,.85)}
     if(!overlay.classList.contains('open') && typeof stopQrScanner === 'function') stopQrScanner();
   }) : null;
   if(obs) obs.observe(overlay,{attributes:true,attributeFilter:['class']});
+
+  // The profile Help card is gone; keep the sidebar support action useful and route it to Telegram.
+  if(oldHelp){
+    const help = oldHelp.cloneNode(true);
+    oldHelp.replaceWith(help);
+    help.addEventListener('click', ()=>{
+      document.body.classList.remove('mobile-sidebar-open');
+      document.getElementById('mathlvl-mobile-menu-btn')?.setAttribute('aria-expanded','false');
+      window.open('https://t.me/mathlvl_admin','_blank','noopener,noreferrer');
+    });
+  }
 })();
 </script>
 '''
