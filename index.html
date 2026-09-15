@@ -6701,6 +6701,63 @@ html[data-theme="light"] #panel-teacher.view-teacher .chat-thumb{
   border-color:rgba(31,45,67,.09)!important;
 }
 
+
+/* ===== Home workspace is the primary navigation ===== */
+.hero-product-preview .hpp-link{
+  width:100%!important;
+  appearance:none!important;
+  -webkit-appearance:none!important;
+  border:0!important;
+  border-bottom:1px solid var(--v12-line)!important;
+  border-radius:0!important;
+  background:transparent!important;
+  color:inherit!important;
+  font:inherit!important;
+  text-align:left!important;
+  cursor:pointer!important;
+  box-shadow:none!important;
+}
+.hero-product-preview .hpp-link:last-child{
+  border-bottom:0!important;
+}
+.hero-product-preview .hpp-link:hover{
+  background:rgba(115,128,255,.055)!important;
+  transform:translateX(3px)!important;
+}
+.hero-product-preview .hpp-link:focus-visible{
+  outline:2px solid rgba(115,128,255,.62)!important;
+  outline-offset:-2px!important;
+}
+.hero-product-preview .hpp-copy{
+  min-width:0;
+  display:block;
+}
+.hero-product-preview .hpp-copy b{
+  display:block;
+}
+.hero-product-preview .hpp-copy small{
+  display:block;
+}
+.hero-product-preview .hpp-link .hpp-arrow{
+  transition:transform .15s ease,color .15s ease;
+}
+.hero-product-preview .hpp-link:hover .hpp-arrow{
+  transform:translate(2px,-2px);
+  color:#9ea9ff!important;
+}
+html[data-theme="light"] .hero-product-preview .hpp-link{
+  border-bottom-color:rgba(31,45,67,.075)!important;
+}
+html[data-theme="light"] .hero-product-preview .hpp-link:hover{
+  background:rgba(93,110,230,.055)!important;
+}
+
+/* Duplicate quick-access grid removed; keep no dead gap. */
+.dash-quick-title,
+.dash-quick-grid{
+  display:none!important;
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -6825,33 +6882,33 @@ html[data-theme="light"] #panel-teacher.view-teacher .chat-thumb{
           <span>Mock testlar</span>
         </div>
       </div>
-      <div class="hero-product-preview" aria-hidden="true">
+      <div class="hero-product-preview" aria-label="MATHLVL asosiy bo‘limlari">
         <div class="hpp-top">
           <span class="hpp-status-dot"></span>
           <span>MATHLVL workspace</span>
           <span class="hpp-status">online</span>
         </div>
-        <div class="hpp-metric">
+        <button class="hpp-metric hpp-link" type="button" data-home-target="books">
           <span class="hpp-icon">
             <svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg>
           </span>
-          <div><b>Kitoblar</b><small>O‘qish va davom ettirish</small></div>
+          <span class="hpp-copy"><b>Kitoblar</b><small>O‘qish va davom ettirish</small></span>
           <span class="hpp-arrow">↗</span>
-        </div>
-        <div class="hpp-metric">
+        </button>
+        <button class="hpp-metric hpp-link" type="button" data-home-target="teacher">
           <span class="hpp-icon">
             <svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg>
           </span>
-          <div><b>Ustoz AI</b><small>Qadam-baqadam tushuntirish</small></div>
+          <span class="hpp-copy"><b>Ustoz AI</b><small>Qadam-baqadam tushuntirish</small></span>
           <span class="hpp-arrow">↗</span>
-        </div>
-        <div class="hpp-metric">
+        </button>
+        <button class="hpp-metric hpp-link" type="button" data-home-target="mocktest">
           <span class="hpp-icon">
             <svg class="nova-svg-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
           </span>
-          <div><b>Milliy sertifikat</b><small>Real formatdagi mock testlar</small></div>
+          <span class="hpp-copy"><b>Milliy sertifikat</b><small>Real formatdagi mock testlar</small></span>
           <span class="hpp-arrow">↗</span>
-        </div>
+        </button>
       </div>
     </div>
 
@@ -6865,25 +6922,6 @@ html[data-theme="light"] #panel-teacher.view-teacher .chat-thumb{
         </div>
         <button class="glow-btn" id="dash-continue-btn" style="flex:none;">Davom etish</button>
       </div>
-    </div>
-
-    <div class="dash-quick-title">Asosiy bo‘limlar</div>
-    <div class="dash-quick-grid">
-      <button class="dash-quick-card" id="dash-quick-books">
-        <span class="dqc-ic" style="background:rgba(61,169,252,0.14); color:var(--blue);"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span>
-        <span class="dqc-title">Kitoblar</span>
-        <span class="dqc-sub">Barcha kitoblar</span>
-      </button>
-      <button class="dash-quick-card" id="dash-quick-teacher">
-        <span class="dqc-ic" style="background:rgba(255,201,60,0.14); color:var(--gold);"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg></span>
-        <span class="dqc-title">Ustoz AI</span>
-        <span class="dqc-sub">Tushuntirish va masalalar</span>
-      </button>
-      <button class="dash-quick-card" id="dash-quick-mocktest">
-        <span class="dqc-ic" style="background:rgba(74,222,128,0.14); color:var(--green, #4ADE80);"><svg class="nova-svg-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>
-        <span class="dqc-title">Mock Test</span>
-        <span class="dqc-sub">Milliy sertifikat tayyorgarligi</span>
-      </button>
     </div>
 
     <div class="dash-solve-section">
@@ -9607,9 +9645,11 @@ function refreshDashboard(){
     setTimeout(()=>{ openBookInChat(book); startReading(book); }, 80);
   };
 }
-document.getElementById('dash-quick-books').addEventListener('click', ()=> activateTab('books'));
-document.getElementById('dash-quick-teacher').addEventListener('click', ()=> activateTab('teacher'));
-document.getElementById('dash-quick-mocktest').addEventListener('click', ()=> activateTab('mocktest'));
+document.querySelectorAll('.hpp-link[data-home-target]').forEach(item=>{
+  item.addEventListener('click', ()=>{
+    activateTab(item.dataset.homeTarget);
+  });
+});
 
 (async ()=>{
   await loadBooks();
