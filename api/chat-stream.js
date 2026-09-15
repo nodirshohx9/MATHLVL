@@ -118,56 +118,97 @@ export default async function handler(request) {
   };
   if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-  let geminiRes;
-  try {
-    geminiRes = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(geminiBody) });
-  } catch (err) {
-    return jsonResponse({ error: err.message }, 500);
-  }
-
-  if (!geminiRes.ok || !geminiRes.body) {
-    const errData = await geminiRes.json().catch(() => ({}));
-    return jsonResponse({ error: errData.error?.message || 'Gemini API xatoligi' }, geminiRes.status);
-  }
-
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
+
+  // IMPORTANT: return the SSE response immediately. Vercel Edge stops a function
+  // if it waits too long before sending the first byte. Gemini can occasionally
+  // take >25s to open its upstream stream, so we connect the browser first and
+  // perform the Gemini fetch inside the response stream.
   const stream = new ReadableStream({
     async start(controller) {
-      const reader = geminiRes.body.getReader();
-      let buffer = '';
+      let closed = false;
+      const sendRaw = (chunk) => {
+        if (closed) return;
+        try { controller.enqueue(encoder.encode(chunk)); } catch {}
+      };
+      const sendEvent = (payload) => sendRaw(`data: ${JSON.stringify(payload)}\n\n`);
+
+      // First byte goes out immediately; the browser safely ignores SSE comments.
+      sendRaw(': connected\n\n');
+
+      // Keep the connection alive while Gemini is preparing its first token.
+      const heartbeat = setInterval(() => sendRaw(': ping\n\n'), 8000);
+
       try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
+        const upstreamAbort = new AbortController();
+        const upstreamTimeout = setTimeout(() => upstreamAbort.abort(), 60000);
+
+        let geminiRes;
+        try {
+          geminiRes = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(geminiBody),
+            signal: upstreamAbort.signal
+          });
+        } finally {
+          clearTimeout(upstreamTimeout);
+        }
+
+        if (!geminiRes.ok || !geminiRes.body) {
+          const errData = await geminiRes.json().catch(() => ({}));
+          sendEvent({ error: errData.error?.message || `Gemini API xatoligi (${geminiRes.status})` });
+          sendRaw('data: [DONE]\n\n');
+          return;
+        }
+
+        const reader = geminiRes.body.getReader();
+        let buffer = '';
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
+
           buffer += decoder.decode(value, { stream: true });
           const lines = buffer.split('\n');
-          buffer = lines.pop();
+          buffer = lines.pop() || '';
+
           for (const line of lines) {
             if (!line.startsWith('data: ')) continue;
             const jsonStr = line.slice(6).trim();
-            if (!jsonStr) continue;
+            if (!jsonStr || jsonStr === '[DONE]') continue;
+
             try {
               const parsed = JSON.parse(jsonStr);
-              const text = (parsed.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-              if (text) controller.enqueue(encoder.encode(`data: ${JSON.stringify({ text })}\n\n`));
+              const text = (parsed.candidates?.[0]?.content?.parts || [])
+                .map(p => p.text || '')
+                .join('');
+              if (text) sendEvent({ text });
             } catch {}
           }
         }
-        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+
+        sendRaw('data: [DONE]\n\n');
       } catch (err) {
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify({ error: err.message })}\n\n`));
+        const message = err?.name === 'AbortError'
+          ? 'Ustoz AI javobi kechikdi. Qayta urinib ko‘ring.'
+          : (err?.message || 'Ustoz AI bilan ulanishda xatolik.');
+        sendEvent({ error: message });
+        sendRaw('data: [DONE]\n\n');
       } finally {
-        controller.close();
+        clearInterval(heartbeat);
+        closed = true;
+        try { controller.close(); } catch {}
       }
     }
   });
 
   return new Response(stream, {
     headers: {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
       'Connection': 'keep-alive',
       'X-Accel-Buffering': 'no'
     }
