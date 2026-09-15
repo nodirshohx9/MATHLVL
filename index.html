@@ -8261,14 +8261,16 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
         if(!line.startsWith('data: ')) continue;
         const payload = line.slice(6).trim();
         if(payload === '[DONE]') continue;
-        try{
-          const parsed = JSON.parse(payload);
-          if(parsed.text){
-            fullText += parsed.text;
-            bubbleEl.textContent = fullText;
-            win.scrollTop = win.scrollHeight;
-          }
-        }catch(e){}
+        let parsed = null;
+        try{ parsed = JSON.parse(payload); }catch(e){}
+        if(parsed?.error){
+          throw new Error(parsed.error);
+        }
+        if(parsed?.text){
+          fullText += parsed.text;
+          bubbleEl.textContent = fullText;
+          win.scrollTop = win.scrollHeight;
+        }
       }
     }
 
@@ -8288,7 +8290,16 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
       bubbleEl.innerHTML = marked.parse(bubbleEl.textContent || "To'xtatildi.");
     }else{
       typingDiv.remove();
-      statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
+      const raw = String(err?.message || '');
+      if(/429|limit|Juda ko'p|limiti tugadi/i.test(raw)){
+        statusEl.textContent = raw || "Ustoz AI limiti tugadi. Birozdan keyin urinib ko‘ring.";
+      }else if(/401|tizimga kiring/i.test(raw)){
+        statusEl.textContent = "Ustoz AI uchun avval hisobingizga kiring.";
+      }else if(raw){
+        statusEl.textContent = raw;
+      }else{
+        statusEl.textContent = "Ustoz AI bilan ulanishda xatolik. Qayta urinib ko‘ring.";
+      }
       statusEl.classList.add('err');
     }
   }finally{
