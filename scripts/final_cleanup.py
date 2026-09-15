@@ -13,9 +13,12 @@ if start >= 0:
         raise SystemExit('Profile marker not found after stale mock overlay')
     s = s[:start] + s[end:]
 
+# Keep older source copies compatible with the current production wording.
 replacements = {
     'Test davomida javoblar avtomatik saqlanishi kerak.':
         'Natija test yakunida ushbu qurilmada saqlanadi.',
+    'Tanlangan javoblar test davomida saqlanadi.':
+        'Tanlangan javoblar test davomida eslab turiladi; natija test yakunida ushbu qurilmada saqlanadi.',
     'Yakunlangandan keyin natija va xatolar tahlili ko‘rsatiladi.':
         'MATHLVL Plus bilan testdan keyin Ustoz AI xatolaringizni tahlil qiladi.',
     'Ustoz AI uchun yuqoriroq limit':
@@ -39,14 +42,15 @@ for forbidden in (
     if forbidden in s:
         raise SystemExit(f'Stale production copy remains: {forbidden}')
 
+# Validate stable production behavior without forcing old Help copy.
 required = (
     'Natija test yakunida ushbu qurilmada saqlanadi.',
-    'MATHLVL Plus bilan testdan keyin Ustoz AI xatolaringizni tahlil qiladi.',
-    'Mock testdan keyingi Ustoz AI tahlili',
+    'id="mocktest-list"',
+    'data-help-topic="mock"',
 )
 for token in required:
     if token not in s:
-        raise SystemExit(f'Expected production copy missing: {token}')
+        raise SystemExit(f'Expected production token missing: {token}')
 
 p.write_text(s, encoding='utf-8')
-print('Cleaned stale mock overlay and aligned Help/Plus copy with production behavior')
+print('Cleaned stale mock overlay and aligned production copy.')
