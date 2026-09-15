@@ -33,11 +33,12 @@ old_report = '''  document.getElementById('help-report-btn')?.addEventListener('
     alert("Muammo haqida xabar berish formasi keyingi bosqichda Telegram/email yoki support API bilan ulanadi.");
   });'''
 new_report = '''  document.getElementById('help-report-btn')?.addEventListener('click', ()=>{
-    if(typeof window.openMathlvlSupport === 'function') window.openMathlvlSupport();
+    window.open('https://t.me/mathlvl_admin', '_blank', 'noopener,noreferrer');
   });'''
-if old_report not in s:
-    raise SystemExit('help report placeholder anchor not found')
-s = s.replace(old_report, new_report, 1)
+if old_report in s:
+    s = s.replace(old_report, new_report, 1)
+elif 'https://t.me/mathlvl_admin' not in s:
+    raise SystemExit('Help Center Telegram handler missing')
 
 support_ui = r'''
 <style>
@@ -105,10 +106,8 @@ html[data-theme="light"] .mathlvl-support-card{background:#fff;color:#14203a;bor
 })();
 </script>
 '''
-if 'id="mathlvl-support-overlay"' not in s:
-    if '</body>' not in s:
-        raise SystemExit('index body close not found')
-    s = s.replace('</body>', support_ui + '\n</body>', 1)
+# The main MATHLVL Help Center owns public support UI.
+# Do not inject the legacy internal support form here.
 
 for forbidden in ('claude-sonnet-4-6', 'callClaude', 'keyingi bosqichda Telegram/email'):
     if forbidden in s:
