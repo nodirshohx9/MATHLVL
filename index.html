@@ -3299,7 +3299,7 @@ function looksLikeLibraryTopicQuestion(text){
 
 async function findLibraryBooksForTopic(query){
   try{
-    const res = await fetch('/api/book-topic-search', {
+    const res = await fetch('/api/books?action=topic-search', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({ query })
