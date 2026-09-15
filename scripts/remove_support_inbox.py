@@ -7,7 +7,7 @@ s = INDEX.read_text(encoding='utf-8')
 a = ADMIN.read_text(encoding='utf-8')
 
 # Public sahifadagi eski ichki support modalini olib tashlaymiz.
-# Foydalanuvchi endi faqat Telegram orqali @mathlvl_admin ga yozadi.
+# Yordam markazi saqlanadi; bevosita aloqa Telegram @mathlvl_admin orqali ishlaydi.
 start = s.find('<style>\n#mathlvl-support-overlay[hidden]')
 if start != -1:
     marker = 'window.openMathlvlSupport = open;'
@@ -19,10 +19,9 @@ if start != -1:
         raise SystemExit('support modal script end not found')
     s = s[:start] + s[end + len('</script>'):]
 
-# Admin yon menyusidan "Xabarlar" tugmasini olib tashlaymiz.
+# Admin yon menyusidan eski "Xabarlar" tugmasini olib tashlaymiz.
 a = a.replace('      <button class="nav-item" data-page="support"><span class="ic">💬</span>Xabarlar</button>\n', '')
 
-# Admin support sahifasini olib tashlaymiz.
 support_start = a.find('      <!-- ============ SUPPORT ============ -->')
 if support_start != -1:
     settings_start = a.find('      <!-- ============ SOZLAMALAR ============ -->', support_start)
@@ -30,10 +29,8 @@ if support_start != -1:
         raise SystemExit('settings section after support not found')
     a = a[:support_start] + a[settings_start:]
 
-# Login paytida support inbox yangilanishini olib tashlaymiz.
 a = a.replace('      refreshSupportList();\n', '')
 
-# Admin support JavaScript blokini olib tashlaymiz.
 script_start = a.find('<script>\nasync function refreshSupportList(){')
 if script_start != -1:
     script_end = a.find('</script>', script_start)
@@ -41,10 +38,9 @@ if script_start != -1:
         raise SystemExit('admin support script end not found')
     a = a[:script_start] + a[script_end + len('</script>'):]
 
-# Telegram aloqa yo'li build oxirida saqlanib qolishi shart.
-for required in ('@mathlvl_admin', 'Telegramda yozish', 'https://t.me/mathlvl_admin'):
+for required in ('@mathlvl_admin', 'Telegram admin', 'https://t.me/mathlvl_admin', 'nova-help-overlay'):
     if required not in s:
-        raise SystemExit(f'Telegram support missing after cleanup: {required}')
+        raise SystemExit(f'Help/Telegram support missing after cleanup: {required}')
 
 for forbidden in ('mathlvl-support-overlay', '/api/support', 'openMathlvlSupport'):
     if forbidden in s:
