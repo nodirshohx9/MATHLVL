@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MATHLVL — MATEMATIKA KOINOTI</title>
+<title>MATHLVL — Matematika platformasi</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --space-1: #05060F;
@@ -918,6 +918,909 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
   filter:drop-shadow(0 3px 8px rgba(40,70,180,.18));
 }
 
+
+/* ===== MATHLVL v7 — 2026 professional product design ===== */
+:root{
+  --space-1:#090c12;
+  --space-2:#0c1018;
+  --space-3:#111722;
+  --panel:rgba(17,22,32,.92);
+  --panel-solid:#0e131c;
+  --border:rgba(255,255,255,.085);
+  --border-soft:rgba(255,255,255,.055);
+  --blue:#7b8cff;
+  --blue-soft:rgba(123,140,255,.12);
+  --gold:#9da9ff;
+  --gold-soft:rgba(157,169,255,.10);
+  --text:#f4f6fb;
+  --text-dim:#8f99aa;
+  --green:#72d6a1;
+  --red:#ff7b86;
+  --radius:14px;
+  --font-display:'Manrope',var(--font-body);
+  --font-body:'Inter',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --font-mono:'JetBrains Mono',ui-monospace,SFMono-Regular,Consolas,monospace;
+  --shadow-sm:0 8px 24px rgba(0,0,0,.18);
+  --shadow-md:0 18px 54px rgba(0,0,0,.26);
+}
+html{color-scheme:dark}
+body{
+  background:
+    radial-gradient(900px 500px at 72% -15%,rgba(123,140,255,.10),transparent 62%),
+    linear-gradient(180deg,#090c12 0%,#0b0f16 48%,#090c12 100%) !important;
+  color:var(--text);
+  letter-spacing:-.008em;
+}
+.stars,.floaters{display:none!important}
+*{scrollbar-color:#293142 transparent;scrollbar-width:thin}
+::selection{background:rgba(123,140,255,.28);color:#fff}
+
+.app{position:relative;z-index:2}
+.panel{animation:none!important}
+.sec-title,.dash-title,.hero-title,.book-card .b-title,.mt-card-title{
+  font-family:var(--font-display)!important;
+}
+.dash-title,.sec-title{color:var(--text)!important}
+.dash-title{
+  font-size:clamp(27px,3vw,36px)!important;
+  line-height:1.12;
+  font-weight:750!important;
+  letter-spacing:-.045em!important;
+}
+.dash-sub,.sec-sub{
+  color:var(--text-dim)!important;
+  line-height:1.55;
+}
+.sec-title{
+  font-size:clamp(23px,2.5vw,30px)!important;
+  font-weight:740!important;
+  letter-spacing:-.035em!important;
+}
+.dash-welcome{margin:0 0 22px!important}
+
+@media(min-width:900px){
+  .app-shell{min-height:100vh}
+  .app-sidebar{
+    width:252px!important;
+    min-height:100vh;
+    padding:22px 15px 18px!important;
+    background:rgba(11,15,22,.97)!important;
+    border-right:1px solid var(--border)!important;
+    box-shadow:none!important;
+  }
+  .app-sidebar .sidebar-logo{
+    padding:4px 11px 24px!important;
+    gap:10px!important;
+  }
+  .app-sidebar .sidebar-logo img{
+    width:28px!important;height:28px!important;
+    filter:none!important;
+  }
+  .app-sidebar .sidebar-logo span{
+    font-family:var(--font-display)!important;
+    font-size:18px!important;
+    font-weight:800!important;
+    letter-spacing:-.025em!important;
+  }
+  .sidebar-nav-item{
+    min-height:44px!important;
+    padding:10px 12px!important;
+    margin-bottom:3px!important;
+    border-radius:10px!important;
+    color:#9aa4b6!important;
+    font-size:13px!important;
+    font-weight:650!important;
+    background:transparent!important;
+    box-shadow:none!important;
+  }
+  .sidebar-nav-item:hover{
+    color:#eef1f7!important;
+    background:rgba(255,255,255,.045)!important;
+  }
+  .sidebar-nav-item.active{
+    color:#f7f8fb!important;
+    background:#171d29!important;
+    box-shadow:inset 2px 0 0 var(--blue)!important;
+  }
+  .sidebar-nav-item .ic{color:#aab4c7!important}
+  .sidebar-nav-item.active .ic{color:#aeb8ff!important}
+
+  .sidebar-profile-wrap{margin-top:auto!important}
+  .sidebar-profile-trigger{
+    min-height:60px!important;
+    border:1px solid transparent!important;
+    border-radius:12px!important;
+    padding:9px 10px!important;
+  }
+  .sidebar-profile-trigger:hover,.sidebar-profile-wrap.open .sidebar-profile-trigger{
+    background:#151b25!important;
+    border-color:var(--border)!important;
+  }
+  .sidebar-footer-avatar{
+    width:36px!important;height:36px!important;
+    background:#202737!important;
+    color:#dce2ef!important;
+    border:1px solid rgba(255,255,255,.08);
+  }
+  .sidebar-footer-text .sft-name{
+    font-size:12.5px!important;
+    color:#eef1f7!important;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .sidebar-footer-text .sft-plan{font-size:10.5px!important}
+  .sidebar-profile-menu{
+    bottom:69px!important;
+    padding:7px!important;
+    border-radius:12px!important;
+    background:#111720!important;
+    border:1px solid var(--border)!important;
+    box-shadow:0 20px 55px rgba(0,0,0,.42)!important;
+    backdrop-filter:blur(20px);
+  }
+  .sidebar-profile-action{
+    border-radius:8px!important;
+    padding:10px!important;
+    font-size:12.5px!important;
+    color:#aeb7c6!important;
+  }
+  .sidebar-profile-action:hover{
+    background:#1a202c!important;
+    color:#fff!important;
+  }
+
+  .app{
+    max-width:none!important;
+    width:100%!important;
+    min-width:0!important;
+    padding:42px clamp(32px,4.2vw,68px) 84px!important;
+  }
+  .panel{
+    max-width:1180px!important;
+    margin:0 auto!important;
+  }
+}
+
+.glass-card,.mt-card,.book-card,.dash-quick-card{
+  background:var(--panel)!important;
+  border:1px solid var(--border)!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+}
+.glass-card{border-radius:var(--radius)!important}
+.glass-card:hover{border-color:rgba(255,255,255,.11)!important}
+
+/* Home hero: restrained product presentation */
+.dash-home-hero{
+  min-height:270px!important;
+  margin:0 0 28px!important;
+  padding:0!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.15fr) minmax(320px,.85fr)!important;
+  gap:28px!important;
+  align-items:center!important;
+  overflow:hidden!important;
+  border:1px solid var(--border)!important;
+  border-radius:18px!important;
+  background:
+    linear-gradient(135deg,rgba(20,25,36,.98),rgba(14,19,28,.96))!important;
+  box-shadow:none!important;
+}
+.dash-home-hero:before{
+  content:""!important;
+  position:absolute!important;
+  inset:auto -120px -180px auto!important;
+  width:430px!important;height:430px!important;
+  border-radius:50%!important;
+  background:radial-gradient(circle,rgba(123,140,255,.12),transparent 68%)!important;
+  pointer-events:none!important;
+}
+.hero-copy{
+  padding:36px 0 36px 38px!important;
+  position:relative;z-index:2;
+}
+.hero-eyebrow{
+  margin-bottom:13px!important;
+  color:#909cff!important;
+  font-size:10px!important;
+  font-weight:800!important;
+  letter-spacing:.16em!important;
+}
+.hero-title{
+  max-width:580px;
+  margin:0 0 13px!important;
+  color:#f7f8fb!important;
+  font-size:clamp(28px,3.4vw,44px)!important;
+  line-height:1.04!important;
+  font-weight:780!important;
+  letter-spacing:-.055em!important;
+}
+.hero-sub{
+  max-width:570px!important;
+  margin:0!important;
+  color:#9da6b6!important;
+  font-size:14px!important;
+  line-height:1.68!important;
+}
+.hero-trust-row{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:25px;
+}
+.hero-trust-row span{
+  padding:7px 10px;
+  border:1px solid var(--border);
+  border-radius:8px;
+  background:rgba(255,255,255,.025);
+  color:#aab3c2;
+  font-size:11px;
+  font-weight:650;
+}
+.hero-product-preview{
+  position:relative;
+  z-index:2;
+  margin:22px 24px 22px 0;
+  padding:12px;
+  border:1px solid rgba(255,255,255,.09);
+  border-radius:14px;
+  background:#0c1119;
+  box-shadow:0 24px 70px rgba(0,0,0,.30);
+}
+.hpp-top{
+  height:38px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:0 8px 10px;
+  color:#7f8999;
+  font-size:10.5px;
+  border-bottom:1px solid var(--border-soft);
+}
+.hpp-status-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);
+  box-shadow:0 0 0 4px rgba(114,214,161,.08);
+}
+.hpp-status{
+  margin-left:auto;
+  color:#6f7a8d;
+  font-family:var(--font-mono);
+  font-size:9px;
+}
+.hpp-metric{
+  display:grid;
+  grid-template-columns:34px 1fr 20px;
+  align-items:center;
+  gap:11px;
+  min-height:63px;
+  padding:10px 8px;
+  border-bottom:1px solid var(--border-soft);
+}
+.hpp-metric:last-child{border-bottom:0}
+.hpp-icon{
+  width:34px;height:34px;
+  display:grid;place-items:center;
+  border-radius:9px;
+  color:#aab5ff;
+  background:rgba(123,140,255,.09);
+  border:1px solid rgba(123,140,255,.12);
+}
+.hpp-icon svg{width:17px;height:17px}
+.hpp-metric b{
+  display:block;
+  color:#edf0f6;
+  font-size:12px;
+  font-weight:680;
+  margin-bottom:3px;
+}
+.hpp-metric small{
+  display:block;
+  color:#747f91!important;
+  font-size:10.5px;
+}
+.hpp-arrow{
+  color:#596476;
+  font-size:13px;
+}
+
+/* Continue + quick access */
+.dash-continue-card{
+  padding:15px 16px!important;
+  margin-bottom:25px!important;
+  background:#101620!important;
+}
+.dash-continue-cover{
+  width:48px!important;height:64px!important;
+  border-radius:7px!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.26);
+}
+.dash-continue-title{font-size:14px!important}
+.dash-continue-meta{font-size:10.5px!important;color:#7f8999!important}
+.dash-continue-progress{
+  height:4px!important;
+  max-width:290px!important;
+  background:#202735!important;
+}
+.dash-continue-progress-fill{
+  background:var(--blue)!important;
+  border-radius:999px!important;
+}
+.dash-quick-title{
+  margin:0 0 10px!important;
+  color:#8d97a8!important;
+  font-size:11px!important;
+  font-weight:750!important;
+  letter-spacing:.08em!important;
+  text-transform:uppercase;
+}
+.dash-quick-grid{
+  grid-template-columns:repeat(3,minmax(0,1fr))!important;
+  gap:10px!important;
+  margin-bottom:36px!important;
+}
+.dash-quick-card{
+  min-height:112px!important;
+  padding:16px!important;
+  border-radius:12px!important;
+  gap:9px!important;
+  background:#101620!important;
+  transition:background .16s ease,border-color .16s ease,transform .16s ease!important;
+}
+.dash-quick-card:hover{
+  transform:translateY(-2px)!important;
+  background:#131a25!important;
+  border-color:rgba(123,140,255,.26)!important;
+}
+.dqc-ic{
+  width:34px!important;height:34px!important;
+  border-radius:8px!important;
+  background:rgba(123,140,255,.09)!important;
+  color:#a9b3ff!important;
+}
+.dqc-ic svg{width:18px!important;height:18px!important}
+.dqc-title{
+  color:#f1f3f8!important;
+  font-size:13.5px!important;
+  font-weight:700!important;
+}
+.dqc-sub{
+  color:#7f8999!important;
+  font-size:10.5px!important;
+  line-height:1.4;
+}
+
+/* Forms */
+label{
+  color:#808b9d!important;
+  font-size:10.5px!important;
+  font-weight:750!important;
+  letter-spacing:.08em!important;
+}
+textarea,input[type=text],input[type=number],select{
+  background:#0d131c!important;
+  border:1px solid var(--border)!important;
+  border-radius:10px!important;
+  color:#eef1f6!important;
+  font-family:var(--font-body)!important;
+  font-size:13.5px!important;
+  padding:13px 14px!important;
+  box-shadow:none!important;
+}
+textarea::placeholder,input::placeholder{color:#596476!important}
+textarea:focus,input:focus,select:focus{
+  outline:none!important;
+  border-color:rgba(123,140,255,.58)!important;
+  box-shadow:0 0 0 3px rgba(123,140,255,.10)!important;
+}
+.file-drop{
+  border:1px dashed rgba(255,255,255,.13)!important;
+  border-radius:10px!important;
+  background:#0c121b!important;
+  color:#7f8999!important;
+  padding:18px!important;
+}
+.file-drop:hover{border-color:rgba(123,140,255,.34)!important}
+
+button.glow-btn,.ai-desktop-btn{
+  border-radius:10px!important;
+  border:1px solid transparent!important;
+  background:#7586ff!important;
+  color:#fff!important;
+  font-family:var(--font-body)!important;
+  font-weight:720!important;
+  font-size:13px!important;
+  padding:11px 17px!important;
+  box-shadow:none!important;
+  transition:background .15s ease,transform .12s ease,border-color .15s ease!important;
+}
+button.glow-btn:hover,.ai-desktop-btn:hover{
+  background:#8695ff!important;
+  transform:translateY(-1px)!important;
+  box-shadow:none!important;
+}
+button.glow-btn:active,.ai-desktop-btn:active{transform:translateY(0)!important}
+button.ghost-btn{
+  border-radius:10px!important;
+  border:1px solid var(--border)!important;
+  background:#101620!important;
+  color:#cdd3de!important;
+  font-weight:650!important;
+  font-size:12.5px!important;
+  padding:10px 14px!important;
+}
+button.ghost-btn:hover{
+  background:#151c27!important;
+  border-color:rgba(255,255,255,.13)!important;
+  color:#fff!important;
+}
+.icon-btn{
+  width:38px!important;height:38px!important;
+  border-radius:10px!important;
+  background:#111823!important;
+  border:1px solid var(--border)!important;
+  color:#cbd2dd!important;
+}
+.icon-btn.send-btn{
+  background:#7586ff!important;
+  border-color:#7586ff!important;
+  color:#fff!important;
+}
+.chip-btn,.mt-filter-btn,.plan-toggle-btn{
+  border-radius:9px!important;
+  background:#111721!important;
+  border:1px solid var(--border)!important;
+  color:#9aa4b5!important;
+  box-shadow:none!important;
+}
+.chip-btn:hover,.mt-filter-btn:hover,.plan-toggle-btn:hover{
+  background:#161d28!important;
+  border-color:rgba(123,140,255,.26)!important;
+  color:#e7eaf0!important;
+}
+.mt-filter-btn.active,.plan-toggle-btn.active{
+  background:#20283a!important;
+  border-color:rgba(123,140,255,.30)!important;
+  color:#dfe4ff!important;
+}
+
+/* Solve/result */
+.dash-solve-section .glass-card{padding:22px!important;background:#101620!important}
+.result{border-top:1px solid var(--border-soft)!important}
+.result h3{color:#e9edf6!important}
+.step-num{
+  border:1px solid rgba(123,140,255,.28)!important;
+  color:#b7c0ff!important;
+  background:#171e2a!important;
+}
+.final-answer{
+  border:1px solid rgba(123,140,255,.24)!important;
+  background:#111824!important;
+}
+
+/* AI chat */
+#panel-teacher>.glass-card{padding:20px!important}
+.chat-window{
+  gap:11px!important;
+  max-height:500px!important;
+  padding:5px 2px 12px!important;
+}
+.msg{max-width:86%!important}
+.bubble{
+  border-radius:12px!important;
+  padding:11px 13px!important;
+  background:#121925!important;
+  border:1px solid var(--border-soft)!important;
+  color:#e8ebf1!important;
+  font-size:13.5px!important;
+  line-height:1.62!important;
+}
+.msg.user .bubble{
+  background:#1a2234!important;
+  border-color:rgba(123,140,255,.16)!important;
+}
+.msg.teacher .bubble{
+  background:#111822!important;
+  border-color:var(--border-soft)!important;
+}
+.quick-prompts{gap:7px!important}
+.chat-input-wrap{
+  margin-top:14px!important;
+  padding:9px!important;
+  border:1px solid var(--border)!important;
+  border-radius:13px!important;
+  background:#0d131c!important;
+}
+.chat-input-wrap textarea{
+  border:0!important;
+  background:transparent!important;
+  min-height:46px!important;
+  padding:8px 9px!important;
+  box-shadow:none!important;
+}
+.chat-input-actions{margin-top:4px!important}
+
+/* Library */
+#book-search{margin-bottom:12px!important}
+.book-grid{
+  grid-template-columns:repeat(auto-fill,minmax(170px,1fr))!important;
+  gap:12px!important;
+  margin-top:14px!important;
+}
+.book-card{
+  padding:10px!important;
+  border-radius:12px!important;
+  background:#101620!important;
+}
+.book-card:hover{
+  transform:translateY(-2px)!important;
+  border-color:rgba(123,140,255,.28)!important;
+  box-shadow:none!important;
+}
+.book-card img{
+  border-radius:8px!important;
+  margin-bottom:11px!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.22);
+}
+.book-card .b-title{
+  color:#edf0f6!important;
+  font-size:14px!important;
+  line-height:1.35!important;
+  font-weight:700!important;
+}
+.book-card .b-author{
+  color:#7e899b!important;
+  font-family:var(--font-body)!important;
+  font-size:10.5px!important;
+}
+
+/* Mock tests */
+.mocktest-header-row{margin-bottom:20px!important}
+.mocktest-list{gap:10px!important}
+.mt-card{
+  border-radius:12px!important;
+  padding:15px 16px!important;
+  background:#101620!important;
+}
+.mt-card-icon{
+  width:38px!important;height:38px!important;
+  border-radius:9px!important;
+  background:rgba(123,140,255,.09)!important;
+  color:#aab5ff!important;
+  font-family:Georgia,serif;
+  font-size:17px!important;
+}
+.mt-card-title{font-size:13.5px!important;color:#eef1f6!important}
+.mt-card-meta{
+  color:#7f8999!important;
+  font-family:var(--font-body)!important;
+  font-size:10.5px!important;
+}
+.mt-card-result{font-size:10.5px!important;color:#707b8e!important}
+#mock-question-text{color:#eef1f6!important}
+#mock-clock{color:#aab5ff!important}
+.result-kicker,.modal-kicker{
+  display:inline-flex;
+  align-items:center;
+  min-height:25px;
+  padding:5px 8px;
+  border:1px solid rgba(123,140,255,.18);
+  border-radius:7px;
+  background:rgba(123,140,255,.08);
+  color:#aeb8ff;
+  font-size:9.5px;
+  font-weight:800;
+  letter-spacing:.09em;
+  text-transform:uppercase;
+  margin-bottom:12px;
+}
+
+/* Profile + plans */
+.profile-hero{
+  gap:15px!important;
+  margin-bottom:18px!important;
+}
+.profile-hero-avatar{
+  width:66px!important;height:66px!important;
+  border-radius:16px!important;
+  background:#1a2230!important;
+  border:1px solid var(--border)!important;
+  color:#dfe5ef!important;
+}
+.profile-hero-avatar img{border-radius:16px!important}
+.profile-hero-name-row span:first-child{
+  font-size:19px!important;
+  letter-spacing:-.025em!important;
+}
+.plan-badge{
+  border-radius:7px!important;
+  font-size:9px!important;
+  letter-spacing:.06em!important;
+}
+.profile-grid{gap:12px!important}
+.profile-section-card{background:#101620!important}
+.profile-section-card h3{
+  margin-top:0!important;
+  font-size:14px!important;
+  color:#e9edf4!important;
+}
+.oauth-btn{
+  border-radius:10px!important;
+  background:#111721!important;
+  border-color:var(--border)!important;
+}
+.oauth-btn:hover{
+  background:#161d28!important;
+  border-color:rgba(123,140,255,.28)!important;
+}
+.fullscreen-overlay{
+  background:rgba(4,7,11,.72)!important;
+  backdrop-filter:blur(12px)!important;
+}
+.fullscreen-overlay-inner{
+  border-radius:16px!important;
+}
+.plan-card{background:#101620!important}
+.plan-price{letter-spacing:-.035em!important}
+
+/* Reader */
+.reader-header{margin-bottom:12px!important}
+.reader-body{
+  border:1px solid var(--border)!important;
+  border-radius:12px!important;
+  background:#080c12!important;
+}
+.reader-scroll{background:#080c12!important}
+.reader-page-item{box-shadow:0 14px 42px rgba(0,0,0,.34)!important}
+.reader-menu-popover,.reader-page-popover,.annotation-clear-confirm{
+  background:#111720!important;
+  border:1px solid var(--border)!important;
+  border-radius:12px!important;
+  box-shadow:var(--shadow-md)!important;
+}
+.reader-menu-item:hover{background:#171e29!important}
+.annotation-toolbar{
+  border-radius:12px!important;
+  background:#111720!important;
+  border-color:var(--border)!important;
+}
+
+/* Help */
+.nova-help-overlay{background:rgba(4,7,11,.72)!important}
+.nova-help-modal{
+  border-radius:16px!important;
+  background:#111720!important;
+  border:1px solid var(--border)!important;
+  box-shadow:0 28px 84px rgba(0,0,0,.42)!important;
+}
+.nova-help-head{border-bottom-color:var(--border-soft)!important}
+.nova-help-item{
+  border-radius:10px!important;
+  background:#141b26!important;
+  border-color:var(--border-soft)!important;
+}
+.nova-help-item:hover{
+  transform:none!important;
+  background:#18202c!important;
+  border-color:rgba(123,140,255,.18)!important;
+}
+.help-ic{
+  border-radius:9px!important;
+  background:#1b2230!important;
+  color:#aeb8ff!important;
+}
+.nova-help-report{
+  border-radius:11px!important;
+  background:#141b26!important;
+  border-color:var(--border)!important;
+}
+.nova-help-report button{
+  border-radius:9px!important;
+  background:#7586ff!important;
+}
+
+/* Mobile */
+@media(max-width:899px){
+  .app{padding:24px 15px 104px!important}
+  .panel{margin-top:7px!important}
+  .dash-welcome{margin:0 2px 16px!important}
+  .dash-title{font-size:27px!important}
+
+  .dash-home-hero{
+    min-height:0!important;
+    grid-template-columns:1fr!important;
+    gap:0!important;
+    border-radius:15px!important;
+    margin-bottom:20px!important;
+  }
+  .hero-copy{padding:24px 21px 18px!important}
+  .hero-title{font-size:30px!important}
+  .hero-sub{font-size:13px!important}
+  .hero-trust-row{margin-top:18px!important}
+  .hero-product-preview{
+    margin:0 14px 14px!important;
+  }
+
+  .dash-quick-grid{
+    grid-template-columns:repeat(3,minmax(0,1fr))!important;
+    gap:8px!important;
+    margin-bottom:28px!important;
+  }
+  .dash-quick-card{
+    min-height:104px!important;
+    padding:12px 10px!important;
+  }
+  .dqc-title{font-size:11.5px!important}
+  .dqc-sub{font-size:9.5px!important}
+  .dqc-ic{width:31px!important;height:31px!important}
+
+  .glass-card{padding:16px!important}
+  .bottom-nav{
+    display:flex!important;
+    left:10px!important;right:10px!important;bottom:10px!important;
+    padding:7px 5px calc(7px + env(safe-area-inset-bottom,0px))!important;
+    border:1px solid var(--border)!important;
+    border-radius:16px!important;
+    background:rgba(14,19,28,.93)!important;
+    backdrop-filter:blur(18px)!important;
+    box-shadow:0 16px 44px rgba(0,0,0,.35)!important;
+  }
+  .bottom-nav-item{
+    min-height:50px;
+    border-radius:10px!important;
+    color:#7f8999!important;
+    font-size:9px!important;
+  }
+  .bottom-nav-item.active{
+    color:#c2c9ff!important;
+    background:#1a2130!important;
+  }
+  .bottom-nav-item svg{width:19px!important;height:19px!important}
+
+  .book-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  .mt-card{gap:11px!important}
+  .mt-card-start{width:100%!important}
+  .profile-hero-avatar{width:58px!important;height:58px!important;border-radius:14px!important}
+  .profile-hero-avatar img{border-radius:14px!important}
+}
+
+@media(max-width:430px){
+  .hero-title{font-size:27px!important}
+  .hero-product-preview{padding:9px!important}
+  .hpp-metric{min-height:58px!important}
+  .hero-trust-row span{font-size:10px!important;padding:6px 8px!important}
+  .dash-quick-card{min-height:98px!important}
+}
+
+/* Light mode: same restraint, no toy-like gradients */
+html[data-theme="light"]{
+  color-scheme:light;
+  --space-1:#f5f7fa;
+  --space-2:#f1f4f8;
+  --space-3:#e9edf3;
+  --panel:#ffffff;
+  --panel-solid:#ffffff;
+  --border:rgba(20,32,54,.10);
+  --border-soft:rgba(20,32,54,.065);
+  --blue:#5f70e8;
+  --blue-soft:rgba(95,112,232,.10);
+  --gold:#6677e8;
+  --gold-soft:rgba(102,119,232,.09);
+  --text:#151b26;
+  --text-dim:#6f7989;
+}
+html[data-theme="light"] body{
+  background:#f5f7fa!important;
+  color:#151b26!important;
+}
+html[data-theme="light"] .app-sidebar{
+  background:#fff!important;
+  border-right-color:rgba(20,32,54,.09)!important;
+}
+html[data-theme="light"] .sidebar-nav-item{color:#667184!important}
+html[data-theme="light"] .sidebar-nav-item:hover{background:#f5f7fa!important;color:#202938!important}
+html[data-theme="light"] .sidebar-nav-item.active{
+  background:#eef1f8!important;
+  color:#263043!important;
+  box-shadow:inset 2px 0 0 #6677e8!important;
+}
+html[data-theme="light"] .sidebar-profile-trigger:hover,
+html[data-theme="light"] .sidebar-profile-wrap.open .sidebar-profile-trigger{
+  background:#f5f7fa!important;
+}
+html[data-theme="light"] .sidebar-profile-menu{
+  background:#fff!important;
+  box-shadow:0 20px 55px rgba(42,54,76,.14)!important;
+}
+html[data-theme="light"] .sidebar-profile-action:hover{background:#f3f5f9!important;color:#151b26!important}
+html[data-theme="light"] .sidebar-footer-text .sft-name{color:#202735!important}
+
+html[data-theme="light"] .glass-card,
+html[data-theme="light"] .mt-card,
+html[data-theme="light"] .book-card,
+html[data-theme="light"] .dash-quick-card,
+html[data-theme="light"] .profile-section-card,
+html[data-theme="light"] .plan-card{
+  background:#fff!important;
+  border-color:rgba(20,32,54,.10)!important;
+  box-shadow:none!important;
+}
+html[data-theme="light"] .dash-home-hero{
+  background:#fff!important;
+  border-color:rgba(20,32,54,.10)!important;
+}
+html[data-theme="light"] .hero-title,
+html[data-theme="light"] .dash-title,
+html[data-theme="light"] .sec-title,
+html[data-theme="light"] .dqc-title,
+html[data-theme="light"] .mt-card-title,
+html[data-theme="light"] .book-card .b-title{
+  color:#151b26!important;
+}
+html[data-theme="light"] .hero-sub,
+html[data-theme="light"] .dash-sub,
+html[data-theme="light"] .sec-sub,
+html[data-theme="light"] .dqc-sub{
+  color:#6f7989!important;
+}
+html[data-theme="light"] .hero-product-preview{
+  background:#f7f8fb!important;
+  border-color:rgba(20,32,54,.09)!important;
+  box-shadow:0 20px 50px rgba(44,57,80,.08)!important;
+}
+html[data-theme="light"] .hpp-metric b{color:#202735!important}
+html[data-theme="light"] .hpp-metric small{color:#788293!important}
+html[data-theme="light"] .hpp-icon{background:#eef1ff!important;color:#5d6ee4!important}
+html[data-theme="light"] .dash-quick-card:hover{background:#fafbfc!important}
+html[data-theme="light"] textarea,
+html[data-theme="light"] input[type=text],
+html[data-theme="light"] input[type=number],
+html[data-theme="light"] select,
+html[data-theme="light"] .file-drop,
+html[data-theme="light"] .chat-input-wrap{
+  background:#fafbfc!important;
+  color:#1d2532!important;
+}
+html[data-theme="light"] button.ghost-btn,
+html[data-theme="light"] .chip-btn,
+html[data-theme="light"] .mt-filter-btn,
+html[data-theme="light"] .plan-toggle-btn,
+html[data-theme="light"] .icon-btn{
+  background:#f8f9fb!important;
+  color:#4f5b6d!important;
+}
+html[data-theme="light"] button.ghost-btn:hover,
+html[data-theme="light"] .chip-btn:hover,
+html[data-theme="light"] .mt-filter-btn:hover{
+  background:#f1f3f7!important;
+  color:#1f2734!important;
+}
+html[data-theme="light"] .bubble{
+  background:#f6f7fa!important;
+  color:#253041!important;
+  border-color:rgba(20,32,54,.08)!important;
+}
+html[data-theme="light"] .msg.user .bubble{background:#eef1ff!important}
+html[data-theme="light"] .bottom-nav{
+  background:rgba(255,255,255,.94)!important;
+  border-color:rgba(20,32,54,.10)!important;
+  box-shadow:0 14px 40px rgba(44,57,80,.14)!important;
+}
+html[data-theme="light"] .bottom-nav-item.active{
+  background:#eef1f8!important;
+  color:#5869dc!important;
+}
+html[data-theme="light"] .nova-help-modal,
+html[data-theme="light"] .reader-menu-popover,
+html[data-theme="light"] .reader-page-popover,
+html[data-theme="light"] .annotation-clear-confirm{
+  background:#fff!important;
+}
+html[data-theme="light"] .nova-help-item,
+html[data-theme="light"] .nova-help-report{
+  background:#f8f9fb!important;
+  color:#263043!important;
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -1027,14 +1930,50 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
   <!-- ===== HOME / SOLVE ===== -->
   <section class="panel active" id="panel-home">
     <div class="dash-welcome">
-      <h1 class="dash-title">Xush kelibsiz!</h1>
+      <h1 class="dash-title">Xush kelibsiz</h1>
       <p class="dash-sub" id="dash-sub-text">Bugun nima o'rganishni davom ettiramiz?</p>
     </div>
 
     <div class="dash-home-hero">
-<div class="hero-copy"><div class="hero-eyebrow">MATHLVL · MATEMATIKA KOINOTI</div><h2 class="hero-title">Kitobdan masalagacha — hammasi bir joyda.</h2><p class="hero-sub">Matematika kitoblarini o‘qing, milliy sertifikat mock testlarini ishlang va Ustoz AI bilan tushunmagan joylaringizni aniqlashtiring.</p></div>
-<div class="hero-book-wrap" aria-hidden="true"><div class="hero-book-glow"></div><span class="hero-symbol s1">π</span><span class="hero-symbol s2">∑</span><span class="hero-symbol s3">x²</span>
-<svg class="hero-book" viewBox="0 0 300 190"><defs><linearGradient id="bookL" x1="0" x2="1"><stop stop-color="#163e9d"/><stop offset="1" stop-color="#5b7cff"/></linearGradient><linearGradient id="bookR" x1="0" x2="1"><stop stop-color="#6d78ff"/><stop offset="1" stop-color="#173f9f"/></linearGradient></defs><path d="M150 151C118 127 77 119 30 127l18-82c45-6 79 4 102 27z" fill="url(#bookL)" stroke="#7696ff" stroke-width="2"/><path d="M150 151c32-24 73-32 120-24l-18-82c-45-6-79 4-102 27z" fill="url(#bookR)" stroke="#7696ff" stroke-width="2"/><path d="M150 142c-28-21-62-29-101-23l13-61c36-2 66 7 88 27z" fill="#dbe7ff" opacity=".78"/><path d="M150 142c28-21 62-29 101-23l-13-61c-36-2-66 7-88 27z" fill="#b8caff" opacity=".72"/><path d="M150 72v79" stroke="#b8c9ff" stroke-width="3"/><path d="M72 82c22-1 42 4 59 14M68 101c23 0 43 5 61 15M228 82c-22-1-42 4-59 14M232 101c-23 0-43 5-61 15" stroke="#5f7ed6" stroke-width="3" opacity=".72"/></svg></div></div>
+      <div class="hero-copy">
+        <div class="hero-eyebrow">MATHLVL / MATEMATIKA PLATFORMASI</div>
+        <h2 class="hero-title">Matematikani tartibli o‘rganing.</h2>
+        <p class="hero-sub">Kitoblar, Milliy sertifikat mock testlari va Ustoz AI — bitta tinch, tez va tushunarli ish muhitida.</p>
+        <div class="hero-trust-row" aria-label="Platforma imkoniyatlari">
+          <span>Kitoblar</span>
+          <span>Ustoz AI</span>
+          <span>Mock testlar</span>
+        </div>
+      </div>
+      <div class="hero-product-preview" aria-hidden="true">
+        <div class="hpp-top">
+          <span class="hpp-status-dot"></span>
+          <span>MATHLVL workspace</span>
+          <span class="hpp-status">online</span>
+        </div>
+        <div class="hpp-metric">
+          <span class="hpp-icon">
+            <svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg>
+          </span>
+          <div><b>Kitoblar</b><small>O‘qish va davom ettirish</small></div>
+          <span class="hpp-arrow">↗</span>
+        </div>
+        <div class="hpp-metric">
+          <span class="hpp-icon">
+            <svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg>
+          </span>
+          <div><b>Ustoz AI</b><small>Qadam-baqadam tushuntirish</small></div>
+          <span class="hpp-arrow">↗</span>
+        </div>
+        <div class="hpp-metric">
+          <span class="hpp-icon">
+            <svg class="nova-svg-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
+          </span>
+          <div><b>Milliy sertifikat</b><small>Real formatdagi mock testlar</small></div>
+          <span class="hpp-arrow">↗</span>
+        </div>
+      </div>
+    </div>
 
     <div class="glass-card dash-continue-card" id="dash-continue-card" style="display:none;">
       <div class="dash-continue-row">
@@ -1068,7 +2007,7 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
     </div>
 
     <div class="dash-solve-section">
-      <h2 class="sec-title" style="font-size:19px;">Masalani kiriting</h2>
+      <h2 class="sec-title" style="font-size:19px;">Masala yechish</h2>
       <p class="sec-sub">Matn yozing yoki rasmga oling — MATHLVL bosqichma-bosqich yechim beradi.</p>
       <div class="glass-card">
         <div class="field">
@@ -1083,7 +2022,7 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
             <button type="button" class="clear-btn" id="solve-clear">Rasmni olib tashlash</button>
           </div>
         </div>
-        <button class="glow-btn" id="solve-btn">Yechib ber ✨</button>
+        <button class="glow-btn" id="solve-btn">Yechishni boshlash</button>
         <div class="status" id="solve-status"></div>
         <div class="result" id="solve-result">
           <h3>Yechim</h3>
@@ -1140,21 +2079,21 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
               <div class="reader-header-title" id="reader-header-title"></div>
               <div class="reader-header-desktop-controls" id="reader-header-desktop-controls">
                 <button class="reader-page-text" id="reader-page-text-desktop" title="Sahifaga o'tish">— / —</button>
-                <button class="ai-desktop-btn" id="ai-desktop-btn">✨ Ustoz AI</button>
+                <button class="ai-desktop-btn" id="ai-desktop-btn">Ustoz AI</button>
               </div>
               <button class="icon-btn" id="reader-menu-btn" title="Ko'proq" aria-label="Ko'proq">⋮</button>
             </div>
 
             <div class="reader-menu-popover" id="reader-menu-popover">
-              <button class="reader-menu-item" id="menu-page-jump-btn">🔢 Sahifaga o'tish</button>
-              <button class="reader-menu-item" id="menu-clear-page-btn">🗑 Sahifadagi belgilarni tozalash</button>
+              <button class="reader-menu-item" id="menu-page-jump-btn">Sahifaga o'tish</button>
+              <button class="reader-menu-item" id="menu-clear-page-btn">Belgilarni tozalash</button>
             </div>
 
             <div class="reader-body" id="reader-body">
               <div class="reader-main">
                 <div class="reader-canvas-wrap" id="reader-canvas-wrap">
                 <div class="reader-loading" id="reader-loading">
-                  <div id="reader-loading-text">📖 Kitob tayyorlanmoqda...</div>
+                  <div id="reader-loading-text">Kitob tayyorlanmoqda...</div>
                   <button class="ghost-btn" id="reader-retry-btn" style="display:none; margin-top:14px;">Qayta urinish</button>
                 </div>
                 <div class="reader-scroll" id="reader-scroll"></div>
@@ -1226,7 +2165,7 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
         <h2 class="sec-title" style="margin-bottom:2px;">Mock Test</h2>
         <p class="sec-sub" style="margin:0;">Bilimingizni sinab ko'ring va natijangizni yaxshilang.</p>
       </div>
-      <button class="ghost-btn" id="mocktest-results-btn" style="flex:none;">📊 Natijalar</button>
+      <button class="ghost-btn" id="mocktest-results-btn" style="flex:none;">Natijalar</button>
     </div>
 
     <div class="mocktest-filter-row" id="mocktest-filter-row">
@@ -1239,7 +2178,7 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
   <!-- ===== TEST TEZ ORADA (Mock Test 'Boshlash' bosilganda) ===== -->
   <div id="mocktest-soon-overlay" class="fullscreen-overlay">
     <div class="fullscreen-overlay-inner" style="text-align:center; max-width:380px;">
-      <div style="font-size:40px; margin-bottom:14px;">🚧</div>
+      <div class="modal-kicker">YANGILANMOQDA</div>
       <h2 class="sec-title" style="font-size:20px;">Tez orada</h2>
       <p class="sec-sub">Bu test hozircha tayyorlanmoqda. Savollar bazasi ulanishi bilan bu yerdan to'g'ridan-to'g'ri testni boshlay olasiz.</p>
       <button class="glow-btn" id="mocktest-soon-close" style="margin-top:10px;">Tushunarli</button>
@@ -1279,11 +2218,11 @@ html[data-theme="light"] .app-sidebar .sidebar-logo .mathlvl-logo-image{
 
       <div class="profile-grid">
         <div class="glass-card profile-section-card">
-          <h3>⭐ Sizning tarifingiz</h3>
+          <h3>Tarif</h3>
           <div id="subscription-card-body"></div>
         </div>
         <div class="glass-card profile-section-card">
-          <h3>📚 Mening kitoblarim</h3>
+          <h3>Mening kitoblarim</h3>
           <div id="my-books-body"></div>
         </div>
       </div>
@@ -2824,7 +3763,7 @@ async function openPlanSelect(plusData){
     noteEl.style.display = 'block';
     noteEl.innerHTML = `<div class="glass-card profile-section-card" style="margin-bottom:16px;">
       <div style="font-size:12px; color:var(--text-dim); margin-bottom:6px;">Sizning hozirgi tarifingiz</div>
-      <div style="color:var(--gold); font-family:var(--font-display);">⭐ MATHLVL Plus — Faol, ${dateStr}gacha</div>
+      <div style="color:var(--gold); font-family:var(--font-display);">MATHLVL Plus — Faol, ${dateStr}gacha</div>
     </div>`;
   }else{
     noteEl.style.display = 'none';
@@ -3152,7 +4091,7 @@ document.getElementById('manual-redeem-btn').addEventListener('click', async ()=
       statusEl.textContent = errMessages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
       statusEl.classList.add('err');
     }else{
-      statusEl.textContent = `🎉 ${data.durationDays} kunlik MATHLVL Plus faollashtirildi!`;
+      statusEl.textContent = `${data.durationDays} kunlik MATHLVL Plus faollashtirildi.`;
       input.value = '';
       refreshPlusStatus();
     }
@@ -3411,7 +4350,7 @@ function finishMockTest(autoFinish){
   const list = document.getElementById('mocktest-list');
   list.innerHTML = `
     <div class="glass-card" style="text-align:center;padding:28px;">
-      <div style="font-size:42px;">${percent>=70?'🏆':percent>=50?'📈':'📚'}</div>
+      <div class="result-kicker">Test yakunlandi</div>
       <h3>Natija: ${correct}/${total}</h3>
       <div style="font-size:30px;font-weight:800;color:var(--blue);">${percent}%</div>
       <div style="color:var(--text-dim);margin:8px 0 20px;">Javob berilgan: ${answered}/${total}${autoFinish?' • Vaqt tugadi':''}</div>
