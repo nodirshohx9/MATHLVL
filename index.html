@@ -2697,22 +2697,53 @@ document.getElementById('ai-sheet-input').addEventListener('keydown', (e)=>{
 refreshAllBookViews();
 
 // ================= PROFILE (haqiqiy Google login) =================
+function setUserAvatar(el, user){
+  if(!el) return;
+
+  const label = (user && (user.name || user.email)) || '?';
+  const fallback = label.charAt(0).toUpperCase();
+
+  el.innerHTML = '';
+
+  if(user && user.picture){
+    const img = document.createElement('img');
+    img.src = user.picture;
+    img.alt = 'Google profil rasmi';
+    img.referrerPolicy = 'no-referrer';
+    img.loading = 'eager';
+    img.addEventListener('error', ()=>{
+      el.innerHTML = '';
+      el.textContent = fallback;
+    }, { once:true });
+    el.appendChild(img);
+  }else{
+    el.textContent = fallback;
+  }
+}
+
 function showSignedOutUI(){
   document.getElementById('profile-logged-out').style.display = 'block';
   document.getElementById('profile-dashboard').style.display = 'none';
+
+  const sidebarAvatar = document.getElementById('sidebar-footer-avatar');
+  if(sidebarAvatar){
+    sidebarAvatar.innerHTML = '';
+    sidebarAvatar.textContent = '?';
+  }
 }
 function showSignedInUI(user){
   document.getElementById('profile-logged-out').style.display = 'none';
   document.getElementById('profile-dashboard').style.display = 'block';
 
-  const avatarEl = document.getElementById('profile-avatar');
-  if(user.picture){
-    avatarEl.innerHTML = `<img src="${user.picture}" alt="">`;
-  }else{
-    avatarEl.textContent = (user.name || user.email || '?').charAt(0).toUpperCase();
-  }
+  setUserAvatar(document.getElementById('profile-avatar'), user);
+  setUserAvatar(document.getElementById('sidebar-footer-avatar'), user);
+
   document.getElementById('profile-name').textContent = user.name || user.email;
   document.getElementById('profile-email').textContent = user.email;
+
+  const sidebarName = document.getElementById('sidebar-footer-name');
+  if(sidebarName) sidebarName.textContent = user.name || user.email || 'Profil';
+
   refreshPlusStatus();
   renderMyBooks();
 }
