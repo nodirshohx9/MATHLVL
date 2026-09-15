@@ -7983,9 +7983,38 @@ function appendMsg(role, text){
   win.scrollTop = win.scrollHeight;
 }
 
-function appendTypingBubble(){ const win = document.getElementById('chat-window'); const div = document.createElement('div'); div.className = 'msg teacher'; div.innerHTML = `<div class="bubble"></div>`; win.appendChild(div); win.scrollTop = win.scrollHeight; return div; }
+function appendTypingBubble(){
+  const win = document.getElementById('chat-window');
+  const div = document.createElement('div');
+  div.className = 'msg teacher';
+  div.innerHTML = `<div class="bubble typing-dots" aria-label="Ustoz AI javob tayyorlamoqda"><span></span><span></span><span></span></div>`;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+  return div;
+}
 
-function typewriterReveal(div, text){ const bubbleEl = div.querySelector('.bubble'); bubbleEl.classList.remove('typing-dots'); const win = document.getElementById('chat-window'); let i = 0; function step(){ i += 3; bubbleEl.textContent = text.slice(0, i); win.scrollTop = win.scrollHeight; if(i < text.length){ setTimeout(step, 12); }else{ bubbleEl.innerHTML = marked.parse(text); renderMathInElement(bubbleEl, { delimiters: [{left: "$$", right: "$$", display: true},{left: "$", right: "$", display: false}] }); win.scrollTop = win.scrollHeight; } } step(); }
+function cleanAiText(text){
+  return String(text || '')
+    .replace(/[\u200B-\u200D\uFEFF]/g,'')
+    .replace(/\uFFFD/g,'')
+    .trim();
+}
+
+function typewriterReveal(div, text){
+  const bubbleEl = div.querySelector('.bubble');
+  const win = document.getElementById('chat-window');
+  const finalText = cleanAiText(text);
+  bubbleEl.classList.remove('typing-dots');
+  bubbleEl.innerHTML = marked.parse(finalText);
+  renderMathInElement(bubbleEl, {
+    delimiters:[
+      {left:"$", right:"$", display:true},
+      {left:"$", right:"$", display:false}
+    ],
+    throwOnError:false
+  });
+  win.scrollTop = win.scrollHeight;
+}
 
 let chatImageBase64 = null;
 let chatImageMedia = null;
@@ -8205,7 +8234,10 @@ async function sendChat(){
     const waitingBubble = typingDiv.querySelector('.bubble');
     if(waitingBubble) waitingBubble.textContent = 'MATHLVL kutubxonasidan mos kitob qidirilyapti...';
     libraryRecommendation = await findLibraryBooksForTopic(text);
-    if(waitingBubble) waitingBubble.textContent = '';
+    if(waitingBubble){
+      waitingBubble.classList.add('typing-dots');
+      waitingBubble.innerHTML = '<span></span><span></span><span></span>';
+    }
   }
 
   let system = `Sen tajribali, mehribon va sabr-toqatli matematika ustozisan. O'zingni ismi bilan tanishtirma, shunchaki yordamchi sifatida javob ber. O'zbek tilida javob ber.
@@ -8268,26 +8300,32 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
         }
         if(parsed?.text){
           fullText += parsed.text;
-          bubbleEl.textContent = fullText;
-          win.scrollTop = win.scrollHeight;
         }
       }
     }
 
-    bubbleEl.innerHTML = marked.parse(fullText);
+    const finalText = cleanAiText(fullText);
+    if(!finalText) throw new Error("Ustoz AI bo‘sh javob qaytardi.");
+
+    bubbleEl.classList.remove('typing-dots');
+    bubbleEl.innerHTML = marked.parse(finalText);
     renderMathInElement(bubbleEl, {
       delimiters: [
         {left: "$", right: "$", display: true},
         {left: "$", right: "$", display: false}
-      ]
+      ],
+      throwOnError:false
     });
+    win.scrollTop = win.scrollHeight;
+
     if(libraryRecommendation.matches.length){
       renderTeacherBookRecommendations(typingDiv, libraryRecommendation.matches, libraryRecommendation.verified);
     }
-    chatHistory.push({ role:'assistant', content: fullText });
+    chatHistory.push({ role:'assistant', content: finalText });
   }catch(err){
     if(err.name === 'AbortError'){
-      bubbleEl.innerHTML = marked.parse(bubbleEl.textContent || "To'xtatildi.");
+      bubbleEl.classList.remove('typing-dots');
+      bubbleEl.textContent = "To‘xtatildi.";
     }else{
       typingDiv.remove();
       const raw = String(err?.message || '');
@@ -9089,7 +9127,7 @@ async function sendAiSheetMessage(text){
 
   const typingDiv = document.createElement('div');
   typingDiv.className = 'msg teacher';
-  typingDiv.innerHTML = `<div class="bubble"></div>`;
+  typingDiv.innerHTML = `<div class="bubble typing-dots" aria-label="Ustoz AI javob tayyorlamoqda"><span></span><span></span><span></span></div>`;
   document.getElementById('ai-sheet-chat').appendChild(typingDiv);
   const bubbleEl = typingDiv.querySelector('.bubble');
   const win = document.getElementById('ai-sheet-chat');
@@ -9124,17 +9162,22 @@ async function sendAiSheetMessage(text){
         if(payload === '[DONE]') continue;
         try{
           const parsed = JSON.parse(payload);
-          if(parsed.text){ fullText += parsed.text; bubbleEl.textContent = fullText; win.scrollTop = win.scrollHeight; }
+          if(parsed.text){ fullText += parsed.text; }
         }catch(e){}
       }
     }
-    bubbleEl.innerHTML = marked.parse(fullText);
+    const finalText = cleanAiText(fullText);
+    if(!finalText) throw new Error("Ustoz AI bo‘sh javob qaytardi.");
+    bubbleEl.classList.remove('typing-dots');
+    bubbleEl.innerHTML = marked.parse(finalText);
     renderMathInElement(bubbleEl, {
       delimiters: [
-        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: true},
         {left: "$", right: "$", display: false}
-      ]
+      ],
+      throwOnError:false
     });
+    win.scrollTop = win.scrollHeight;
   }catch(err){
     bubbleEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
   }
