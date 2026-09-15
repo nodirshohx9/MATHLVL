@@ -6758,6 +6758,36 @@ html[data-theme="light"] .hero-product-preview .hpp-link:hover{
   display:none!important;
 }
 
+
+/* ===== MATHLVL v13.3 — natural AI typewriter ===== */
+#panel-teacher.view-teacher .bubble.typewriter-active,
+.ai-panel .bubble.typewriter-active{
+  white-space:pre-wrap!important;
+}
+#panel-teacher.view-teacher .bubble.typewriter-active::after,
+.ai-panel .bubble.typewriter-active::after{
+  content:"";
+  display:inline-block;
+  width:1.5px;
+  height:1em;
+  margin-left:2px;
+  vertical-align:-.1em;
+  border-radius:2px;
+  background:currentColor;
+  opacity:.72;
+  animation:mathlvlTypingCaret .75s steps(1,end) infinite;
+}
+@keyframes mathlvlTypingCaret{
+  0%,48%{opacity:.72}
+  49%,100%{opacity:0}
+}
+@media(prefers-reduced-motion:reduce){
+  #panel-teacher.view-teacher .bubble.typewriter-active::after,
+  .ai-panel .bubble.typewriter-active::after{
+    animation:none!important;
+  }
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -8000,20 +8030,110 @@ function cleanAiText(text){
     .trim();
 }
 
-function typewriterReveal(div, text){
-  const bubbleEl = div.querySelector('.bubble');
-  const win = document.getElementById('chat-window');
-  const finalText = cleanAiText(text);
-  bubbleEl.classList.remove('typing-dots');
-  bubbleEl.innerHTML = marked.parse(finalText);
-  renderMathInElement(bubbleEl, {
+function renderAiAnswer(el, text){
+  el.innerHTML = marked.parse(cleanAiText(text));
+  renderMathInElement(el, {
     delimiters:[
       {left:"$", right:"$", display:true},
       {left:"$", right:"$", display:false}
     ],
     throwOnError:false
   });
-  win.scrollTop = win.scrollHeight;
+}
+
+function getAiTypingPreview(text){
+  const clean = cleanAiText(text);
+  const temp = document.createElement('div');
+
+  try{
+    renderAiAnswer(temp, clean);
+
+    // KaTeX keeps a hidden MathML copy for accessibility. Remove that copy so
+    // formulas do not appear twice in the temporary typing preview.
+    temp.querySelectorAll('.katex-mathml').forEach(node=>node.remove());
+    temp.querySelectorAll('br').forEach(br=>br.replaceWith('\n'));
+
+    const preview = (temp.innerText || temp.textContent || '')
+      .replace(/\n{3,}/g,'\n\n')
+      .trim();
+
+    if(preview) return preview;
+  }catch(e){}
+
+  // Safe fallback: hide markdown control characters while typing.
+  return clean
+    .replace(/```[a-z]*\n?/gi,'')
+    .replace(/```/g,'')
+    .replace(/\*\*|__/g,'')
+    .replace(/^#{1,6}\s+/gm,'')
+    .replace(/\$\$/g,'')
+    .replace(/\$/g,'')
+    .trim();
+}
+
+function waitForTyping(ms, signal){
+  return new Promise((resolve,reject)=>{
+    if(signal?.aborted){
+      const err = new Error('Stopped');
+      err.name = 'AbortError';
+      reject(err);
+      return;
+    }
+
+    const timer = setTimeout(()=>{
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+
+    function onAbort(){
+      clearTimeout(timer);
+      const err = new Error('Stopped');
+      err.name = 'AbortError';
+      reject(err);
+    }
+
+    signal?.addEventListener('abort', onAbort, { once:true });
+  });
+}
+
+async function typewriterReveal(div, text, options = {}){
+  const bubbleEl = div.querySelector('.bubble');
+  const scrollEl = options.scrollEl || document.getElementById('chat-window');
+  const signal = options.signal;
+  const finalText = cleanAiText(text);
+  const previewText = getAiTypingPreview(finalText);
+
+  bubbleEl.classList.remove('typing-dots');
+  bubbleEl.classList.add('typewriter-active');
+  bubbleEl.textContent = '';
+
+  for(let i = 0; i < previewText.length; i++){
+    if(signal?.aborted){
+      const err = new Error('Stopped');
+      err.name = 'AbortError';
+      throw err;
+    }
+
+    bubbleEl.textContent += previewText[i];
+
+    if((i % 3) === 0 && scrollEl){
+      scrollEl.scrollTop = scrollEl.scrollHeight;
+    }
+
+    const ch = previewText[i];
+    const delay =
+      ch === '\n' ? 18 :
+      /[.!?]/.test(ch) ? 34 :
+      /[,;:]/.test(ch) ? 18 :
+      ch === ' ' ? 3 : 8;
+
+    await waitForTyping(delay, signal);
+  }
+
+  bubbleEl.classList.remove('typewriter-active');
+  renderAiAnswer(bubbleEl, finalText);
+
+  if(scrollEl) scrollEl.scrollTop = scrollEl.scrollHeight;
 }
 
 let chatImageBase64 = null;
@@ -8307,16 +8427,10 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
     const finalText = cleanAiText(fullText);
     if(!finalText) throw new Error("Ustoz AI bo‘sh javob qaytardi.");
 
-    bubbleEl.classList.remove('typing-dots');
-    bubbleEl.innerHTML = marked.parse(finalText);
-    renderMathInElement(bubbleEl, {
-      delimiters: [
-        {left: "$", right: "$", display: true},
-        {left: "$", right: "$", display: false}
-      ],
-      throwOnError:false
+    await typewriterReveal(typingDiv, finalText, {
+      scrollEl: win,
+      signal: chatAbortController?.signal
     });
-    win.scrollTop = win.scrollHeight;
 
     if(libraryRecommendation.matches.length){
       renderTeacherBookRecommendations(typingDiv, libraryRecommendation.matches, libraryRecommendation.verified);
@@ -9168,16 +9282,7 @@ async function sendAiSheetMessage(text){
     }
     const finalText = cleanAiText(fullText);
     if(!finalText) throw new Error("Ustoz AI bo‘sh javob qaytardi.");
-    bubbleEl.classList.remove('typing-dots');
-    bubbleEl.innerHTML = marked.parse(finalText);
-    renderMathInElement(bubbleEl, {
-      delimiters: [
-        {left: "$", right: "$", display: true},
-        {left: "$", right: "$", display: false}
-      ],
-      throwOnError:false
-    });
-    win.scrollTop = win.scrollHeight;
+    await typewriterReveal(typingDiv, finalText, { scrollEl: win });
   }catch(err){
     bubbleEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
   }
