@@ -44,9 +44,9 @@ for forbidden in (
 
 # Validate stable production behavior without forcing old Help copy.
 required = (
-    'Natija test yakunida ushbu qurilmada saqlanadi.',
     'id="mocktest-list"',
     'data-help-topic="mock"',
+    'id="nova-help-overlay"',
 )
 for token in required:
     if token not in s:
