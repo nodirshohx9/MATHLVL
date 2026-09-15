@@ -5436,10 +5436,7 @@ textarea,input,select,.bottom-nav{
 
 /* ===== MATHLVL v12.1 — Solve reliability + UX ===== */
 .solve-section-head{
-  display:flex;
-  align-items:flex-end;
-  justify-content:space-between;
-  gap:18px;
+  display:block;
   margin-bottom:14px;
 }
 .solve-section-head .sec-title{margin:0 0 4px!important}
@@ -5450,25 +5447,6 @@ textarea,input,select,.bottom-nav{
   font-size:8.5px;
   font-weight:850;
   letter-spacing:.16em;
-}
-.solve-capability-badge{
-  flex:none;
-  min-height:30px;
-  display:inline-flex;
-  align-items:center;
-  gap:7px;
-  padding:0 10px;
-  border:1px solid var(--v12-line);
-  border-radius:9px;
-  background:#0f141b;
-  color:#748093;
-  font-size:9.5px;
-  font-weight:650;
-}
-.solve-capability-badge span{
-  width:6px;height:6px;border-radius:50%;
-  background:#62d69a;
-  box-shadow:0 0 0 4px rgba(98,214,154,.07);
 }
 .solve-card{
   padding:20px!important;
@@ -5742,11 +5720,6 @@ textarea,input,select,.bottom-nav{
 }
 #solve-final b{color:#7cdda6!important}
 
-html[data-theme="light"] .solve-capability-badge{
-  background:#fff;
-  color:#6f7b8e;
-  border-color:rgba(31,45,67,.09);
-}
 html[data-theme="light"] .solve-card{background:#fff!important}
 html[data-theme="light"] .solve-file-drop{
   background:#f8fafc!important;
@@ -6010,7 +5983,6 @@ html[data-theme="light"] #solve-final b{color:#27865a!important}
           <h2 class="sec-title" style="font-size:21px;">Masala yechish</h2>
           <p class="sec-sub">Masalani yozing yoki rasmini yuklang — MATHLVL yechimni qadam-baqadam tushuntiradi.</p>
         </div>
-        <div class="solve-capability-badge"><span></span>Matn + rasm</div>
       </div>
 
       <div class="glass-card solve-card">
@@ -6085,7 +6057,6 @@ html[data-theme="light"] #solve-final b{color:#27865a!important}
           <p class="sec-sub" id="panel-teacher-sub">Matematika uchun aqlli yordamchi.</p>
         </div>
       </div>
-      <div class="ai-library-status"><span></span><b>Kutubxona ulangan</b></div>
     </div>
     <div class="glass-card">
       <div class="teacher-layout" id="teacher-layout">
