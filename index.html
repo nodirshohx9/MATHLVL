@@ -2205,6 +2205,102 @@ html[data-theme="light"] .empty-note{
 }
 
 
+
+/* ===== Ustoz AI -> MATHLVL library recommendations ===== */
+.ai-book-recommendations{
+  display:grid;
+  gap:9px;
+  margin-top:11px;
+}
+.ai-book-rec-label{
+  color:#727e91;
+  font-size:10px;
+  font-weight:750;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.ai-book-rec-card{
+  display:grid;
+  grid-template-columns:52px minmax(0,1fr) auto;
+  align-items:center;
+  gap:11px;
+  padding:9px;
+  border:1px solid rgba(255,255,255,.075);
+  border-radius:12px;
+  background:#0d141d;
+}
+.ai-book-rec-cover{
+  width:52px;
+  height:68px;
+  overflow:hidden;
+  border-radius:7px;
+  background:#18202c;
+  border:1px solid rgba(255,255,255,.06);
+}
+.ai-book-rec-cover img{
+  width:100%;
+  height:100%;
+  display:block;
+  object-fit:cover;
+}
+.ai-book-rec-fallback{
+  width:100%;
+  height:100%;
+  display:grid;
+  place-items:center;
+  padding:5px;
+  color:#8798ff;
+  font:800 8px/1.1 var(--font-body);
+  text-align:center;
+}
+.ai-book-rec-info{min-width:0}
+.ai-book-rec-title{
+  overflow:hidden;
+  color:#edf1f7;
+  font-size:12.5px;
+  font-weight:720;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.ai-book-rec-meta{
+  margin-top:4px;
+  color:#748094;
+  font-size:10.5px;
+  line-height:1.35;
+}
+.ai-book-rec-proof{
+  margin-top:5px;
+  color:#72c99a;
+  font-size:9.5px;
+}
+.ai-book-rec-open{
+  min-height:34px!important;
+  padding:8px 10px!important;
+  border-radius:8px!important;
+  white-space:nowrap;
+  font-size:10.5px!important;
+}
+html[data-theme="light"] .ai-book-rec-card{
+  background:#f8fafc;
+  border-color:rgba(28,45,73,.09);
+}
+html[data-theme="light"] .ai-book-rec-title{color:#1a2435}
+html[data-theme="light"] .ai-book-rec-cover{
+  background:#eef2f7;
+  border-color:rgba(28,45,73,.07);
+}
+@media(max-width:520px){
+  .ai-book-rec-card{
+    grid-template-columns:44px minmax(0,1fr);
+  }
+  .ai-book-rec-cover{width:44px;height:58px}
+  .ai-book-rec-open{
+    grid-column:1/-1;
+    width:100%;
+  }
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -3194,6 +3290,130 @@ document.getElementById('chat-image-input').addEventListener('change', (e)=>{
   reader.readAsDataURL(file);
 });
 
+
+function looksLikeLibraryTopicQuestion(text){
+  const q = String(text || '').toLowerCase();
+  if(!q) return false;
+  return /(qaysi|qayer|qanaqa|qanday).*?(kitob|darslik)|(?:kitob|darslik).*?(mavzu|bor|top|tavsiya)|(?:mavzu).*?(qaysi|qayer).*?(kitob|darslik)|(?:shu|bu).*?(mavzu).*?(kitob|darslik)/i.test(q);
+}
+
+async function findLibraryBooksForTopic(query){
+  try{
+    const res = await fetch('/api/book-topic-search', {
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({ query })
+    });
+    if(!res.ok) return { matches:[], verified:false };
+    const data = await res.json();
+    return {
+      matches:Array.isArray(data.matches) ? data.matches : [],
+      verified:!!data.verified
+    };
+  }catch(e){
+    return { matches:[], verified:false };
+  }
+}
+
+function getBookByIdFromLibrary(id){
+  return booksCache.find(book => String(book.id) === String(id)) || null;
+}
+
+async function openBookFromTeacherRecommendation(bookId){
+  if(!booksCache.length) await loadBooks();
+  const book = getBookByIdFromLibrary(bookId);
+  if(!book) return;
+
+  activateTab('books');
+
+  const search = document.getElementById('book-search');
+  if(search){
+    search.value = book.title || '';
+    if(typeof runBookSearch === 'function') runBookSearch();
+  }
+
+  window.setTimeout(()=>{
+    openBookInChat(book);
+    const panel = document.getElementById('panel-teacher');
+    panel?.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 80);
+}
+
+function renderTeacherBookRecommendations(messageDiv, matches, verified){
+  if(!messageDiv || !Array.isArray(matches) || !matches.length) return;
+
+  const old = messageDiv.querySelector('.ai-book-recommendations');
+  if(old) old.remove();
+
+  const wrap = document.createElement('div');
+  wrap.className = 'ai-book-recommendations';
+
+  const label = document.createElement('div');
+  label.className = 'ai-book-rec-label';
+  label.textContent = verified ? 'MATHLVL kitobidan topildi' : 'MATHLVL kutubxonasidan tavsiya';
+  wrap.appendChild(label);
+
+  matches.slice(0,3).forEach(match=>{
+    const card = document.createElement('div');
+    card.className = 'ai-book-rec-card';
+
+    const cover = document.createElement('div');
+    cover.className = 'ai-book-rec-cover';
+    if(match.coverUrl){
+      const img = document.createElement('img');
+      img.src = match.coverUrl;
+      img.alt = match.title || 'Kitob muqovasi';
+      img.loading = 'lazy';
+      cover.appendChild(img);
+    }else{
+      const fallback = document.createElement('div');
+      fallback.className = 'ai-book-rec-fallback';
+      fallback.textContent = 'MATHLVL';
+      cover.appendChild(fallback);
+    }
+
+    const info = document.createElement('div');
+    info.className = 'ai-book-rec-info';
+
+    const titleEl = document.createElement('div');
+    titleEl.className = 'ai-book-rec-title';
+    titleEl.textContent = match.title || 'Kitob';
+
+    const metaEl = document.createElement('div');
+    metaEl.className = 'ai-book-rec-meta';
+    metaEl.textContent = [match.grade && match.grade !== 'ALL' ? match.grade : '', match.subject || '', match.author || '']
+      .filter(Boolean)
+      .join(' • ');
+
+    info.appendChild(titleEl);
+    info.appendChild(metaEl);
+
+    if(match.verified){
+      const proof = document.createElement('div');
+      proof.className = 'ai-book-rec-proof';
+      proof.textContent = match.reason ? 'Mavzu tekshirildi: ' + match.reason : 'Mavzu kitob ichidan tekshirildi';
+      info.appendChild(proof);
+    }
+
+    const openBtn = document.createElement('button');
+    openBtn.type = 'button';
+    openBtn.className = 'ghost-btn ai-book-rec-open';
+    openBtn.textContent = 'Kitobni ochish';
+    openBtn.addEventListener('click', ()=> openBookFromTeacherRecommendation(match.id));
+
+    card.appendChild(cover);
+    card.appendChild(info);
+    card.appendChild(openBtn);
+    wrap.appendChild(card);
+  });
+
+  messageDiv.appendChild(wrap);
+  document.getElementById('chat-window')?.scrollTo({
+    top:document.getElementById('chat-window').scrollHeight,
+    behavior:'smooth'
+  });
+}
+
 async function sendChat(){
   const input = document.getElementById('chat-input');
   const text = input.value.trim();
@@ -3234,6 +3454,14 @@ async function sendChat(){
   // Yuborish tugmasi javob paytida Stop vazifasini bajaradi, shuning uchun disabled bo'lmasin.
   btn.disabled = false;
 
+  let libraryRecommendation = { matches:[], verified:false };
+  if(text && looksLikeLibraryTopicQuestion(text)){
+    const waitingBubble = typingDiv.querySelector('.bubble');
+    if(waitingBubble) waitingBubble.textContent = 'MATHLVL kutubxonasidan mos kitob qidirilyapti...';
+    libraryRecommendation = await findLibraryBooksForTopic(text);
+    if(waitingBubble) waitingBubble.textContent = '';
+  }
+
   let system = `Sen tajribali, mehribon va sabr-toqatli matematika ustozisan. O'zingni ismi bilan tanishtirma, shunchaki yordamchi sifatida javob ber. O'zbek tilida javob ber.
 Foydalanuvchi biror mavzuni tushuntirishni so'rasa, HAQIQIY matematik tushuntirish ber: ta'rif, qoida yoki formula, so'ng kamida bitta yechilgan misol bilan bosqichma-bosqich ko'rsat va agar foydalanuvchining senga bergan savoli boshqa fan yoki matematikadan uzoqda bo'lsa unga men faqat matematika faniga asoslanganman deb javob berasan agar u seni kimligingni so'rasa men matematika o'qtuvchingizman diysan.
 Umumiy, mazmunsiz yoki reklama uslubidagi gaplar ("bu oson", "bemalol uddalaysiz" kabi) bilan cheklanma — doim aniq matematik mazmun ber.
@@ -3242,6 +3470,18 @@ Agar foydalanuvchi test yoki mashq so'rasa, mavzu bo'yicha savollarni to'g'ridan
 Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
   if(activeBook){
     system += `\n\nFoydalanuvchi hozir "${activeBook.title}" nomli darslik bilan ishlayapti (PDF holida, siz matnini ko'rmaysiz). Savollariga umumiy matematik bilim asosida javob bering, kerak bo'lsa aniqroq savol so'rang.`;
+  }
+
+  if(libraryRecommendation.matches.length){
+    const libraryLines = libraryRecommendation.matches.map((book, i)=>{
+      const status = book.verified ? 'PDF ichidan mavzu topildi' : 'katalog bo‘yicha eng mos';
+      return `${i+1}. "${book.title}" | ${book.grade || ''} | ${book.subject || ''} | ${status}${book.reason ? ' | ' + book.reason : ''}`;
+    }).join('\n');
+
+    system += `\n\nMATHLVL KUTUBXONASI NATIJASI:
+${libraryLines}
+
+Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqoridagi real MATHLVL kitoblaridan tavsiya qil. Kitob nomini aniq yoz. Saytda yo‘q kitobni o‘ylab topma. Javob oxirida foydalanuvchiga pastdagi “Kitobni ochish” tugmasi orqali kitobga o‘tishi mumkinligini qisqa ayt.`;
   }
 
   const bubbleEl = typingDiv.querySelector('.bubble');
@@ -3289,10 +3529,13 @@ Javoblaring tushunarli va batafsil bo'lsin, lekin ortiqcha cho'zilmasin.`;
     bubbleEl.innerHTML = marked.parse(fullText);
     renderMathInElement(bubbleEl, {
       delimiters: [
-        {left: "$$", right: "$$", display: true},
+        {left: "$", right: "$", display: true},
         {left: "$", right: "$", display: false}
       ]
     });
+    if(libraryRecommendation.matches.length){
+      renderTeacherBookRecommendations(typingDiv, libraryRecommendation.matches, libraryRecommendation.verified);
+    }
     chatHistory.push({ role:'assistant', content: fullText });
   }catch(err){
     if(err.name === 'AbortError'){
