@@ -49,7 +49,6 @@ if old not in s:
     raise SystemExit('profile gift card not found')
 s = s.replace(old, new, 1)
 
-# Improve copy/placeholder in the existing redeem screen without changing backend behavior.
 s = s.replace(
     '<p style="font-size:13px; color:var(--text-dim); margin-bottom:20px;">QR kodni skaner qiling yoki kodni kiriting.</p>',
     '<p style="font-size:13px; color:var(--text-dim); margin-bottom:18px;">Usulni tanlang: QR skaner yoki sovg\'a kodini qo\'lda kiriting.</p>',
@@ -91,7 +90,6 @@ html[data-theme="light"] #qr-scanner-wrap{background:rgba(245,248,255,.85)}
   const input = document.getElementById('manual-redeem-input');
   const scanBtn = document.getElementById('qr-scan-btn');
   const overlay = document.getElementById('redeem-screen-overlay');
-  const oldHelp = document.getElementById('sidebar-help-open');
 
   function openGift(){
     if(typeof openRedeemScreen === 'function') openRedeemScreen();
@@ -100,7 +98,6 @@ html[data-theme="light"] #qr-scanner-wrap{background:rgba(245,248,255,.85)}
 
   qrQuick?.addEventListener('click', ()=>{
     openGift();
-    // Keep scanner start in the same user gesture for stricter mobile browsers.
     scanBtn?.click();
   });
 
@@ -114,22 +111,12 @@ html[data-theme="light"] #qr-scanner-wrap{background:rgba(245,248,255,.85)}
     try{ input.setSelectionRange(pos,pos); }catch(e){}
   });
 
-  // If the redeem overlay is closed by any future UI action, make sure camera is released.
   const obs = overlay ? new MutationObserver(()=>{
     if(!overlay.classList.contains('open') && typeof stopQrScanner === 'function') stopQrScanner();
   }) : null;
   if(obs) obs.observe(overlay,{attributes:true,attributeFilter:['class']});
 
-  // The profile Help card is gone; keep the sidebar support action useful and route it to Telegram.
-  if(oldHelp){
-    const help = oldHelp.cloneNode(true);
-    oldHelp.replaceWith(help);
-    help.addEventListener('click', ()=>{
-      document.body.classList.remove('mobile-sidebar-open');
-      document.getElementById('mathlvl-mobile-menu-btn')?.setAttribute('aria-expanded','false');
-      window.open('https://t.me/mathlvl_admin','_blank','noopener,noreferrer');
-    });
-  }
+  // Help behavior is owned by the main Help Center. Do not replace its click handler here.
 })();
 </script>
 '''
