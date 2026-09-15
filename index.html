@@ -6643,6 +6643,64 @@ html[data-theme="light"] .solve-image-preview img{
   }
 }
 
+
+/* ===== MATHLVL v13.2 — reliable AI composer controls ===== */
+#panel-teacher.view-teacher .chat-input-actions .ai-attach-btn{
+  margin:0!important;
+  padding:0!important;
+  cursor:pointer!important;
+  user-select:none!important;
+  flex:none!important;
+}
+#panel-teacher.view-teacher .chat-input-actions .ai-attach-btn:hover{
+  transform:none!important;
+}
+#panel-teacher.view-teacher .chat-input-actions .send-btn svg[hidden]{
+  display:none!important;
+}
+#panel-teacher.view-teacher .chat-thumb{
+  width:max-content!important;
+  max-width:180px!important;
+  min-height:46px!important;
+  display:flex!important;
+  align-items:center!important;
+  gap:7px!important;
+  padding:5px!important;
+  border:1px solid var(--v12-line)!important;
+  border-radius:11px!important;
+  background:#10161e!important;
+}
+#panel-teacher.view-teacher .chat-thumb img{
+  width:46px!important;
+  height:46px!important;
+  object-fit:cover!important;
+  border-radius:8px!important;
+}
+#panel-teacher.view-teacher .chat-thumb .rm{
+  width:25px!important;
+  height:25px!important;
+  display:grid!important;
+  place-items:center!important;
+  border:0!important;
+  border-radius:7px!important;
+  background:transparent!important;
+  color:#748093!important;
+  cursor:pointer!important;
+  font-size:15px!important;
+  line-height:1!important;
+}
+#panel-teacher.view-teacher .chat-thumb .rm:hover{
+  background:rgba(255,112,124,.08)!important;
+  color:#ff808b!important;
+}
+#panel-teacher.view-teacher #chat-status:empty{
+  display:none!important;
+}
+html[data-theme="light"] #panel-teacher.view-teacher .chat-thumb{
+  background:#f7f9fc!important;
+  border-color:rgba(31,45,67,.09)!important;
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -6943,21 +7001,15 @@ html[data-theme="light"] .solve-image-preview img{
             <div class="chat-input-wrap">
               <textarea id="chat-input" placeholder="Mavzu, masala yoki kitob haqida yozing..." rows="1"></textarea>
               <div class="chat-input-actions">
-                <input type="file" id="chat-image-input" accept="image/*" style="display:none;">
-                <button class="icon-btn ai-attach-btn" id="chat-image-btn" title="Rasm biriktirish" aria-label="Rasm biriktirish">
-                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-                </button>
+                <input type="file" id="chat-image-input" accept="image/jpeg,image/png,image/webp" hidden>
+                <label class="icon-btn ai-attach-btn" id="chat-image-btn" for="chat-image-input" title="Rasm biriktirish" aria-label="Rasm biriktirish">
+                  <svg viewBox="0 0 24 24"><path d="M8 12.5 13.4 7a3 3 0 0 1 4.2 4.2l-7.2 7.3a4.5 4.5 0 0 1-6.4-6.4l7-7"/><path d="m7.2 15.2 7.1-7.1"/></svg>
+                </label>
                 <button class="icon-btn send-btn" id="chat-send" type="button" title="Yuborish" aria-label="Xabarni yuborish">
-                  <svg viewBox="0 0 24 24"><path d="M4 12 20 4l-5.5 16-3.1-6.4z"/><path d="m11.4 13.6 4.2-4.2"/></svg>
+                  <svg class="chat-send-icon" viewBox="0 0 24 24"><path d="M4 12 20 4l-5.5 16-3.1-6.4z"/><path d="m11.4 13.6 4.2-4.2"/></svg>
+                  <svg class="chat-stop-icon" viewBox="0 0 24 24" hidden><rect x="7" y="7" width="10" height="10" rx="2"/></svg>
                 </button>
               </div>
-            </div>
-            <div class="ai-composer-footer">
-              <span>Enter — yuborish</span>
-              <span class="ai-composer-dot"></span>
-              <span>Shift + Enter — yangi qator</span>
-              <span class="ai-composer-spacer"></span>
-              <span>MATHLVL AI javoblarini tekshirib ko‘ring</span>
             </div>
             <div class="status" id="chat-status"></div>
           </div>
@@ -7901,26 +7953,46 @@ let chatImageBase64 = null;
 let chatImageMedia = null;
 let chatAbortController = null;
 
-document.getElementById('chat-image-btn').addEventListener('click', ()=>{
-  document.getElementById('chat-image-input').click();
-});
-document.getElementById('chat-image-input').addEventListener('change', (e)=>{
-  const file = e.target.files[0];
+document.getElementById('chat-image-input').addEventListener('change', async (e)=>{
+  const file = e.target.files?.[0];
   if(!file) return;
-  chatImageMedia = file.type;
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    chatImageBase64 = reader.result.split(',')[1];
-    const previewEl = document.getElementById('chat-image-preview');
+
+  const previewEl = document.getElementById('chat-image-preview');
+  const statusEl = document.getElementById('chat-status');
+  statusEl.classList.remove('err');
+  statusEl.textContent = 'Rasm tayyorlanmoqda...';
+
+  try{
+    const prepared = await prepareSolveImage(file);
+    chatImageBase64 = prepared.base64;
+    chatImageMedia = prepared.mediaType;
+
     previewEl.style.display = 'block';
-    previewEl.innerHTML = `<div class="chat-thumb"><img src="${reader.result}"><div class="rm" id="chat-image-remove">✕</div></div>`;
+    previewEl.innerHTML = `
+      <div class="chat-thumb">
+        <img src="${prepared.dataUrl}" alt="Biriktirilgan rasm">
+        <button type="button" class="rm" id="chat-image-remove" aria-label="Rasmni olib tashlash">×</button>
+      </div>`;
+
     document.getElementById('chat-image-remove').addEventListener('click', ()=>{
-      chatImageBase64 = null; chatImageMedia = null;
-      previewEl.style.display = 'none'; previewEl.innerHTML = '';
+      chatImageBase64 = null;
+      chatImageMedia = null;
+      previewEl.style.display = 'none';
+      previewEl.innerHTML = '';
       document.getElementById('chat-image-input').value = '';
+      statusEl.textContent = '';
     });
-  };
-  reader.readAsDataURL(file);
+
+    statusEl.textContent = '';
+  }catch(err){
+    chatImageBase64 = null;
+    chatImageMedia = null;
+    previewEl.style.display = 'none';
+    previewEl.innerHTML = '';
+    document.getElementById('chat-image-input').value = '';
+    statusEl.textContent = err.message || 'Rasmni biriktirib bo‘lmadi.';
+    statusEl.classList.add('err');
+  }
 });
 
 
@@ -8081,9 +8153,11 @@ async function sendChat(){
 
   statusEl.classList.remove('err');
   statusEl.textContent = '';
-  btn.textContent = '⏹';
   btn.classList.add('stop-state');
   btn.title = "To'xtatish";
+  btn.setAttribute('aria-label', "Javobni to'xtatish");
+  btn.querySelector('.chat-send-icon')?.setAttribute('hidden','');
+  btn.querySelector('.chat-stop-icon')?.removeAttribute('hidden');
   const typingDiv = appendTypingBubble();
   // Yuborish tugmasi javob paytida Stop vazifasini bajaradi, shuning uchun disabled bo'lmasin.
   btn.disabled = false;
@@ -8180,9 +8254,11 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
       statusEl.classList.add('err');
     }
   }finally{
-    btn.textContent = '➤';
     btn.classList.remove('stop-state');
     btn.title = "Yuborish";
+    btn.setAttribute('aria-label', 'Xabarni yuborish');
+    btn.querySelector('.chat-stop-icon')?.setAttribute('hidden','');
+    btn.querySelector('.chat-send-icon')?.removeAttribute('hidden');
     btn.disabled = false;
     chatAbortController = null;
   }
