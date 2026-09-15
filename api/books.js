@@ -1,8 +1,11 @@
 import crypto from 'crypto';
 
+export const config = { maxDuration: 30 };
+
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 const HASH_KEY = 'nova:books';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 
 function parseCookies(header) {
   const cookies = {};
@@ -60,6 +63,223 @@ function publicBook(book, includeFile = false) {
   const safe = { ...book };
   if (!includeFile) delete safe.fileUrl;
   return safe;
+}
+
+function aiSafeBook(book) {
+  return {
+    id: book.id,
+    title: book.title || '',
+    author: book.author || '',
+    subject: book.subject || '',
+    grade: book.grade || '',
+    category: book.category || '',
+    bookType: book.bookType || '',
+    accessType: book.accessType || 'FREE',
+    price: Number(book.price) || 0,
+    coverUrl: book.coverUrl || ''
+  };
+}
+
+function parseAiJson(text, fallback) {
+  if (!text) return fallback;
+  const cleaned = String(text)
+    .replace(/^```json\s*/i, '')
+    .replace(/^```\s*/i, '')
+    .replace(/\s*```$/i, '')
+    .trim();
+  try { return JSON.parse(cleaned); } catch {}
+  const first = cleaned.indexOf('{');
+  const last = cleaned.lastIndexOf('}');
+  if (first >= 0 && last > first) {
+    try { return JSON.parse(cleaned.slice(first, last + 1)); } catch {}
+  }
+  return fallback;
+}
+
+async function callGeminiForBooks(parts, maxOutputTokens = 700) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) throw new Error('GEMINI_API_KEY topilmadi');
+
+  const body = {
+    contents: [{ role: 'user', parts }],
+    generationConfig: {
+      maxOutputTokens,
+      temperature: 0.1,
+      thinkingConfig: { thinkingBudget: 0 }
+    }
+  };
+
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error?.message || 'Gemini API xatoligi');
+  return (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
+}
+
+async function loadAllStoredBooks() {
+  const flat = await redisCommand(['HGETALL', HASH_KEY]);
+  const books = [];
+  for (let i = 0; i < flat.length; i += 2) {
+    try {
+      const book = JSON.parse(flat[i + 1]);
+      if (book?.id) books.push(book);
+    } catch {}
+  }
+  return books;
+}
+
+async function shortlistTopicBooks(query, books) {
+  const catalog = books.map(book => ({
+    id: book.id,
+    title: book.title || '',
+    author: book.author || '',
+    subject: book.subject || '',
+    grade: book.grade || '',
+    category: book.category || '',
+    bookType: book.bookType || ''
+  }));
+
+  const prompt = `
+Siz MATHLVL kutubxonasi qidiruv yordamchisisiz.
+Foydalanuvchi izlayotgan matematika mavzusi yoki savoli: "${query}"
+
+Quyidagi REAL katalogdan shu mavzu bo'lish ehtimoli eng yuqori ko'pi bilan 3 ta kitobni tanlang.
+Faqat katalogdagi ID lardan foydalaning, yangi kitob o'ylab topmang.
+Sinf, fan, kitob nomi va muallif metadata sini hisobga oling.
+Faqat JSON qaytaring: {"ids":["id1","id2"]}
+
+KATALOG:
+${JSON.stringify(catalog)}
+`;
+
+  const raw = await callGeminiForBooks([{ text: prompt }], 300);
+  const parsed = parseAiJson(raw, { ids: [] });
+  const allowed = new Set(books.map(book => String(book.id)));
+  const ids = Array.isArray(parsed.ids)
+    ? parsed.ids.map(String).filter(id => allowed.has(id)).slice(0, 3)
+    : [];
+
+  return ids.length ? ids : books.slice(0, 3).map(book => String(book.id));
+}
+
+async function fetchPdfForGemini(book, remainingBytes) {
+  if (!book.fileUrl || remainingBytes < 200000) return null;
+  try {
+    const response = await fetch(book.fileUrl, { redirect: 'follow' });
+    if (!response.ok) return null;
+
+    const contentType = (response.headers.get('content-type') || '').toLowerCase();
+    if (!contentType.includes('pdf') && !String(book.fileUrl).toLowerCase().includes('.pdf')) return null;
+
+    const declared = Number(response.headers.get('content-length') || 0);
+    if (declared && declared > remainingBytes) return null;
+
+    const buffer = await response.arrayBuffer();
+    if (!buffer.byteLength || buffer.byteLength > remainingBytes) return null;
+
+    return {
+      bytes: buffer.byteLength,
+      part: {
+        inline_data: {
+          mime_type: 'application/pdf',
+          data: Buffer.from(buffer).toString('base64')
+        }
+      }
+    };
+  } catch {
+    return null;
+  }
+}
+
+async function verifyTopicInsideBooks(query, candidates) {
+  const parts = [{
+    text: `
+Quyidagi MATHLVL kitob PDF larini tekshiring.
+Foydalanuvchi izlayotgan mavzu: "${query}"
+
+Har bir PDF ichida shu mavzu haqiqatan bor-yo'qligini tekshiring.
+Mavzu aynan bir xil nom bilan yozilmagan bo'lsa ham, mazmunan mos bo'lsa found=true qiling.
+Faqat JSON qaytaring:
+{"matches":[{"id":"BOOK_ID","found":true,"confidence":"high|medium|low","reason":"qisqa sabab"}]}
+Faqat berilgan BOOK_ID lardan foydalaning.
+`
+  }];
+
+  let remaining = 14 * 1024 * 1024;
+  const attachedIds = [];
+
+  for (const book of candidates) {
+    const pdf = await fetchPdfForGemini(book, remaining);
+    if (!pdf) continue;
+    parts.push({
+      text: `\nBOOK_ID: ${book.id}\nTITLE: ${book.title || ''}\nGRADE: ${book.grade || ''}\nSUBJECT: ${book.subject || ''}\nPDF:`
+    });
+    parts.push(pdf.part);
+    remaining -= pdf.bytes;
+    attachedIds.push(String(book.id));
+    if (attachedIds.length >= 3 || remaining < 300000) break;
+  }
+
+  if (!attachedIds.length) return null;
+
+  const raw = await callGeminiForBooks(parts, 700);
+  const parsed = parseAiJson(raw, { matches: [] });
+  const allowed = new Set(attachedIds);
+  const matches = Array.isArray(parsed.matches)
+    ? parsed.matches.filter(item => allowed.has(String(item.id)) && item.found === true).slice(0, 3)
+    : [];
+
+  return { matches };
+}
+
+async function searchBooksByTopic(query) {
+  const cacheHash = crypto.createHash('sha256').update(query.toLowerCase()).digest('hex').slice(0, 24);
+  const cacheKey = `mathlvl:book-topic:${cacheHash}`;
+
+  const cached = await redisCommand(['GET', cacheKey]).catch(() => null);
+  if (cached) {
+    try { return JSON.parse(cached); } catch {}
+  }
+
+  const books = await loadAllStoredBooks();
+  if (!books.length) return { matches: [], verified: false };
+
+  const ids = await shortlistTopicBooks(query, books);
+  const candidates = ids.map(id => books.find(book => String(book.id) === String(id))).filter(Boolean);
+
+  let resultBooks = candidates;
+  let verification = [];
+  let verified = false;
+
+  try {
+    const scan = await verifyTopicInsideBooks(query, candidates);
+    if (scan?.matches?.length) {
+      const foundIds = new Set(scan.matches.map(item => String(item.id)));
+      resultBooks = candidates.filter(book => foundIds.has(String(book.id)));
+      verification = scan.matches;
+      verified = true;
+    }
+  } catch {}
+
+  const payload = {
+    matches: resultBooks.slice(0, 3).map(book => {
+      const info = verification.find(item => String(item.id) === String(book.id));
+      return {
+        ...aiSafeBook(book),
+        verified: !!info,
+        confidence: info?.confidence || 'metadata',
+        reason: info?.reason || ''
+      };
+    }),
+    verified
+  };
+
+  await redisCommand(['SET', cacheKey, JSON.stringify(payload), 'EX', '3600']).catch(() => null);
+  return payload;
 }
 
 async function hasActivePlus(email) {
@@ -162,6 +382,18 @@ export default async function handler(req, res) {
       books.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       res.setHeader('Cache-Control', auth.isAdmin ? 'private, no-store' : 'public, max-age=30, s-maxage=60');
       return res.status(200).json({ books });
+    }
+
+    if (req.method === 'POST' && req.query.action === 'topic-search') {
+      const auth = getAuth(req);
+      if (!auth.user) return res.status(401).json({ error: 'Ustoz AI uchun avval tizimga kiring.' });
+
+      const query = String(req.body?.query || '').trim().slice(0, 500);
+      if (query.length < 2) return res.status(400).json({ error: 'Mavzuni yozing' });
+
+      const payload = await searchBooksByTopic(query);
+      res.setHeader('Cache-Control', 'private, no-store');
+      return res.status(200).json(payload);
     }
 
     if (!verifyAdmin(req)) {
