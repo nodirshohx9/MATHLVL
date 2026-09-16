@@ -487,6 +487,57 @@ async function handleMyPaymentStatus(req, res) {
   return res.status(200).json({ payment: safePaymentForUser(latest) });
 }
 
+async function handleMyPurchasedBooks(req, res) {
+  const session = getSession(req);
+  if (!session?.email) return res.status(401).json({ error: 'not_logged_in' });
+
+  const email = String(session.email).toLowerCase();
+  const flat = await redisCommand(['HGETALL', 'nova:payments']);
+  const purchasedByBook = new Map();
+
+  for (let i = 0; i < flat.length; i += 2) {
+    try {
+      const payment = JSON.parse(flat[i + 1]);
+      if (
+        String(payment.email || '').toLowerCase() === email &&
+        payment.status === 'APPROVED' &&
+        payment.kind === 'book' &&
+        payment.bookId
+      ) {
+        const prev = purchasedByBook.get(String(payment.bookId));
+        if (!prev || Number(payment.reviewedAt || payment.createdAt || 0) > Number(prev.reviewedAt || prev.createdAt || 0)) {
+          purchasedByBook.set(String(payment.bookId), payment);
+        }
+      }
+    } catch {}
+  }
+
+  const books = [];
+  for (const [bookId, payment] of purchasedByBook.entries()) {
+    const raw = await redisCommand(['HGET', 'nova:books', bookId]);
+    if (!raw) continue;
+    try {
+      const book = JSON.parse(raw);
+      books.push({
+        id: book.id,
+        title: book.title || 'Kitob',
+        author: book.author || '',
+        subject: book.subject || '',
+        grade: book.grade || '',
+        category: book.category || '',
+        coverUrl: book.coverUrl || '',
+        accessType: book.accessType || 'PURCHASE',
+        price: Number(book.price) || Number(payment.amount) || 0,
+        purchasedAt: Number(payment.reviewedAt || payment.createdAt || 0)
+      });
+    } catch {}
+  }
+
+  books.sort((a, b) => b.purchasedAt - a.purchasedAt);
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  return res.status(200).json({ books });
+}
+
 export default async function handler(req, res) {
   if (!REDIS_URL || !REDIS_TOKEN) {
     return res.status(500).json({ error: 'Server sozlanmagan: UPSTASH kalitlar topilmadi' });
@@ -500,6 +551,7 @@ export default async function handler(req, res) {
       if (action === 'payment-settings') return await handleGetPaymentSettings(req, res);
       if (action === 'payments-list') return await handleListPayments(req, res);
       if (action === 'my-payment') return await handleMyPaymentStatus(req, res);
+      if (action === 'my-books') return await handleMyPurchasedBooks(req, res);
       return res.status(400).json({ error: "Noma'lum action" });
     }
 
