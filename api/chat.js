@@ -83,11 +83,29 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' });
 
   try {
-    const { system, messages = [], tools, max_tokens } = req.body || {};
+    const { system, messages = [], tools, max_tokens, mode } = req.body || {};
     const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
+    const isSolve = mode === 'solve';
+
+    const generationConfig = {
+      maxOutputTokens: isSolve
+        ? Math.max(Math.min(Number(max_tokens) || 6000, 8000), 4000)
+        : Math.max(Number(max_tokens) || 1000, 1500),
+      temperature: isSolve ? 0.1 : 0.35,
+      thinkingConfig: {
+        // Solver gets real reasoning budget; ordinary non-stream calls stay fast.
+        thinkingBudget: isSolve ? 4096 : 0
+      }
+    };
+
+    if (isSolve) {
+      // Gemini JSON mode prevents LaTeX backslashes/newlines from breaking JSON.
+      generationConfig.responseMimeType = 'application/json';
+    }
+
     const geminiBody = {
       contents,
-      generationConfig: { maxOutputTokens: Math.max(max_tokens || 1000, 1500), thinkingConfig: { thinkingBudget: 0 } }
+      generationConfig
     };
     if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
     if (Array.isArray(tools) && tools.some(t => t.type === 'web_search_20250305')) geminiBody.tools = [{ google_search: {} }];
@@ -96,8 +114,21 @@ export default async function handler(req, res) {
     const geminiRes = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(geminiBody) });
     const data = await geminiRes.json();
     if (!geminiRes.ok) return res.status(geminiRes.status).json({ error: data.error?.message || 'Gemini API xatoligi' });
-    const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
-    return res.status(200).json({ content: [{ type: 'text', text }] });
+    const candidate = data.candidates?.[0];
+    const text = (candidate?.content?.parts || []).map(p => p.text || '').join('');
+    if (!text) {
+      return res.status(502).json({ error: 'AI bo‘sh javob qaytardi' });
+    }
+
+    const finishReason = candidate?.finishReason || '';
+    if (isSolve && finishReason === 'MAX_TOKENS') {
+      return res.status(502).json({ error: 'Masala yechimi juda uzun bo‘lib ketdi. Qayta urinib ko‘ring.' });
+    }
+
+    return res.status(200).json({
+      content: [{ type: 'text', text }],
+      finishReason
+    });
   } catch (err) {
     return res.status(500).json({ error: err.message });
   }
