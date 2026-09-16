@@ -6788,6 +6788,117 @@ html[data-theme="light"] .hero-product-preview .hpp-link:hover{
   }
 }
 
+
+/* ===== Profile — purchased books only ===== */
+.profile-purchased-list{
+  display:grid;
+  gap:8px;
+}
+.profile-purchased-book{
+  min-height:72px;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:9px;
+  border:1px solid var(--v12-line);
+  border-radius:12px;
+  background:rgba(255,255,255,.012);
+}
+.profile-purchased-cover{
+  width:42px;
+  height:56px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  overflow:hidden;
+  border-radius:8px;
+  border:1px solid rgba(255,255,255,.055);
+  background:#171d26;
+  color:#8f9aff;
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:800;
+}
+.profile-purchased-cover img{
+  width:100%;
+  height:100%;
+  object-fit:cover;
+}
+.profile-purchased-info{
+  min-width:0;
+  flex:1;
+}
+.profile-purchased-title{
+  overflow:hidden;
+  color:#e9edf3;
+  font-size:11.5px;
+  font-weight:720;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.profile-purchased-meta{
+  margin-top:3px;
+  overflow:hidden;
+  color:#697588;
+  font-size:9px;
+  line-height:1.35;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.profile-purchased-status{
+  width:max-content;
+  margin-top:6px;
+  padding:3px 6px;
+  border-radius:6px;
+  background:rgba(98,214,154,.08);
+  color:#69d69a;
+  font-size:8px;
+  font-weight:750;
+}
+.profile-purchased-open{
+  min-height:32px!important;
+  padding:6px 10px!important;
+  font-size:9px!important;
+  flex:none;
+}
+.profile-books-loading,
+.profile-books-empty{
+  padding:8px 0;
+  color:#6f7b8d;
+  font-size:11px;
+  line-height:1.5;
+}
+.profile-books-error{
+  margin-top:8px;
+  color:#ff7f89;
+  font-size:9.5px;
+}
+html[data-theme="light"] .profile-purchased-book{
+  background:#fff;
+  border-color:rgba(31,45,67,.08);
+}
+html[data-theme="light"] .profile-purchased-cover{
+  background:#edf1f6;
+  border-color:rgba(31,45,67,.08);
+}
+html[data-theme="light"] .profile-purchased-title{color:#1b2536}
+html[data-theme="light"] .profile-purchased-meta{color:#778295}
+
+@media(max-width:560px){
+  .profile-purchased-book{
+    gap:9px;
+    padding:8px;
+  }
+  .profile-purchased-cover{
+    width:38px;
+    height:51px;
+  }
+  .profile-purchased-open{
+    padding:6px 8px!important;
+  }
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -9393,20 +9504,118 @@ async function refreshPlusStatus(){
   }
 }
 
-function renderMyBooks(){
-  const el = document.getElementById('my-books-body');
-  const progress = getAllBookProgress();
-  const entries = Object.entries(progress);
-  if(!entries.length){
-    el.innerHTML = `<div style="font-size:13px; color:var(--text-dim);">Hali hech qanday kitob o'qilmagan.</div>`;
-    return;
+async function openPurchasedBookFromProfile(bookId){
+  try{
+    const res = await fetch('/api/books?action=open&id=' + encodeURIComponent(bookId), {
+      cache:'no-store'
+    });
+    const data = await res.json().catch(()=>({}));
+    if(!res.ok) throw new Error(data.error || "Kitobni ochib bo'lmadi");
+
+    const book = data.book || {};
+    book.fileUrl = data.fileUrl || book.fileUrl;
+    if(!book.id || !book.fileUrl) throw new Error("Kitob fayli topilmadi");
+
+    activateTab('teacher');
+    window.setTimeout(()=> openBookInChat(book), 60);
+  }catch(err){
+    const el = document.getElementById('my-books-body');
+    const note = el?.querySelector('.profile-books-error');
+    if(note){
+      note.textContent = "Kitobni ochib bo‘lmadi. Qayta urinib ko‘ring.";
+      note.hidden = false;
+    }
   }
-  const recent = entries.sort((a,b)=> (b[1].updatedAt||0) - (a[1].updatedAt||0)).slice(0,3);
-  el.innerHTML = recent.map(([bookId, p])=>
-    `<div style="font-size:12.5px; color:var(--text-dim); padding:6px 0; border-top:1px solid var(--border-soft);">
-      ${p.currentPage}/${p.totalPages}-bet — %${p.progressPercent}
-    </div>`
-  ).join('') + `<button class="ghost-btn" style="width:100%; margin-top:12px;" onclick="activateTab('teacher')">Ko'rish</button>`;
+}
+
+async function renderMyBooks(){
+  const el = document.getElementById('my-books-body');
+  if(!el) return;
+
+  el.innerHTML = '<div class="profile-books-loading">Sotib olingan kitoblar yuklanmoqda...</div>';
+
+  try{
+    const res = await fetch('/api/gift?action=my-books', { cache:'no-store' });
+    const data = await res.json().catch(()=>({}));
+
+    if(res.status === 401){
+      el.innerHTML = '<div class="profile-books-empty">Sotib olingan kitoblarni ko‘rish uchun hisobingizga kiring.</div>';
+      return;
+    }
+    if(!res.ok) throw new Error(data.error || 'Kitoblar yuklanmadi');
+
+    const books = Array.isArray(data.books) ? data.books : [];
+    if(!books.length){
+      el.innerHTML = '<div class="profile-books-empty">Hali hech qanday kitob sotib olinmagan.</div>';
+      return;
+    }
+
+    const list = document.createElement('div');
+    list.className = 'profile-purchased-list';
+
+    books.forEach(book=>{
+      const row = document.createElement('div');
+      row.className = 'profile-purchased-book';
+
+      const cover = document.createElement('div');
+      cover.className = 'profile-purchased-cover';
+      if(book.coverUrl){
+        const img = document.createElement('img');
+        img.src = book.coverUrl;
+        img.alt = book.title || 'Kitob muqovasi';
+        img.loading = 'lazy';
+        cover.appendChild(img);
+      }else{
+        const fallback = document.createElement('span');
+        fallback.textContent = 'M';
+        cover.appendChild(fallback);
+      }
+
+      const info = document.createElement('div');
+      info.className = 'profile-purchased-info';
+
+      const title = document.createElement('div');
+      title.className = 'profile-purchased-title';
+      title.textContent = book.title || 'Kitob';
+
+      const meta = document.createElement('div');
+      meta.className = 'profile-purchased-meta';
+      meta.textContent = [
+        book.grade && book.grade !== 'ALL' ? book.grade : '',
+        book.subject || '',
+        book.author || ''
+      ].filter(Boolean).join(' • ') || 'MATHLVL kitobi';
+
+      const bought = document.createElement('div');
+      bought.className = 'profile-purchased-status';
+      bought.textContent = 'Sotib olingan';
+
+      info.appendChild(title);
+      info.appendChild(meta);
+      info.appendChild(bought);
+
+      const openBtn = document.createElement('button');
+      openBtn.type = 'button';
+      openBtn.className = 'ghost-btn profile-purchased-open';
+      openBtn.textContent = 'Ochish';
+      openBtn.addEventListener('click', ()=> openPurchasedBookFromProfile(book.id));
+
+      row.appendChild(cover);
+      row.appendChild(info);
+      row.appendChild(openBtn);
+      list.appendChild(row);
+    });
+
+    const error = document.createElement('div');
+    error.className = 'profile-books-error';
+    error.hidden = true;
+
+    el.innerHTML = '';
+    el.appendChild(list);
+    el.appendChild(error);
+  }catch(err){
+    el.innerHTML = '<div class="profile-books-empty">Sotib olingan kitoblarni yuklab bo‘lmadi.</div>';
+  }
 }
 
 // ---- Tarif tanlash ekrani ----
