@@ -57,9 +57,24 @@ function isAdmin(req) {
   return admin?.role === 'admin';
 }
 
+function sameOrigin(req) {
+  const origin = String(req.headers.origin || '').trim();
+  if (!origin) return true;
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim();
+  try {
+    return new URL(origin).host === host;
+  } catch {
+    return false;
+  }
+}
+
 function requireAdmin(req, res) {
   if (!isAdmin(req)) {
     res.status(401).json({ error: 'Admin ruxsati kerak' });
+    return false;
+  }
+  if (req.method !== 'GET' && !sameOrigin(req)) {
+    res.status(403).json({ error: 'Noto‘g‘ri so‘rov manbasi' });
     return false;
   }
   return true;
@@ -276,21 +291,43 @@ async function handleStatus(req, res) {
 }
 
 async function handleGetPaymentSettings(req, res) {
+  const session = getSession(req);
+  const admin = isAdmin(req);
+  if (!session && !admin) {
+    return res.status(401).json({ error: 'not_logged_in' });
+  }
+
   const raw = await redisCommand(['GET', 'nova:payment-settings']);
   const settings = raw ? JSON.parse(raw) : { cardNumber: '', cardHolder: '', monthlyPrice: 0, yearlyPrice: 0 };
-  res.setHeader('Cache-Control', 'no-store');
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
   return res.status(200).json(settings);
 }
 
 async function handleSetPaymentSettings(req, res) {
   if (!requireAdmin(req, res)) return;
+
   const { cardNumber, cardHolder, monthlyPrice, yearlyPrice } = req.body || {};
+  const rawCard = String(cardNumber || '').trim();
+  const cardDigits = rawCard.replace(/[^0-9]/g, '');
+  const holder = String(cardHolder || '').trim().slice(0, 100);
+
+  if (cardDigits.length < 12 || cardDigits.length > 19 || !/^[0-9\s-]+$/.test(rawCard)) {
+    return res.status(400).json({ error: 'Karta raqami noto‘g‘ri' });
+  }
+  if (holder.length < 2) {
+    return res.status(400).json({ error: 'Karta egasi ismini kiriting' });
+  }
+
+  const monthly = Math.max(0, Math.min(parseInt(monthlyPrice, 10) || 0, 1000000000));
+  const yearly = Math.max(0, Math.min(parseInt(yearlyPrice, 10) || 0, 1000000000));
+
   const settings = {
-    cardNumber: String(cardNumber || '').trim(),
-    cardHolder: String(cardHolder || '').trim(),
-    monthlyPrice: Math.max(0, parseInt(monthlyPrice, 10) || 0),
-    yearlyPrice: Math.max(0, parseInt(yearlyPrice, 10) || 0)
+    cardNumber: rawCard,
+    cardHolder: holder,
+    monthlyPrice: monthly,
+    yearlyPrice: yearly
   };
+
   await redisCommand(['SET', 'nova:payment-settings', JSON.stringify(settings)]);
   return res.status(200).json({ ok: true });
 }
