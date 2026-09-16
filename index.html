@@ -7583,9 +7583,10 @@ document.getElementById('bottom-nav-profile').addEventListener('click', ()=> act
 document.getElementById('sidebar-logo-btn').addEventListener('click', ()=> activateTab('home'));
 
 // ---------- Helper: call Claude API ----------
-async function callClaude({system, messages, tools, max_tokens}){
+async function callClaude({system, messages, tools, max_tokens, mode}){
   const body = { model: MODEL, max_tokens: max_tokens || 1000, system, messages };
   if(tools) body.tools = tools;
+  if(mode) body.mode = mode;
 
   const res = await fetch(API_URL, {
     method: "POST",
@@ -7759,32 +7760,106 @@ function stripJsonFence(text){
     .trim();
 }
 
+function repairSolveJson(text){
+  let s = String(text || '').trim();
+
+  // LaTeX commands such as \frac or \pmod are not valid JSON escapes unless
+  // the backslash itself is escaped. Repair only invalid JSON escape sequences.
+  s = s.replace(/\\(?!["\\/bfnrtu])/g, '\\\\');
+
+  // Models can occasionally put a literal line break inside a JSON string.
+  // Escape those line breaks without touching structural whitespace.
+  let out = '';
+  let inString = false;
+  let escaped = false;
+  for(let i = 0; i < s.length; i++){
+    const ch = s[i];
+
+    if(inString){
+      if(escaped){
+        out += ch;
+        escaped = false;
+        continue;
+      }
+      if(ch === '\\'){
+        out += ch;
+        escaped = true;
+        continue;
+      }
+      if(ch === '"'){
+        inString = false;
+        out += ch;
+        continue;
+      }
+      if(ch === '\n'){
+        out += '\\n';
+        continue;
+      }
+      if(ch === '\r'){
+        continue;
+      }
+      out += ch;
+      continue;
+    }
+
+    if(ch === '"') inString = true;
+    out += ch;
+  }
+  return out;
+}
+
 function parseSolvePayload(raw){
   const cleaned = stripJsonFence(raw);
   if(!cleaned) throw new Error('AI bo‘sh javob qaytardi.');
 
-  let parsed = null;
-  try{
-    parsed = JSON.parse(cleaned);
-  }catch{
-    const start = cleaned.indexOf('{');
-    const end = cleaned.lastIndexOf('}');
-    if(start !== -1 && end > start){
-      try{ parsed = JSON.parse(cleaned.slice(start,end + 1)); }catch{}
-    }
+  const candidates = [cleaned];
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if(start !== -1 && end > start){
+    candidates.push(cleaned.slice(start, end + 1));
   }
 
-  if(!parsed){
-    return { steps:[cleaned], answer:'' };
+  let parsed = null;
+  for(const candidate of candidates){
+    try{
+      parsed = JSON.parse(candidate);
+      break;
+    }catch{}
+
+    try{
+      parsed = JSON.parse(repairSolveJson(candidate));
+      break;
+    }catch{}
+  }
+
+  if(!parsed || typeof parsed !== 'object'){
+    throw new Error('AI javobini to‘g‘ri formatda o‘qib bo‘lmadi. Qayta urinib ko‘ring.');
   }
 
   let steps = Array.isArray(parsed.steps) ? parsed.steps : [];
-  steps = steps.map(v=>String(v || '').trim()).filter(Boolean);
-  const answer = String(parsed.answer || parsed.final_answer || '').trim();
+  steps = steps
+    .map(v=>{
+      if(typeof v === 'string') return v.trim();
+      if(v && typeof v === 'object'){
+        return String(v.text || v.step || v.explanation || '').trim();
+      }
+      return String(v || '').trim();
+    })
+    .filter(Boolean)
+    .slice(0, 20);
+
+  const answer = String(
+    parsed.answer ??
+    parsed.final_answer ??
+    parsed.finalAnswer ??
+    parsed.result ??
+    ''
+  ).trim();
 
   if(!steps.length && !answer){
-    throw new Error('AI javobini o‘qib bo‘lmadi.');
+    throw new Error('AI javobida yechim topilmadi. Qayta urinib ko‘ring.');
   }
+
   return { steps, answer };
 }
 
@@ -7839,19 +7914,26 @@ document.getElementById('solve-btn').addEventListener('click', async ()=>{
     text:text || "Rasmdagi matematik masala yoki misolni o‘zbek tilida yeching."
   });
 
-  const system = `Sen MATHLVL platformasidagi tajribali matematika o‘qituvchisisan.
-Foydalanuvchi yuborgan masalani to‘g‘ri yech, kerakli formulani qo‘llab, yechimni qisqa va tushunarli qadamlar bilan o‘zbek tilida tushuntir.
-Hisob-kitobni qayta tekshir.
-Matematik ifodalarni kerak bo‘lsa LaTeX ko‘rinishida $...$ yoki $$...$$ ichida yoz.
-JAVOBNI FAQAT valid JSON ko‘rinishida qaytar:
-{"steps":["qadam 1","qadam 2"],"answer":"yakuniy javob"}
-Markdown code fence, JSON dan tashqari izoh yoki boshqa matn yozma.`;
+  const system = `Sen MATHLVL platformasidagi kuchli matematika masala yechuvchi yordamchisan.
+Foydalanuvchi yuborgan masalani avval ichingda to‘liq yech, keyin natijani mustaqil ravishda qayta tekshir.
+Katta darajalar, modullar, tenglamalar, geometriya, kombinatorika va uzun ko‘p bosqichli masalalarda shoshilma:
+- har bir algebraik o‘tish matematik jihatdan to‘g‘ri bo‘lsin;
+- modul masalalarida Fermat/Euler yoki son tartibini to‘g‘ri qo‘lla;
+- taxminiy natijani aniq natija deb yozma;
+- yakuniy javobni imkon bo‘lsa ikkinchi usul yoki tez tekshiruv bilan tasdiqla.
+Yechimni o‘zbek tilida, kerakli miqdorda aniq va tushunarli qadamlar bilan yoz.
+Matematik ifodalarni LaTeX ko‘rinishida $...$ yoki $...$ ichida yoz.
+JAVOB FAQAT valid JSON bo‘lsin:
+{"steps":["1-qadam matni","2-qadam matni"],"answer":"yakuniy javob"}
+JSON stringlaridagi LaTeX backslashlarini JSON qoidasi bo‘yicha to‘g‘ri escape qil.
+Markdown code fence, JSON tashqarisida matn, sarlavha yoki izoh yozma.`;
 
   try{
     const data = await callClaude({
       system,
       messages:[{ role:"user", content }],
-      max_tokens:1800
+      max_tokens:6000,
+      mode:'solve'
     });
 
     const parsed = parseSolvePayload(extractText(data));
@@ -7867,6 +7949,7 @@ Markdown code fence, JSON dan tashqari izoh yoki boshqa matn yozma.`;
     });
 
     if(parsed.answer){
+      finalEl.style.display = '';
       const label = document.createElement('b');
       label.textContent = 'Javob: ';
       const answerSpan = document.createElement('span');
