@@ -122,8 +122,7 @@ nav_anchor = '      <button class="nav-item" data-page="settings">'
 if 'data-page="support"' not in a:
     if nav_anchor not in a:
         raise SystemExit('admin settings nav anchor not found')
-    support_nav = '''      <button class="nav-item" data-page="support"><span class="ic"><svg viewBox="0 0 24 24"><path d="M5 5h14v10H9l-4 4z"/><path d="M9 9h6M9 12h4"/></svg></span>Xabarlar</button>
-'''
+    support_nav = '      <button class="nav-item" data-page="support"><span class="ic">💬</span>Xabarlar</button>\n'
     a = a.replace(nav_anchor, support_nav + nav_anchor, 1)
 
 settings_anchor = '''      <!-- ============ SOZLAMALAR ============ -->
