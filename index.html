@@ -7012,6 +7012,64 @@ html[data-theme="light"] .reader-floating-bar,html[data-theme="light"] .annotati
   .reader-floating-bar{bottom:12px!important}
 }
 
+
+/* ===== Reader header tools: pen + AI live in the top bar ===== */
+.reader-header-tool{
+  width:38px;
+  height:38px;
+  flex:none;
+  display:grid;
+  place-items:center;
+  padding:0;
+  border:1px solid rgba(255,255,255,.07);
+  border-radius:9px;
+  background:#111720;
+  color:#8b96a8;
+  cursor:pointer;
+  transition:background .15s ease,border-color .15s ease,color .15s ease,transform .12s ease;
+}
+.reader-header-tool:hover{
+  background:#171e28;
+  border-color:rgba(115,128,255,.20);
+  color:#e8ecf2;
+}
+.reader-header-tool:active{transform:translateY(1px)}
+.reader-header-tool.active{
+  background:rgba(115,128,255,.13);
+  border-color:rgba(115,128,255,.26);
+  color:#b7beff;
+}
+.reader-header-tool svg{
+  width:16px;
+  height:16px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.reader-floating-bar{display:none!important}
+html[data-theme="light"] .reader-header-tool{
+  border-color:rgba(31,45,67,.09);
+  background:#f7f9fc;
+  color:#697589;
+}
+html[data-theme="light"] .reader-header-tool:hover{
+  background:#eef2f7;
+  color:#344155;
+}
+html[data-theme="light"] .reader-header-tool.active{
+  background:rgba(93,110,230,.08);
+  border-color:rgba(93,110,230,.20);
+  color:#5869dc;
+}
+@media(max-width:899px){
+  .reader-header-tool{
+    width:38px;
+    height:38px;
+  }
+}
+
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -7351,6 +7409,9 @@ html[data-theme="light"] .reader-floating-bar,html[data-theme="light"] .annotati
               </div>
               <div class="reader-header-desktop-controls" id="reader-header-desktop-controls">
                 <button class="reader-page-text" id="reader-page-text-desktop" title="Sahifaga o'tish">— / —</button>
+                <button class="reader-header-tool" id="pen-toggle" title="Yozish" aria-label="Yozish">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z"/><path d="m13.8 7.4 2.8 2.8"/></svg>
+                </button>
                 <button class="ai-desktop-btn" id="ai-desktop-btn">
                   <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m12 3 1.3 3.9L17 8.2l-3.7 1.3L12 13.4l-1.3-3.9L7 8.2l3.7-1.3z"/><path d="m18.5 14 .7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg>
                   <span>Ustoz AI</span>
@@ -7398,10 +7459,6 @@ html[data-theme="light"] .reader-floating-bar,html[data-theme="light"] .annotati
                   <button class="icon-btn" id="annotation-undo" title="Ortga qaytarish" aria-label="Ortga qaytarish"><svg viewBox="0 0 24 24"><path d="M9 7 4 12l5 5"/><path d="M5 12h8a6 6 0 0 1 6 6"/></svg></button>
                   <button class="icon-btn" id="annotation-redo" title="Qayta bajarish" aria-label="Qayta bajarish"><svg viewBox="0 0 24 24"><path d="m15 7 5 5-5 5"/><path d="M19 12h-8a6 6 0 0 0-6 6"/></svg></button>
                   <button class="icon-btn" id="annotation-done" title="Tayyor" aria-label="Tayyor"><svg viewBox="0 0 24 24"><path d="m5 12 4 4 10-10"/></svg></button>
-                </div>
-                <div class="reader-floating-bar" id="reader-floating-bar">
-                  <button class="icon-btn" id="pen-toggle" title="Yozish" aria-label="Yozish"><svg viewBox="0 0 24 24"><path d="m4 20 4.2-1 10-10a2.1 2.1 0 0 0-3-3l-10 10z"/><path d="m13.8 7.4 2.8 2.8"/></svg></button>
-                  <button class="icon-btn ai-fab" id="ai-fab" title="Ustoz AI" aria-label="Ustoz AI"><svg viewBox="0 0 24 24"><path d="m12 3 1.3 3.9L17 8.2l-3.7 1.3L12 13.4l-1.3-3.9L7 8.2l3.7-1.3z"/><path d="m18.5 14 .7 2 2 .7-2 .7-.7 2-.7-2-2-.7 2-.7z"/></svg></button>
                 </div>
               </div>
 
@@ -9373,14 +9430,14 @@ function setAnnotationTool(tool){
       c.style.pointerEvents = 'auto'; c.style.touchAction = 'none';
     });
     document.getElementById('annotation-toolbar').classList.add('open');
-    document.getElementById('reader-floating-bar').style.display = 'none';
+    document.getElementById('pen-toggle')?.classList.add('active');
   }else{
     scrollEl.classList.remove('draw-lock');
     document.querySelectorAll('canvas.page-annotation-canvas').forEach(c=>{
       c.style.pointerEvents = 'none'; c.style.touchAction = 'pan-y';
     });
     document.getElementById('annotation-toolbar').classList.remove('open');
-    document.getElementById('reader-floating-bar').style.display = 'flex';
+    document.getElementById('pen-toggle')?.classList.remove('active');
   }
 }
 document.getElementById('pen-toggle').addEventListener('click', ()=>{
@@ -9517,7 +9574,6 @@ function closeAiSheet(){
   document.getElementById('ai-sheet-backdrop').classList.remove('open');
   setTimeout(()=>{ if(readerPdfDoc) reRenderAllForZoom(); }, 260);
 }
-document.getElementById('ai-fab').addEventListener('click', openAiSheet);
 document.getElementById('ai-desktop-btn').addEventListener('click', openAiSheet);
 document.getElementById('ai-sheet-close').addEventListener('click', closeAiSheet);
 document.getElementById('ai-sheet-backdrop').addEventListener('click', closeAiSheet);
