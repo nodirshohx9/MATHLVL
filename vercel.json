@@ -1,7 +1,3 @@
 {
-  "buildCommand": "python scripts/build_all.py",
-  "outputDirectory": ".",
-  "rewrites": [
-    { "source": "/admin", "destination": "/admin.html" }
-  ]
+  "outputDirectory": "."
 }
