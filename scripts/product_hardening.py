@@ -91,7 +91,10 @@ new_dash = r'''    setTimeout(async ()=>{
       activeBook = readableBook;
       startReading(readableBook);
     }, 80);'''
-s = replace_once(s, old_dash, new_dash, "dashboard book access")
+# The legacy "last read / continue" dashboard card was removed in v14.
+# Keep compatibility with older snapshots, but do not require that UI to exist.
+if old_dash in s:
+    s = s.replace(old_dash, new_dash, 1)
 
 # Individual book purchase uses the same manual payment flow.
 cycle_anchor = "let selectedCycle = 'monthly';"
