@@ -237,6 +237,710 @@
     .mock-admin-actions{ width:100%; }
     .mock-options-grid{ grid-template-columns:1fr; }
   }
+
+/* =====================================================================
+   MATHLVL ADMIN v13 — premium product dashboard
+   Backup: backup-admin-before-v13-redesign
+   ===================================================================== */
+:root{
+  --space-1:#090b0f;
+  --space-2:#0d1015;
+  --space-3:#12161d;
+  --panel:#11151c;
+  --panel-solid:#0d1117;
+  --border:rgba(255,255,255,.078);
+  --border-soft:rgba(255,255,255,.048);
+  --blue:#7380ff;
+  --blue-soft:rgba(115,128,255,.105);
+  --gold:#9b7cff;
+  --gold-soft:rgba(155,124,255,.10);
+  --green:#62d69a;
+  --green-soft:rgba(98,214,154,.10);
+  --red:#ff707c;
+  --red-soft:rgba(255,112,124,.10);
+  --text:#f3f5f8;
+  --text-dim:#7d8899;
+  --radius:16px;
+  --sidebar-w:246px;
+}
+
+html{color-scheme:dark;background:#090b0f}
+body{
+  min-height:100vh;
+  background:
+    radial-gradient(900px 520px at 82% -12%,rgba(115,128,255,.085),transparent 64%),
+    radial-gradient(680px 420px at 10% 105%,rgba(101,199,255,.04),transparent 68%),
+    linear-gradient(180deg,#090b0f,#0a0d12 48%,#090b0f)!important;
+  color:var(--text);
+  letter-spacing:-.006em;
+  overflow-x:hidden;
+}
+body::before{
+  content:"";
+  position:fixed;
+  inset:0;
+  z-index:-1;
+  pointer-events:none;
+  opacity:.13;
+  background-image:
+    linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:linear-gradient(180deg,rgba(0,0,0,.82),rgba(0,0,0,.12) 74%,transparent);
+}
+
+::selection{background:rgba(115,128,255,.24);color:#fff}
+
+/* ---------- Gate ---------- */
+.gate-wrap{
+  width:min(100%,440px)!important;
+  max-width:none!important;
+  margin:0 auto!important;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:34px 20px!important;
+}
+.gate-wrap .brand{
+  margin-bottom:24px!important;
+}
+.gate-wrap .brand::before{
+  content:"M";
+  width:48px;height:48px;
+  margin:0 auto 13px;
+  display:grid;
+  place-items:center;
+  border:1px solid rgba(115,128,255,.18);
+  border-radius:14px;
+  background:
+    linear-gradient(145deg,rgba(115,128,255,.15),rgba(115,128,255,.035)),
+    #11161e;
+  color:#b7beff;
+  font-family:var(--font-display);
+  font-weight:800;
+  font-size:19px;
+  box-shadow:0 18px 52px rgba(0,0,0,.28);
+}
+.gate-wrap .brand .word{
+  font-size:24px!important;
+  letter-spacing:-.04em!important;
+  color:#f3f5f8;
+}
+.gate-wrap .brand .tag{
+  margin-top:7px!important;
+  padding:0!important;
+  border:0!important;
+  background:none!important;
+  color:#747f91!important;
+  font-family:var(--font-body)!important;
+  font-size:10.5px!important;
+  letter-spacing:.08em!important;
+}
+.gate-wrap .card{
+  padding:24px!important;
+  border-radius:20px!important;
+  box-shadow:0 28px 90px rgba(0,0,0,.34)!important;
+}
+.lock-icon{
+  width:42px;height:42px;
+  display:grid;
+  place-items:center;
+  margin:0 auto 17px!important;
+  border:1px solid var(--border);
+  border-radius:12px;
+  background:#151b24;
+}
+.lock-icon svg{
+  width:18px;height:18px;
+  fill:none;
+  stroke:#aab3ff;
+  stroke-width:1.8;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+
+/* ---------- Shell ---------- */
+.shell{min-height:100vh}
+.sidebar{
+  width:var(--sidebar-w)!important;
+  padding:20px 14px 16px!important;
+  background:
+    linear-gradient(180deg,rgba(12,15,21,.99),rgba(9,12,17,.98))!important;
+  border-right:1px solid rgba(255,255,255,.065)!important;
+  box-shadow:
+    24px 0 80px rgba(0,0,0,.13),
+    inset -1px 0 0 rgba(255,255,255,.018);
+}
+.sidebar::after{
+  content:"";
+  position:absolute;
+  right:-1px;top:0;
+  width:1px;height:180px;
+  background:linear-gradient(180deg,rgba(123,135,255,.45),transparent);
+  opacity:.3;
+  pointer-events:none;
+}
+.sidebar .brand{
+  position:relative;
+  min-height:68px;
+  padding:4px 10px 24px!important;
+}
+.sidebar .brand::before{
+  content:"M";
+  width:30px;height:30px;
+  display:grid;
+  place-items:center;
+  flex:none;
+  border-radius:9px;
+  border:1px solid rgba(115,128,255,.18);
+  background:rgba(115,128,255,.08);
+  color:#aeb6ff;
+  font-family:var(--font-display);
+  font-size:12px;
+  font-weight:800;
+}
+.sidebar .brand .word{
+  color:#f0f3f7;
+  font-size:15px!important;
+  letter-spacing:-.025em!important;
+}
+.sidebar .brand .tag{
+  margin-top:2px;
+  color:#697487!important;
+  font-family:var(--font-body)!important;
+  font-size:9px!important;
+  letter-spacing:.06em!important;
+}
+.nav-item{
+  position:relative;
+  min-height:44px;
+  margin-bottom:4px!important;
+  padding:10px 12px!important;
+  gap:11px!important;
+  overflow:hidden;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  color:#7f8a9b!important;
+  font-size:12.5px!important;
+  font-weight:650!important;
+  transition:background .15s ease,color .15s ease,border-color .15s ease!important;
+}
+.nav-item:hover{
+  background:rgba(255,255,255,.035)!important;
+  color:#d9dee7!important;
+}
+.nav-item.active{
+  background:linear-gradient(90deg,rgba(115,128,255,.13),rgba(115,128,255,.04))!important;
+  border-color:rgba(115,128,255,.14)!important;
+  color:#f2f4f8!important;
+}
+.nav-item.active::before{
+  content:"";
+  position:absolute;
+  left:-1px;top:8px;bottom:8px;
+  width:3px;
+  border-radius:4px;
+  background:linear-gradient(180deg,#929bff,#6f7cff);
+  box-shadow:0 0 16px rgba(115,128,255,.45);
+}
+.nav-item .ic{
+  width:18px!important;
+  height:18px;
+  display:grid;
+  place-items:center;
+  color:#8d98aa;
+}
+.nav-item .ic svg{
+  width:17px;height:17px;
+  fill:none;
+  stroke:currentColor;
+  stroke-width:1.7;
+  stroke-linecap:round;
+  stroke-linejoin:round;
+}
+.nav-item.active .ic{color:#afb7ff}
+.sidebar-foot{
+  padding:14px 10px 2px!important;
+  border-top:1px solid var(--border-soft)!important;
+}
+.sidebar-foot a{
+  color:#687487!important;
+  font-family:var(--font-body)!important;
+  font-size:10.5px!important;
+}
+.sidebar-foot a:hover{color:#dce1e8!important}
+
+.main{
+  flex:1;
+  width:100%;
+  max-width:1280px!important;
+  padding:44px clamp(30px,4vw,64px) 80px!important;
+}
+.page.active{animation:none!important}
+.page-header{margin-bottom:24px!important}
+.page-header h1{
+  margin:0 0 6px!important;
+  color:#f3f5f8;
+  font-size:clamp(28px,3vw,38px)!important;
+  line-height:1.04;
+  letter-spacing:-.045em;
+  font-weight:780;
+}
+.page-header p{
+  color:#778395!important;
+  font-size:12.5px!important;
+  line-height:1.6;
+}
+
+/* ---------- Surface language ---------- */
+.card,
+.stat-card,
+.payment-item,
+.mock-admin-item,
+.mock-question-card,
+.book-mobile-card,
+.gift-result,
+.modal-box{
+  position:relative;
+  border:1px solid var(--border)!important;
+  background:
+    linear-gradient(180deg,rgba(255,255,255,.018),rgba(255,255,255,.006)),
+    #10151c!important;
+  box-shadow:0 14px 38px rgba(0,0,0,.15)!important;
+  backdrop-filter:none!important;
+}
+.card{
+  padding:22px!important;
+  border-radius:17px!important;
+}
+.card::before,
+.stat-card::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  border-radius:inherit;
+  pointer-events:none;
+  background:linear-gradient(135deg,rgba(255,255,255,.035),transparent 32%,transparent 72%,rgba(115,128,255,.025));
+}
+.card:hover{
+  border-color:rgba(255,255,255,.10)!important;
+}
+
+/* ---------- Stats ---------- */
+.stat-grid{
+  grid-template-columns:repeat(5,minmax(0,1fr))!important;
+  gap:11px!important;
+  margin-bottom:20px!important;
+}
+.stat-card{
+  min-height:118px;
+  display:flex;
+  flex-direction:column;
+  justify-content:flex-end;
+  padding:16px!important;
+  border-radius:15px!important;
+  overflow:hidden;
+}
+.stat-card::after{
+  content:"";
+  position:absolute;
+  top:-50px;right:-45px;
+  width:120px;height:120px;
+  border-radius:50%;
+  background:radial-gradient(circle,rgba(115,128,255,.09),transparent 70%);
+}
+.stat-card .n{
+  position:relative;
+  z-index:1;
+  color:#f3f5f8;
+  font-size:28px!important;
+  line-height:1;
+  letter-spacing:-.05em;
+}
+.stat-card .l{
+  position:relative;
+  z-index:1;
+  margin-top:8px!important;
+  color:#6f7b8e!important;
+  font-size:9.5px!important;
+  font-weight:650;
+  letter-spacing:.01em;
+}
+
+/* ---------- Controls ---------- */
+label{
+  margin-bottom:7px!important;
+  color:#747f91!important;
+  font-size:9.5px!important;
+  letter-spacing:.09em!important;
+  font-weight:800!important;
+}
+textarea,input[type=text],input[type=number],select,input[type=file]{
+  min-height:43px;
+  border:1px solid var(--border)!important;
+  border-radius:11px!important;
+  background:#0e131a!important;
+  color:#edf1f6!important;
+  font-family:var(--font-body)!important;
+  font-size:12.5px!important;
+  box-shadow:none!important;
+  transition:border-color .15s ease,background .15s ease,box-shadow .15s ease!important;
+}
+textarea:focus,input:focus,select:focus{
+  outline:none!important;
+  border-color:rgba(115,128,255,.48)!important;
+  box-shadow:0 0 0 3px rgba(115,128,255,.075)!important;
+}
+input::placeholder,textarea::placeholder{color:#4f5a6b}
+.field{margin-bottom:16px!important}
+.field-hint{
+  color:#657184!important;
+  font-family:var(--font-body)!important;
+  font-size:9.5px!important;
+}
+
+button.glow-btn,
+button.ghost-btn,
+button.danger-btn{
+  min-height:40px;
+  padding:10px 15px!important;
+  border-radius:10px!important;
+  font-family:var(--font-body)!important;
+  font-size:11.5px!important;
+  font-weight:750!important;
+  box-shadow:none!important;
+}
+button.glow-btn{
+  border:1px solid transparent!important;
+  background:linear-gradient(145deg,#7d87ff,#6976f4)!important;
+  color:#fff!important;
+  box-shadow:0 8px 22px rgba(105,118,244,.17)!important;
+}
+button.glow-btn:hover{
+  transform:translateY(-1px)!important;
+  filter:brightness(1.05);
+  box-shadow:0 10px 28px rgba(105,118,244,.22)!important;
+}
+button.ghost-btn{
+  background:#121820!important;
+  border:1px solid var(--border)!important;
+  color:#9aa5b6!important;
+}
+button.ghost-btn:hover{
+  background:#171e28!important;
+  border-color:rgba(115,128,255,.22)!important;
+  color:#eef1f5!important;
+}
+button.danger-btn{
+  background:rgba(255,112,124,.11)!important;
+  border:1px solid rgba(255,112,124,.16)!important;
+  color:#ff8992!important;
+}
+button.danger-btn:hover{
+  background:rgba(255,112,124,.15)!important;
+}
+button:disabled{opacity:.46!important;cursor:not-allowed!important}
+
+/* ---------- Selectors / access ---------- */
+.type-choice{gap:8px!important}
+.type-opt,
+.access-card{
+  border:1px solid var(--border)!important;
+  background:#0f141b!important;
+  color:#8c97a8;
+  box-shadow:none;
+}
+.type-opt{
+  min-height:44px;
+  display:grid;
+  place-items:center;
+  padding:10px 12px!important;
+  border-radius:10px!important;
+  font-size:11.5px!important;
+}
+.type-opt:hover,
+.access-card:hover{
+  border-color:rgba(115,128,255,.22)!important;
+  background:#131922!important;
+}
+.type-opt.selected,
+.access-card.selected{
+  border-color:rgba(115,128,255,.28)!important;
+  background:rgba(115,128,255,.085)!important;
+  color:#b7beff!important;
+  box-shadow:inset 0 0 0 1px rgba(115,128,255,.03);
+}
+.access-grid{gap:8px!important}
+.access-card{
+  min-height:70px;
+  padding:12px 13px!important;
+  border-radius:11px!important;
+}
+.access-card .a-title{
+  color:#dce1e9;
+  font-size:11.5px!important;
+}
+.access-card.selected .a-title{color:#c5caff}
+.access-card .a-sub{
+  margin-top:5px!important;
+  color:#687487!important;
+  font-size:9.5px!important;
+}
+
+/* ---------- Preview / file state ---------- */
+.form-split{
+  grid-template-columns:minmax(0,1fr) 290px!important;
+  gap:20px!important;
+}
+.preview-card{top:24px!important}
+.preview-card .card{
+  padding:12px!important;
+  border-radius:15px!important;
+}
+.preview-cover{
+  margin-bottom:12px!important;
+  border-radius:11px!important;
+  border:1px solid rgba(255,255,255,.055)!important;
+  background:#171d26!important;
+}
+.preview-title{
+  color:#e9edf3;
+  font-size:14px!important;
+  line-height:1.35;
+}
+.preview-meta{
+  color:#6e7a8d!important;
+  font-family:var(--font-body)!important;
+  font-size:9.8px!important;
+}
+.preview-badge{
+  min-height:25px;
+  padding:4px 8px!important;
+  border-radius:8px!important;
+  font-size:9px!important;
+}
+.badge-free{background:rgba(98,214,154,.09)!important;color:#6bd79b!important}
+.badge-plus{background:rgba(115,128,255,.10)!important;color:#aeb7ff!important}
+.badge-purchase{background:rgba(191,148,75,.10)!important;color:#e0bd79!important}
+.pdf-state{
+  border:1px solid var(--border)!important;
+  border-radius:10px!important;
+  background:#0f141b!important;
+}
+
+/* ---------- Filters / table ---------- */
+.filters-row{
+  gap:8px!important;
+  margin-bottom:16px!important;
+}
+.filters-row input,
+.filters-row select{
+  min-height:38px!important;
+  padding:8px 10px!important;
+  font-size:10.5px!important;
+}
+table.book-table{
+  border-collapse:separate!important;
+  border-spacing:0!important;
+  font-size:11.5px!important;
+}
+table.book-table th{
+  padding:9px 10px!important;
+  border-bottom:1px solid var(--border)!important;
+  color:#657184!important;
+  font-size:8.5px!important;
+  letter-spacing:.09em!important;
+}
+table.book-table td{
+  padding:11px 10px!important;
+  border-bottom:1px solid var(--border-soft)!important;
+}
+table.book-table tbody tr{
+  transition:background .14s ease;
+}
+table.book-table tbody tr:hover{
+  background:rgba(255,255,255,.018);
+}
+table.book-table img.b-cover{
+  width:36px!important;height:48px!important;
+  border-radius:6px!important;
+}
+.b-title-cell{color:#e7ebf1;font-weight:650!important}
+.b-sub-cell{
+  margin-top:2px;
+  color:#687487!important;
+  font-size:9.5px!important;
+}
+.icon-action{
+  width:30px!important;height:30px!important;
+  border-radius:8px!important;
+  background:#111720!important;
+  border-color:var(--border)!important;
+  color:#778396!important;
+}
+.icon-action:hover{
+  background:#171e28!important;
+  border-color:rgba(115,128,255,.22)!important;
+  color:#eef1f5!important;
+}
+
+/* ---------- Mock admin ---------- */
+.mock-admin-list{gap:8px!important}
+.mock-admin-item{
+  min-height:66px;
+  padding:12px 13px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+.mock-admin-item:hover{
+  border-color:rgba(115,128,255,.18)!important;
+  background:#131922!important;
+}
+.mock-admin-title{
+  color:#e8ecf2;
+  font-size:12px!important;
+}
+.mock-admin-meta{
+  color:#697588!important;
+  font-size:9.5px!important;
+}
+.mock-question-card{
+  padding:14px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+.mock-question-number{font-size:11.5px!important}
+.mock-options-grid{gap:8px!important}
+.mock-correct-row{
+  color:#6f7a8c!important;
+  font-size:10px!important;
+}
+
+/* ---------- Gift / settings / payments ---------- */
+.gift-result{
+  border-radius:14px!important;
+  background:#0f141b!important;
+}
+.gift-result #gift-qr{
+  padding:10px!important;
+  border-radius:10px!important;
+}
+.payment-item{
+  padding:13px!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+.status{
+  color:#8e99ff!important;
+  font-family:var(--font-body)!important;
+  font-size:10px!important;
+}
+.status.err{color:#ff7f89!important}
+.status.ok{color:#6bd79b!important}
+.empty-state{
+  padding:34px 18px!important;
+  border:1px dashed rgba(255,255,255,.10)!important;
+  border-radius:13px!important;
+  background:#0e1319;
+}
+.empty-state .e-icon{display:none!important}
+.empty-state .e-text{
+  color:#667285!important;
+  font-family:var(--font-body)!important;
+  font-size:10.5px!important;
+}
+
+/* ---------- Modal ---------- */
+.modal-backdrop{
+  background:rgba(5,7,11,.78)!important;
+  backdrop-filter:blur(14px);
+}
+.modal-box{
+  max-width:400px!important;
+  padding:22px!important;
+  border-radius:18px!important;
+  box-shadow:0 30px 90px rgba(0,0,0,.42)!important;
+}
+.modal-box h3{
+  color:#eff2f6;
+  font-size:16px!important;
+  letter-spacing:-.025em;
+}
+.modal-box p{
+  color:#768295!important;
+  font-size:11px!important;
+}
+
+/* ---------- Mobile ---------- */
+.mobile-topbar{
+  min-height:58px;
+  padding:10px 14px!important;
+  background:rgba(10,13,18,.96)!important;
+  border-bottom:1px solid var(--border)!important;
+  backdrop-filter:blur(18px);
+}
+.mobile-topbar .brand .word{
+  color:#f0f3f7;
+  font-size:13px!important;
+  letter-spacing:-.02em;
+}
+.hamburger{
+  width:38px!important;height:38px!important;
+  border-radius:10px!important;
+  border:1px solid var(--border)!important;
+  background:#121820!important;
+  color:#cbd2dc!important;
+}
+
+@media(max-width:1100px){
+  .stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+}
+@media(max-width:780px){
+  .main{
+    padding:24px 14px 70px!important;
+  }
+  .sidebar{
+    width:min(286px,84vw)!important;
+    box-shadow:30px 0 90px rgba(0,0,0,.44)!important;
+  }
+  .sidebar-backdrop{
+    background:rgba(4,6,10,.68)!important;
+    backdrop-filter:blur(6px);
+  }
+  .page-header{
+    margin-bottom:18px!important;
+  }
+  .page-header h1{
+    font-size:26px!important;
+  }
+  .stat-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:8px!important;
+  }
+  .stat-card{
+    min-height:98px!important;
+    padding:13px!important;
+  }
+  .stat-card .n{font-size:23px!important}
+  .card{padding:15px!important;border-radius:14px!important}
+  .form-split{grid-template-columns:1fr!important}
+  .preview-card{position:static!important}
+  .filters-row input,
+  .filters-row select{
+    flex:1 1 calc(50% - 4px)!important;
+  }
+  .access-grid{grid-template-columns:1fr!important}
+}
+@media(max-width:480px){
+  .stat-grid{grid-template-columns:1fr 1fr!important}
+  .page-header-row{align-items:flex-start!important}
+  .page-header-row > button{width:100%!important}
+  .filters-row input,
+  .filters-row select{flex:1 1 100%!important}
+  .modal-actions{flex-direction:column}
+}
+
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script type="module">
@@ -253,7 +957,7 @@
     <div class="tag">Administrator paneli</div>
   </div>
   <div class="card">
-    <div class="lock-icon">🔒</div>
+    <div class="lock-icon"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
     <div class="field">
       <label for="admin-pass">Administrator kodi</label>
       <input type="text" id="admin-pass" placeholder="Kodni kiriting" autocomplete="off">
@@ -280,11 +984,11 @@
           <span class="tag">Boshqaruv paneli</span>
         </div>
       </div>
-      <button class="nav-item active" data-page="dashboard"><span class="ic">⌂</span>Boshqaruv</button>
-      <button class="nav-item" data-page="books"><span class="ic">📚</span>Kitoblar</button>
-      <button class="nav-item" data-page="mocks"><span class="ic">📝</span>Mock testlar</button>
-      <button class="nav-item" data-page="gift"><span class="ic">🎁</span>Plus sovg'a</button>
-      <button class="nav-item" data-page="settings"><span class="ic">⚙</span>Sozlamalar</button>
+      <button class="nav-item active" data-page="dashboard"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 4h6v6H4zM14 4h6v10h-6zM4 14h6v6H4zM14 18h6v2h-6z"/></svg></span>Boshqaruv</button>
+      <button class="nav-item" data-page="books"><span class="ic"><svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span>Kitoblar</button>
+      <button class="nav-item" data-page="mocks"><span class="ic"><svg viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>Mock testlar</button>
+      <button class="nav-item" data-page="gift"><span class="ic"><svg viewBox="0 0 24 24"><rect x="4" y="9" width="16" height="11" rx="2"/><path d="M12 9v11M3 9h18M7.5 9C5 9 5 5.5 7.2 5.5c2 0 3.1 2 4.8 3.5M16.5 9c2.5 0 2.5-3.5.3-3.5-2 0-3.1 2-4.8 3.5"/></svg></span>Plus sovg'a</button>
+      <button class="nav-item" data-page="settings"><span class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06A1.7 1.7 0 0 0 15 19.4a1.7 1.7 0 0 0-1 .6 1.7 1.7 0 0 0-.4 1.1V21h-4v-.09A1.7 1.7 0 0 0 8.6 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-.6-1 1.7 1.7 0 0 0-1.1-.4H3v-4h.09A1.7 1.7 0 0 0 4.6 8.6a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-.6 1.7 1.7 0 0 0 .4-1.1V3h4v.09A1.7 1.7 0 0 0 15.4 4.6a1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.4 9c.39.28.72.64 1 1 .25.33.4.73.4 1.1V12h.09v4h-.09c-.37 0-.77.15-1.1.4-.36.28-.72.61-1 .99z"/></svg></span>Sozlamalar</button>
       <div class="sidebar-foot">
         <a href="/">&larr; MATHLVL saytiga qaytish</a>
       </div>
@@ -311,8 +1015,8 @@
           <div style="display:flex; gap:10px; flex-wrap:wrap;">
             <button class="glow-btn" onclick="goToPage('books')">+ Yangi kitob</button>
             <button class="glow-btn" onclick="goToPage('mocks')">+ Yangi mock test</button>
-            <button class="ghost-btn" onclick="goToPage('gift')">🎁 Plus sovg'a yaratish</button>
-            <button class="ghost-btn" onclick="goToPage('settings')">⚙ Sozlamalar</button>
+            <button class="ghost-btn" onclick="goToPage('gift')">Plus sovg'a yaratish</button>
+            <button class="ghost-btn" onclick="goToPage('settings')">Sozlamalar</button>
           </div>
         </div>
       </section>
@@ -367,8 +1071,8 @@
               <div class="field">
                 <label class="req">Kitob turi</label>
                 <div class="type-choice">
-                  <div class="type-opt selected" data-type="TEXTBOOK">📘 Darslik</div>
-                  <div class="type-opt" data-type="SUPPLEMENTARY">📗 Qo'shimcha kitob</div>
+                  <div class="type-opt selected" data-type="TEXTBOOK">Darslik</div>
+                  <div class="type-opt" data-type="SUPPLEMENTARY">Qo'shimcha kitob</div>
                 </div>
               </div>
 
@@ -407,19 +1111,19 @@
                 <label class="req">Kirish turi</label>
                 <div class="access-grid" id="access-grid">
                   <div class="access-card selected" data-access="FREE">
-                    <div class="a-title">🟢 Bepul</div>
+                    <div class="a-title">Bepul</div>
                     <div class="a-sub">Hamma o'qiy oladi</div>
                   </div>
                   <div class="access-card" data-access="PLUS">
-                    <div class="a-title">⭐ MATHLVL Plus</div>
+                    <div class="a-title">MATHLVL Plus</div>
                     <div class="a-sub">Plus obunasi bilan</div>
                   </div>
                   <div class="access-card" data-access="PURCHASE">
-                    <div class="a-title">💎 Alohida sotiladi</div>
+                    <div class="a-title">Alohida sotiladi</div>
                     <div class="a-sub">Bir martalik xarid</div>
                   </div>
                   <div class="access-card" data-access="PLUS_OR_PURCHASE">
-                    <div class="a-title">⭐+💎 Plus yoki xarid</div>
+                    <div class="a-title">Plus yoki xarid</div>
                     <div class="a-sub">Ikkala usul ham mavjud</div>
                   </div>
                 </div>
@@ -489,7 +1193,7 @@
 
         <div class="card" id="mock-list-section" style="margin-bottom:20px;">
           <div class="mock-admin-list" id="mock-admin-list">
-            <div class="empty-state"><div class="e-icon">📝</div><div class="e-text">Yuklanmoqda...</div></div>
+            <div class="empty-state"><div class="e-icon"></div><div class="e-text">Yuklanmoqda...</div></div>
           </div>
         </div>
 
@@ -577,7 +1281,7 @@
         </div>
 
         <div class="card" style="max-width:460px; margin-bottom:20px;">
-          <h2 style="font-family:var(--font-display); font-size:15px; margin:0 0 14px;">💳 To'lov sozlamalari</h2>
+          <h2 style="font-family:var(--font-display); font-size:15px; margin:0 0 14px;">To'lov sozlamalari</h2>
           <div class="field">
             <label for="pay-card-number">Karta raqami</label>
             <input type="text" id="pay-card-number" placeholder="9860 1234 5678 9012">
@@ -599,7 +1303,7 @@
         </div>
 
         <div class="card" style="max-width:520px;">
-          <h2 style="font-family:var(--font-display); font-size:15px; margin:0 0 14px;">⏳ Kutilayotgan to'lovlar</h2>
+          <h2 style="font-family:var(--font-display); font-size:15px; margin:0 0 14px;">Kutilayotgan to'lovlar</h2>
           <div id="payments-list"></div>
         </div>
       </section>
