@@ -56,11 +56,18 @@ s = s.replace(history_anchor, history_anchor + '\n  saveMockResultToServer(resul
 boot_anchor = '''  await loadBooks();
   await syncBookProgressFromServer();
   refreshDashboard();'''
-if boot_anchor not in s:
-    raise SystemExit('dashboard boot anchor not found')
-s = s.replace(boot_anchor, '''  await loadBooks();
+simple_boot_anchor = '''  await loadBooks();
+  refreshDashboard();'''
+if boot_anchor in s:
+    s = s.replace(boot_anchor, '''  await loadBooks();
   await Promise.all([syncBookProgressFromServer(), syncMockHistoryFromServer()]);
   refreshDashboard();''', 1)
+elif simple_boot_anchor in s:
+    s = s.replace(simple_boot_anchor, '''  await loadBooks();
+  await syncMockHistoryFromServer();
+  refreshDashboard();''', 1)
+else:
+    raise SystemExit('dashboard boot anchor not found')
 
 for token in ('/api/progress?action=mock-history', 'syncMockHistoryFromServer', 'saveMockResultToServer(result)'):
     if token not in s:
