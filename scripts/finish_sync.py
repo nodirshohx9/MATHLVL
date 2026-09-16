@@ -212,12 +212,15 @@ s = s.replace(
 )
 
 required = [
-    "fetch('/api/progress'",
-    "async function syncBookProgressFromServer()",
     "const MOCK_DRAFT_KEY = 'mathlvl_mock_draft_v1'",
     "saveMockDraft();",
     "clearMockDraft();",
 ]
+if progress_sync_enabled:
+    required.extend([
+        "fetch('/api/progress'",
+        "async function syncBookProgressFromServer()",
+    ])
 for token in required:
     if token not in s:
         raise SystemExit(f'finish sync missing: {token}')
