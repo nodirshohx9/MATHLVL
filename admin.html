@@ -960,7 +960,7 @@ table.book-table img.b-cover{
     <div class="lock-icon"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg></div>
     <div class="field">
       <label for="admin-pass">Administrator kodi</label>
-      <input type="text" id="admin-pass" placeholder="Kodni kiriting" autocomplete="off">
+      <input type="password" id="admin-pass" placeholder="Kodni kiriting" autocomplete="current-password" spellcheck="false">
     </div>
     <button class="glow-btn" id="admin-unlock-btn" style="width:100%;">Kirish</button>
     <div class="status" id="admin-gate-status"></div>
@@ -1328,7 +1328,6 @@ table.book-table img.b-cover{
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
 
 // ================= ADMIN AUTH =================
-let adminPassword = '';
 document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>{
   const val = document.getElementById('admin-pass').value.trim();
   const statusEl = document.getElementById('admin-gate-status');
@@ -1344,7 +1343,7 @@ document.getElementById('admin-unlock-btn').addEventListener('click', async ()=>
     });
     const data = await res.json();
     if(data.ok){
-      adminPassword = val;
+      document.getElementById('admin-pass').value = '';
       document.getElementById('admin-gate').style.display = 'none';
       document.getElementById('admin-shell').style.display = 'block';
       statusEl.textContent = '';
@@ -1986,7 +1985,7 @@ document.getElementById('gift-create-btn').addEventListener('click', async ()=>{
     const res = await fetch('/api/gift', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'create', password: adminPassword, durationDays, maxRedemptions, expiresInDays, note })
+      body: JSON.stringify({ action:'create', durationDays, maxRedemptions, expiresInDays, note })
     });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error || "Sovg'a yaratib bo'lmadi");
@@ -2041,7 +2040,6 @@ document.getElementById('pay-settings-save-btn').addEventListener('click', async
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         action: 'set-payment-settings',
-        password: adminPassword,
         cardNumber: document.getElementById('pay-card-number').value.trim(),
         cardHolder: document.getElementById('pay-card-holder').value.trim(),
         monthlyPrice: document.getElementById('pay-monthly-price').value,
@@ -2071,7 +2069,7 @@ function paymentStatusLabel(status){
 async function refreshPaymentsList(){
   const listEl = document.getElementById('payments-list');
   try{
-    const res = await fetch('/api/gift?action=payments-list', { headers: { 'x-admin-password': adminPassword } });
+    const res = await fetch('/api/gift?action=payments-list', { cache:'no-store' });
     const data = await res.json();
     if(!res.ok) throw new Error(data.error);
     const pending = data.payments.filter(p => p.status === 'PENDING');
@@ -2107,7 +2105,7 @@ async function approvePayment(paymentId){
   try{
     const res = await fetch('/api/gift', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'approve-payment', password: adminPassword, paymentId })
+      body: JSON.stringify({ action:'approve-payment', paymentId })
     });
     if(!res.ok) throw new Error("Tasdiqlab bo'lmadi");
     refreshPaymentsList();
@@ -2118,7 +2116,7 @@ async function rejectPayment(paymentId){
   try{
     const res = await fetch('/api/gift', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'reject-payment', password: adminPassword, paymentId })
+      body: JSON.stringify({ action:'reject-payment', paymentId })
     });
     if(!res.ok) throw new Error("Rad etib bo'lmadi");
     refreshPaymentsList();
