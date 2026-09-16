@@ -57,7 +57,9 @@ async function syncBookProgressFromServer(){
     return getAllBookProgress();
   }
 }"""
-replace_once(old_get, new_get, 'book progress getter')
+progress_sync_enabled = old_get in s
+if progress_sync_enabled:
+    replace_once(old_get, new_get, 'book progress getter')
 
 old_save = """function saveBookProgress(bookId, currentPage, totalPages, pageOffset){
   try{
@@ -86,7 +88,8 @@ new_save = r"""function saveBookProgress(bookId, currentPage, totalPages, pageOf
     body:JSON.stringify({ bookId, ...record })
   }).catch(()=>{});
 }"""
-replace_once(old_save, new_save, 'book progress save')
+if progress_sync_enabled:
+    replace_once(old_save, new_save, 'book progress save')
 
 old_boot = """(async ()=>{
   await loadBooks();
@@ -98,7 +101,8 @@ new_boot = """(async ()=>{
   refreshDashboard();
   if(document.getElementById('profile-dashboard')?.style.display !== 'none') renderMyBooks();
 })();"""
-replace_once(old_boot, new_boot, 'dashboard progress sync')
+if progress_sync_enabled and old_boot in s:
+    replace_once(old_boot, new_boot, 'dashboard progress sync')
 
 # =========================
 # Mock test draft autosave / resume
