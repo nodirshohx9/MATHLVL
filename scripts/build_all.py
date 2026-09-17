@@ -30,6 +30,7 @@ STEPS = [
     'scripts/mock_answer_key_grid_fix.py',
     'scripts/mock_learning_review.py',
     'scripts/mock_selection_visibility.py',
+    'scripts/mock_math_keyboard_toggle_fix.py',
 ]
 
 for step in STEPS:
