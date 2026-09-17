@@ -33,6 +33,7 @@ STEPS = [
     'scripts/mock_math_keyboard_toggle_fix.py',
     'scripts/wawej_studio_signature.py',
     'scripts/mobile_reader_scroll_fix.py',
+    'scripts/mobile_reader_scroll_performance.py',
 ]
 
 for step in STEPS:
