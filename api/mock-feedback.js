@@ -1,9 +1,13 @@
 import crypto from 'crypto';
 
+export const config = { maxDuration: 60 };
+
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash';
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
+const BATCH_SIZE = 8;
+const BATCH_CONCURRENCY = 2;
 
 function parseCookies(header) {
   const cookies = {};
@@ -83,7 +87,7 @@ function isTransientGeminiError(status, message = '') {
     text.includes('try again later');
 }
 
-async function requestGemini(apiKey, model, prompt) {
+async function requestGemini(apiKey, model, prompt, maxOutputTokens = 4200) {
   const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
   const response = await fetch(url, {
     method: 'POST',
@@ -91,7 +95,8 @@ async function requestGemini(apiKey, model, prompt) {
     body: JSON.stringify({
       contents: [{ role: 'user', parts: [{ text: prompt }] }],
       generationConfig: {
-        maxOutputTokens: 10000,
+        maxOutputTokens,
+        temperature: 0.15,
         thinkingConfig: { thinkingBudget: 0 }
       }
     })
@@ -100,11 +105,11 @@ async function requestGemini(apiKey, model, prompt) {
   return { response, data };
 }
 
-async function getGeminiFeedback(apiKey, prompt) {
+async function getGeminiFeedback(apiKey, prompt, maxOutputTokens = 4200) {
   const attempts = [
     { model: GEMINI_MODEL, delay: 0 },
-    { model: GEMINI_MODEL, delay: 450 },
-    { model: GEMINI_FALLBACK_MODEL, delay: 800 }
+    { model: GEMINI_MODEL, delay: 350 },
+    { model: GEMINI_FALLBACK_MODEL, delay: 650 }
   ];
 
   let last = null;
@@ -112,11 +117,19 @@ async function getGeminiFeedback(apiKey, prompt) {
     const attempt = attempts[i];
     if (attempt.delay) await sleep(attempt.delay);
 
-    const result = await requestGemini(apiKey, attempt.model, prompt);
+    const result = await requestGemini(apiKey, attempt.model, prompt, maxOutputTokens);
     const message = result.data?.error?.message || '';
-    last = { ...result, model: attempt.model, message };
+    const candidate = result.data?.candidates?.[0];
+    const text = (candidate?.content?.parts || []).map(p => p.text || '').join('').trim();
+    last = {
+      ...result,
+      model: attempt.model,
+      message,
+      text,
+      finishReason: candidate?.finishReason || ''
+    };
 
-    if (result.response.ok) {
+    if (result.response.ok && text) {
       if (i > 0) console.warn(`MOCK FEEDBACK recovered on attempt ${i + 1} using ${attempt.model}`);
       return last;
     }
@@ -126,6 +139,146 @@ async function getGeminiFeedback(apiKey, prompt) {
   }
 
   return last;
+}
+
+function itemStatus(item) {
+  if (!item.given || item.given === 'javob berilmagan') return 'JAVOBSIZ';
+  return item.isCorrect ? 'TO_GRI' : 'XATO';
+}
+
+function itemSource(item) {
+  return `[${item.label}] [${item.section}] [${itemStatus(item)}]\nSavol: ${item.question}\nFoydalanuvchi javobi: ${item.given}\nTo'g'ri javob: ${item.expected}`;
+}
+
+function buildBatchPrompt(title, correct, total, answered, items, batchIndex, batchCount) {
+  return `Sen MATHLVL platformasidagi Ustoz AI matematika ustozisan.
+O'zbek tilida, o'quvchiga tushunarli, ixcham va aniq yoz.
+Bu rasmiy BBA bali emas, faqat MATHLVL mock mashq natijasiga asoslangan o'quv tahlili.
+
+Test: ${title}
+Natija: ${correct}/${total}
+Javob berilgan: ${answered}/${total}
+Bu tahlil qismi: ${batchIndex + 1}/${batchCount}
+
+Quyidagi elementlarning HAR BIRINI, berilgan tartibda, hech birini tashlab ketmasdan tahlil qil:
+
+${items.map(itemSource).join('\n\n')}
+
+Har element uchun statusni yuqoridagi [TO_GRI], [XATO], [JAVOBSIZ] qiymatidan ol. Uni o'zing qayta baholama.
+Har biri uchun aynan shu formatdan foydalan:
+
+### <label>-savol — ✅ To'g'ri
+yoki
+### <label>-savol — ❌ Xato
+yoki
+### <label>-savol — ◻️ Javobsiz
+
+**Savol:** mazmunini 1-2 jumlada ko'rsat.
+**Sizning javobingiz:** foydalanuvchi javobi.
+**To'g'ri javob:** to'g'ri javob.
+**Yechish yo'li:** 1-3 ta qisqa, aniq matematik qadam.
+
+To'g'ri savollarda juda qisqa tushuntir.
+Xato yoki javobsiz savollarda asosiy xatoni yoki kerakli usulni bir jumlada tushuntir.
+Savolda ma'lumot yetishmasa, o'zingdan shart yoki son to'qima.
+Bu qism oxirida umumiy xulosa yozma — faqat berilgan savollarni tugat.
+Javobni ixcham tut, lekin BARCHA ${items.length} ta element bo'lishi shart.`;
+}
+
+function escapedLabel(label) {
+  return String(label).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function outputContainsAllItems(text, items) {
+  const source = String(text || '');
+  return items.every(item => {
+    const label = escapedLabel(item.label);
+    return new RegExp(`(?:^|\\n)#{2,4}\\s*${label}\\s*-?\\s*savol\\b`, 'i').test(source);
+  });
+}
+
+async function analyzeBatch(apiKey, context, items, batchIndex, batchCount, depth = 0) {
+  const prompt = buildBatchPrompt(
+    context.title,
+    context.correct,
+    context.total,
+    context.answered,
+    items,
+    batchIndex,
+    batchCount
+  );
+
+  const tokenBudget = Math.min(6000, Math.max(2400, items.length * 500));
+  const result = await getGeminiFeedback(apiKey, prompt, tokenBudget);
+  const complete = result?.response?.ok &&
+    result.text &&
+    result.finishReason !== 'MAX_TOKENS' &&
+    outputContainsAllItems(result.text, items);
+
+  if (complete) return result.text;
+
+  // Long model answers can stop halfway. Split only the problematic group and retry,
+  // so a 50-60 element mock still reaches the very last question.
+  if (items.length > 1 && depth < 4) {
+    const middle = Math.ceil(items.length / 2);
+    const left = await analyzeBatch(apiKey, context, items.slice(0, middle), batchIndex, batchCount, depth + 1);
+    const right = await analyzeBatch(apiKey, context, items.slice(middle), batchIndex, batchCount, depth + 1);
+    return `${left}\n\n${right}`.trim();
+  }
+
+  if (!result?.response?.ok) {
+    const transient = isTransientGeminiError(result?.response?.status, result?.message);
+    throw new Error(transient ? 'AI_BUSY' : 'AI_FAILED');
+  }
+
+  // A single item should almost never truncate. Keep its useful output if present,
+  // otherwise return an explicit section instead of silently ending the analysis.
+  if (result.text) return result.text;
+  const item = items[0];
+  return `### ${item.label}-savol — ${itemStatus(item) === 'TO_GRI' ? '✅ To‘g‘ri' : itemStatus(item) === 'JAVOBSIZ' ? '◻️ Javobsiz' : '❌ Xato'}\n\n**Savol:** ${item.question}\n\n**Sizning javobingiz:** ${item.given}\n\n**To‘g‘ri javob:** ${item.expected}\n\n**Yechish yo‘li:** Ustoz AI bu savol uchun to‘liq izohni vaqtincha tugata olmadi. Savolni alohida Ustoz AI’ga yuborib batafsil yechim olishingiz mumkin.`;
+}
+
+async function mapWithConcurrency(values, concurrency, worker) {
+  const results = new Array(values.length);
+  let cursor = 0;
+
+  async function run() {
+    while (true) {
+      const index = cursor++;
+      if (index >= values.length) return;
+      results[index] = await worker(values[index], index);
+    }
+  }
+
+  await Promise.all(Array.from({ length: Math.min(concurrency, values.length) }, run));
+  return results;
+}
+
+function buildSummary(items, correct, total, answered) {
+  const wrong = items.filter(item => !item.isCorrect || !item.given || item.given === 'javob berilmagan');
+  const sectionCounts = new Map();
+  wrong.forEach(item => {
+    const section = item.section || 'Boshqa';
+    sectionCounts.set(section, (sectionCounts.get(section) || 0) + 1);
+  });
+  const weak = [...sectionCounts.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 4)
+    .map(([name]) => name);
+  const unanswered = Math.max(0, total - answered);
+
+  const lines = [
+    '## Qisqa xulosa',
+    `- Natija: **${correct}/${total}**. Javob berilgan: **${answered}/${total}**${unanswered ? `, javobsiz: **${unanswered}**` : ''}.`
+  ];
+
+  if (weak.length) lines.push(`- Ko‘proq mashq kerak bo‘lgan bo‘limlar: **${weak.join(', ')}**.`);
+  else lines.push('- Testdagi baholangan elementlar yaxshi bajarilgan.');
+
+  lines.push('- Xato va javobsiz savollarni yechim yo‘li bilan yana bir marta mustaqil ishlab chiqing.');
+  lines.push('- Keyin shu mavzulardan 5–10 ta o‘xshash mashq yeching va xatolarni qayta tekshiring.');
+  lines.push('- Qiyin savol qolsa, uni alohida Ustoz AI’ga yuborib qadam-baqadam tushuntirish oling.');
+  return lines.join('\n');
 }
 
 export default async function handler(req, res) {
@@ -158,19 +311,19 @@ export default async function handler(req, res) {
 
     const items = Array.isArray(body.items)
       ? body.items.slice(0, 60).map((item, index) => ({
-          label: cleanText(item.label, 20) || String(index + 1),
-          section: cleanText(item.section, 40) || 'Savol',
-          question: cleanText(item.question, 500),
-          given: cleanText(item.given, 180) || 'javob berilmagan',
-          expected: cleanText(item.expected, 180),
+          label: cleanText(item.label, 24) || String(index + 1),
+          section: cleanText(item.section, 60) || 'Savol',
+          question: cleanText(item.question, 1200),
+          given: cleanText(item.given, 400) || 'javob berilmagan',
+          expected: cleanText(item.expected, 400),
           isCorrect: item.isCorrect === true
         }))
       : (Array.isArray(body.wrong) ? body.wrong.slice(0, 60).map((item, index) => ({
           label: String(index + 1),
-          section: cleanText(item.section, 40) || 'Savol',
-          question: cleanText(item.question, 500),
-          given: cleanText(item.given, 180) || 'javob berilmagan',
-          expected: cleanText(item.expected, 180),
+          section: cleanText(item.section, 60) || 'Savol',
+          question: cleanText(item.question, 1200),
+          given: cleanText(item.given, 400) || 'javob berilmagan',
+          expected: cleanText(item.expected, 400),
           isCorrect: false
         })) : []);
 
@@ -178,64 +331,35 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Tahlil uchun savollar topilmadi.' });
     }
 
-    const reviewSource = items.map(item =>
-      `[${item.label}] [${item.section}] [${item.isCorrect ? 'TO_GRI' : 'XATO_YOKI_JAVOBSIZ'}]\nSavol: ${item.question}\nFoydalanuvchi javobi: ${item.given}\nTo'g'ri javob: ${item.expected}`
-    ).join('\n\n');
-
-    const prompt = `Sen MATHLVL platformasidagi Ustoz AI matematika ustozisan.
-O'zbek tilida, o'quvchiga tushunarli, ixcham va aniq yoz.
-Bu rasmiy BBA bali emas, faqat MATHLVL mock mashq natijasiga asoslangan o'quv tahlili.
-
-Test: ${title}
-Natija: ${correct}/${total}
-Javob berilgan: ${answered}/${total}
-
-Quyida testdagi BARCHA baholanadigan javob elementlari bor:
-${reviewSource}
-
-HAR BIR elementni berilgan tartibda birma-bir ko'rib chiq. Hech birini tashlab ketma.
-Har biri uchun aynan shu formatdan foydalan:
-
-### <label>-savol — ✅ To'g'ri
-yoki
-### <label>-savol — ❌ Xato
-yoki foydalanuvchi javob bermagan bo'lsa:
-### <label>-savol — ◻️ Javobsiz
-
-**Savol:** savolning mazmunini qisqa va tushunarli ko'rsat.
-**Sizning javobingiz:** foydalanuvchi javobi.
-**To'g'ri javob:** to'g'ri javob.
-**Yechish yo'li:** 2-4 ta qisqa matematik qadam bilan qanday ishlanishini ko'rsat.
-
-To'g'ri ishlangan savollarda ham yechish yo'lini yoz, lekin juda qisqa qil.
-Xato yoki javobsiz savollarda qayerda adashish mumkinligini bir jumlada tushuntir.
-Formulalarni Markdown/LaTeX bilan yozish mumkin.
-Savol matnida ma'lumot yetishmasa, o'zingdan shart yoki son to'qima.
-
-Barcha savollar tugagach:
-## Qisqa xulosa
-- 2-4 jumlada umumiy natijani ayt.
-- Xatolarga qarab 2-5 ta sust mavzuni sanab o't.
-- Keyingi mashg'ulot uchun 3 ta aniq tavsiya ber.
-- Rasmiy sertifikat bali deb ko'rsatma va o'quvchini kamsitma.
-
-Javobni imkon qadar ixcham saqla, lekin barcha elementlar bo'lishi shart.`;
-
-    const result = await getGeminiFeedback(apiKey, prompt);
-    if (!result?.response?.ok) {
-      const transient = isTransientGeminiError(result?.response?.status, result?.message);
-      return res.status(transient ? 503 : 502).json({
-        error: transient
-          ? 'Ustoz AI hozir band. Bir ozdan keyin yana urinib ko‘ring.'
-          : 'Ustoz AI tahlilini olishda xatolik'
-      });
+    const batches = [];
+    for (let i = 0; i < items.length; i += BATCH_SIZE) {
+      batches.push(items.slice(i, i + BATCH_SIZE));
     }
 
-    const text = (result.data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('').trim();
-    if (!text) return res.status(502).json({ error: 'Ustoz AI bo‘sh javob qaytardi' });
-    return res.status(200).json({ feedback: text });
+    const context = { title, correct, total, answered };
+    const parts = await mapWithConcurrency(
+      batches,
+      BATCH_CONCURRENCY,
+      (batch, index) => analyzeBatch(apiKey, context, batch, index, batches.length)
+    );
+
+    const summary = buildSummary(items, correct, total, answered);
+    const feedback = `${parts.join('\n\n')}\n\n${summary}`.trim();
+
+    return res.status(200).json({
+      feedback,
+      analyzedCount: items.length,
+      expectedCount: items.length,
+      complete: true
+    });
   } catch (err) {
     console.error('MOCK FEEDBACK XATOLIGI:', err);
+    if (err?.message === 'AI_BUSY') {
+      return res.status(503).json({ error: 'Ustoz AI hozir band. Bir ozdan keyin yana urinib ko‘ring.' });
+    }
+    if (err?.message === 'AI_FAILED') {
+      return res.status(502).json({ error: 'Ustoz AI tahlilini olishda xatolik' });
+    }
     return res.status(500).json({ error: 'Server xatoligi' });
   }
 }
