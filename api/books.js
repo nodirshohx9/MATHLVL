@@ -350,6 +350,36 @@ export default async function handler(req, res) {
       const auth = getAuth(req);
       const action = req.query.action;
 
+      if (action === 'pdf') {
+        const id = String(req.query.id || '');
+        if (!id) return res.status(400).json({ error: 'id kerak' });
+
+        const raw = await redisCommand(['HGET', HASH_KEY, id]);
+        if (!raw) return res.status(404).json({ error: 'Kitob topilmadi' });
+
+        const book = JSON.parse(raw);
+        const access = await canOpenBook(book, auth);
+        if (!access.ok) return res.status(access.status).json({ error: access.error });
+        if (!book.fileUrl) return res.status(404).json({ error: 'Kitob fayli topilmadi' });
+
+        const upstream = await fetch(book.fileUrl, { redirect:'follow' });
+        if (!upstream.ok) return res.status(502).json({ error: 'PDF faylini olishda xato' });
+
+        const contentType = (upstream.headers.get('content-type') || '').toLowerCase();
+        if (contentType && !contentType.includes('pdf') && !String(book.fileUrl).toLowerCase().includes('.pdf')) {
+          return res.status(502).json({ error: 'Fayl PDF emas' });
+        }
+
+        const buffer = Buffer.from(await upstream.arrayBuffer());
+        if (!buffer.length) return res.status(502).json({ error: 'PDF bo‘sh' });
+
+        res.setHeader('Content-Type','application/pdf');
+        res.setHeader('Content-Length',String(buffer.length));
+        res.setHeader('Content-Disposition','inline');
+        res.setHeader('Cache-Control','private, no-store, max-age=0');
+        return res.status(200).send(buffer);
+      }
+
       if (action === 'open') {
         // This response can contain the real PDF URL, so never let a browser/CDN cache it.
         res.setHeader('Cache-Control', 'private, no-store, max-age=0');
