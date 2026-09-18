@@ -74,7 +74,7 @@ s = s.replace("    scrollEl.style.transform = `scale(${liveScale})`;\n    scroll
 # Current-page tracking used to scan every page and call getBoundingClientRect on all
 # of them. A 190-page book makes that noticeably expensive on mobile.
 visible_pattern = re.compile(
-    r"function updateCurrentVisiblePage\(\)\{.*?\n\}\n\nfunction updatePageIndicator",
+    r"function updateCurrentVisiblePage\(\)\{.*?\n\}\n\n(?:function updatePageIndicator\(\)|window\.__mathlvlUpdatePageIndicator = function\(\)\{).*?\n\};",
     re.S,
 )
 visible_replacement = r'''function updateCurrentVisiblePage(){
@@ -109,7 +109,7 @@ visible_replacement = r'''function updateCurrentVisiblePage(){
     if(Number.isFinite(num) && num !== currentVisiblePage){
       currentVisiblePage = num;
       readerPageNum = num;
-      updatePageIndicator();
+      window.__mathlvlUpdatePageIndicator();
       const sheet = document.getElementById('ai-sheet');
       if(sheet?.classList.contains('open')){
         document.getElementById('ai-sheet-title').textContent = `${activeBook ? activeBook.title : ''} • ${num}-sahifa`;
@@ -118,7 +118,7 @@ visible_replacement = r'''function updateCurrentVisiblePage(){
   }
 }
 
-function updatePageIndicator'''
+window.__mathlvlUpdatePageIndicator = function(){'''
 s2, n = visible_pattern.subn(visible_replacement, s, count=1)
 if n != 1:
     raise SystemExit(f'visible page tracker replacement failed: {n}')
