@@ -7078,6 +7078,53 @@ html[data-theme="light"] .reader-header-tool.active{
 
 /* ===== Wawej Studio signature ===== */
 .wawej-signature{display:flex;align-items:center;gap:9px;margin:0 4px 10px;padding:10px 6px 12px;border-top:1px solid var(--border-soft);color:#77839c;text-decoration:none;transition:color .16s ease,opacity .16s ease}.wawej-signature:hover{color:#aab7ff}.wawej-signature-mark{width:25px;height:25px;flex:none;display:block;object-fit:contain;opacity:.9}.wawej-signature-copy{display:flex;flex-direction:column;gap:2px;min-width:0}.wawej-signature-copy small{font-size:7px;line-height:1;letter-spacing:.16em;font-weight:800;color:#68748d}.wawej-signature-copy strong{font-size:11px;line-height:1.1;letter-spacing:.01em;color:#aeb8cf;font-weight:700}.wawej-logo-dark{display:block}.wawej-logo-light{display:none}html[data-theme="light"] .wawej-signature{color:#71809a;border-top-color:rgba(31,57,104,.08)}html[data-theme="light"] .wawej-signature-copy small{color:#8a96aa}html[data-theme="light"] .wawej-signature-copy strong{color:#3a4760}html[data-theme="light"] .wawej-logo-dark{display:block}html[data-theme="light"] .wawej-logo-light{display:none}@media(max-width:899px){.wawej-signature{display:none}}
+
+/* ===== Reader stability: mobile PDF, touch scroll, back button ===== */
+.reader-header,
+.reader-back-button,
+.reader-header-desktop-controls,
+.reader-menu-button{
+  position:relative;
+  z-index:20!important;
+}
+.reader-back-button{
+  pointer-events:auto!important;
+  touch-action:manipulation!important;
+  -webkit-tap-highlight-color:transparent;
+}
+#reader-canvas-wrap{
+  position:relative!important;
+  min-height:0!important;
+}
+#reader-scroll{
+  position:relative!important;
+  z-index:1!important;
+  overscroll-behavior:contain!important;
+  -webkit-overflow-scrolling:touch!important;
+  touch-action:pan-y!important;
+}
+.reader-page-item{
+  contain:layout paint;
+}
+.reader-page-item canvas{
+  display:block;
+  max-width:none;
+}
+@media(max-width:899px){
+  body.reader-mode .app{
+    padding:10px 8px 24px!important;
+  }
+  body.reader-mode .reader-header{
+    position:sticky!important;
+    top:0!important;
+    z-index:30!important;
+    margin-bottom:8px!important;
+  }
+  body.reader-mode .reader-body{
+    height:calc(100dvh - 92px)!important;
+    min-height:0!important;
+  }
+}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -9266,7 +9313,35 @@ async function startReading(book){
     return;
   }
 
-  pdfjsLib.getDocument(book.fileUrl).promise.then(async pdf=>{
+  // Mobil brauzerlarda tashqi Blob/CORS PDF yuklanishi ishonchsiz bo‘lishi mumkin.
+  // Avval to‘g‘ridan-to‘g‘ri ochamiz, ishlamasa himoyalangan same-origin proxyga o‘tamiz.
+  async function loadPdfDocument(){
+    const sources = [];
+    if(book.fileUrl) sources.push({url:book.fileUrl, label:'direct'});
+    if(book.id) sources.push({
+      url:'/api/books?action=pdf&id='+encodeURIComponent(book.id),
+      label:'proxy'
+    });
+
+    let lastError = null;
+    for(const source of sources){
+      try{
+        const task = pdfjsLib.getDocument({
+          url:source.url,
+          disableAutoFetch:false,
+          disableStream:false,
+          useWorkerFetch:true
+        });
+        return await task.promise;
+      }catch(err){
+        lastError = err;
+        console.warn('PDF manbasi ishlamadi:', source.label, err);
+      }
+    }
+    throw lastError || new Error('PDF yuklanmadi');
+  }
+
+  loadPdfDocument().then(async pdf=>{
     try{
       readerPdfDoc = pdf;
       readerNumPages = pdf.numPages;
@@ -9327,7 +9402,9 @@ function setupPageObserver(){
       const num = parseInt(entry.target.dataset.page, 10);
       if(entry.isIntersecting) renderPageInto(entry.target, num);
     });
-  }, { root: wrap, rootMargin: '500px 0px', threshold: 0.01 });
+  const isMobile = window.matchMedia('(max-width: 899px)').matches;
+  const renderMargin = isMobile ? '140px 0px' : '280px 0px';
+  }, { root: wrap, rootMargin: renderMargin, threshold: 0.01 });
 
   document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
 
@@ -9463,10 +9540,13 @@ async function renderPageInto(item, num, forceRerender){
 
 // ---- Ekrandan uzoq sahifalarni bo'shatish (xotira uchun) ----
 function garbageCollectFarPages(){
-  if(renderedPages.size <= 10) return;
+  const isMobile = window.matchMedia('(max-width: 899px)').matches;
+  const keepCount = isMobile ? 5 : 8;
+  const keepDistance = isMobile ? 3 : 5;
+  if(renderedPages.size <= keepCount) return;
   document.querySelectorAll('.reader-page-item').forEach(el=>{
     const num = parseInt(el.dataset.page, 10);
-    if(Math.abs(num - currentVisiblePage) > 6 && renderedPages.has(num)){
+    if(Math.abs(num - currentVisiblePage) > keepDistance && renderedPages.has(num)){
       const state = getPageRenderState(num);
       if(state.task){ try{ state.task.cancel(); }catch(e){} state.task = null; }
       state.token++;
@@ -9674,29 +9754,21 @@ document.addEventListener('keydown', (e)=>{
   else if(e.key === 'ArrowUp' || e.key === 'PageUp'){ scrollEl.scrollTop -= scrollEl.clientHeight * 0.85; }
 });
 
-document.getElementById('reader-back-to-detail').addEventListener('click', ()=>{
+document.getElementById('reader-back-to-detail').addEventListener('click', (e)=>{
+  e.preventDefault();
+  e.stopPropagation();
   setAnnotationTool(null);
-  closeAiSheet();
+  document.getElementById('ai-sheet')?.classList.remove('open');
+  document.getElementById('ai-sheet-backdrop')?.classList.remove('open');
   cancelAllPageRenders();
   if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
   document.getElementById('book-reader-screen').style.display = 'none';
   document.getElementById('book-detail-screen').style.display = 'block';
   readerPdfDoc = null;
+  document.getElementById('reader-scroll').innerHTML = '';
 });
 
-document.getElementById('book-back').addEventListener('click', ()=>{
-  setAnnotationTool(null);
-  closeAiSheet();
-  cancelAllPageRenders();
-  if(pageObserver){ pageObserver.disconnect(); pageObserver = null; }
-  activeBook = null;
-  readerPdfDoc = null;
-  document.getElementById('teacher-layout').classList.remove('book-mode');
-  document.body.classList.remove('reader-mode');
-  refreshAllBookViews();
-});
-
-// ================= ANNOTATION (chizish tizimi, har sahifa uchun alohida) =================
+// ================= ANNOTATION/ (chizish tizimi, har sahifa uchun alohida) =================
 let annotationTool = null; // null | 'pen' | 'marker' | 'eraser'
 let pageStrokesCache = {};
 let pageRedoCache = {};
