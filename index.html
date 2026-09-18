@@ -7070,6 +7070,11 @@ html[data-theme="light"] .reader-header-tool.active{
   }
 }
 
+
+/* MATHLVL reader performance: smoother mobile PDF scrolling */
+.reader-scroll{-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;touch-action:pan-y;scroll-behavior:auto!important}
+.reader-page-item{contain:layout paint}
+@media(max-width:700px){.reader-page-item{content-visibility:auto;contain-intrinsic-size:0 900px}}
 </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
@@ -8998,46 +9003,54 @@ function buildPageContainers(){
 // ---- IntersectionObserver: qaysi sahifa render qilinishi va joriy sahifa kuzatuvi ----
 function setupPageObserver(){
   const wrap = document.getElementById('reader-canvas-wrap');
+  const scrollEl = document.getElementById('reader-scroll');
   pageObserver = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{
       const num = parseInt(entry.target.dataset.page, 10);
-      if(entry.isIntersecting){
-        renderPageInto(entry.target, num);
-      }
+      if(entry.isIntersecting) renderPageInto(entry.target, num);
     });
-    updateCurrentVisiblePage();
-  }, { root: wrap, rootMargin: '900px 0px', threshold: 0.01 });
+  }, { root: wrap, rootMargin: '500px 0px', threshold: 0.01 });
 
   document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
-  document.getElementById('reader-canvas-wrap').querySelector('.reader-scroll')
-    .addEventListener('scroll', debounce(updateCurrentVisiblePage, 150));
-}
 
-function debounce(fn, ms){
-  let t = null;
-  return (...args)=>{ clearTimeout(t); t = setTimeout(()=> fn(...args), ms); };
+  let scrollRaf = 0;
+  let lastScrollUpdate = 0;
+  scrollEl.addEventListener('scroll', ()=>{
+    if(scrollRaf) return;
+    scrollRaf = requestAnimationFrame(()=>{
+      scrollRaf = 0;
+      const now = performance.now();
+      if(now - lastScrollUpdate < 180) return;
+      lastScrollUpdate = now;
+      updateCurrentVisiblePage();
+    });
+  }, {passive:true});
 }
 
 function updateCurrentVisiblePage(){
   const wrap = document.getElementById('reader-canvas-wrap');
-  const wrapRect = wrap.getBoundingClientRect();
-  const centerY = wrapRect.top + wrapRect.height * 0.35;
-  let best = null, bestDist = Infinity;
-  document.querySelectorAll('.reader-page-item').forEach(el=>{
-    const r = el.getBoundingClientRect();
-    if(r.bottom < wrapRect.top - 50 || r.top > wrapRect.bottom + 50) return;
-    const dist = Math.abs((r.top + r.height/2) - centerY);
-    if(dist < bestDist){ bestDist = dist; best = el; }
-  });
-  if(best){
-    const num = parseInt(best.dataset.page, 10);
-    if(num !== currentVisiblePage){
-      currentVisiblePage = num;
-      readerPageNum = num;
-      updatePageIndicator();
-      if(document.getElementById('ai-sheet').classList.contains('open')){
-        document.getElementById('ai-sheet-title').textContent = `${activeBook ? activeBook.title : ''} • ${num}-sahifa`;
-      }
+  const scrollEl = document.getElementById('reader-scroll');
+  if(!wrap || !scrollEl) return;
+  const items = scrollEl.querySelectorAll('.reader-page-item');
+  if(!items.length) return;
+
+  const first = items[0];
+  const pageHeight = first.offsetHeight;
+  const gap = parseFloat(getComputedStyle(first).marginBottom) || 0;
+  const stride = pageHeight + gap;
+  if(!stride) return;
+
+  const index = Math.max(0, Math.min(items.length - 1, Math.round(scrollEl.scrollTop / stride)));
+  const best = items[index];
+  const num = parseInt(best.dataset.page, 10);
+
+  if(num !== currentVisiblePage){
+    currentVisiblePage = num;
+    readerPageNum = num;
+    updatePageIndicator();
+    const aiTitle = document.getElementById('ai-sheet-title');
+    if(aiTitle && document.getElementById('ai-sheet')?.classList.contains('open')){
+      aiTitle.textContent = activeBook ? activeBook.title + ' • ' + num + '-sahifa' : num + '-sahifa';
     }
   }
   garbageCollectFarPages();
@@ -9047,6 +9060,7 @@ function updatePageIndicator(){
   const el = document.getElementById('reader-page-text-desktop');
   if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
 }
+
 
 // ---- Bitta sahifani render qilish ----
 // ---- Har sahifa uchun alohida render holatini kuzatish (poyga holatini oldini olish uchun) ----
