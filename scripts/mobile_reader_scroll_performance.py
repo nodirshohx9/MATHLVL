@@ -77,7 +77,8 @@ visible_pattern = re.compile(
     r"function updateCurrentVisiblePage\(\)\{.*?\n\}\n\n(?:function updatePageIndicator\(\)|window\.__mathlvlUpdatePageIndicator = function\(\)\{).*?\n\};",
     re.S,
 )
-visible_replacement = r'''function updateCurrentVisiblePage(){
+visible_replacement = r"""
+function updateCurrentVisiblePage(){
   const wrap = document.getElementById('reader-canvas-wrap');
   if(!wrap) return;
 
@@ -118,14 +119,18 @@ visible_replacement = r'''function updateCurrentVisiblePage(){
   }
 }
 
-window.__mathlvlUpdatePageIndicator = function(){'''
+window.__mathlvlUpdatePageIndicator = function(){
+  const el = document.getElementById('reader-page-text-desktop');
+  if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
+};
+"""
 s2, n = visible_pattern.subn(visible_replacement, s, count=1)
 if n != 1:
     raise SystemExit(f'visible page tracker replacement failed: {n}')
 s = s2
 
 # Keep GC away from the finger gesture. It now runs only after scrolling settles.
-s = s.replace('  garbageCollectFarPages();\n}\n\nfunction updatePageIndicator',
+s = s.replace('  garbageCollectFarPages();\n}\n\nwindow.__mathlvlUpdatePageIndicator',
               '}\n\nfunction updatePageIndicator', 1)
 
 s = s.replace('  if(renderedPages.size <= 10) return;',
