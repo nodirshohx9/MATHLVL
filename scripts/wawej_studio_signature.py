@@ -3,6 +3,12 @@ from pathlib import Path
 p = Path('index.html')
 s = p.read_text(encoding='utf-8')
 
+# The current product keeps a single clickable Wawej footer signature.
+# Do not re-inject the legacy sidebar credit or expect the old footer copy.
+if 'class="wawej-product-footer"' in s and '<div class="wawej-signature"' not in s and '<div class="wawej-sidebar-credit"' not in s:
+    print('Wawej Studio footer signature already applied; build step is compatible.')
+    raise SystemExit(0)
+
 MARKER = 'MATHLVL_WAWEJ_SIGNATURE_V1'
 if MARKER in s:
     print('Wawej Studio signature already applied.')
