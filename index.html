@@ -9228,7 +9228,7 @@ function buildPageContainers(){
     item.style.height = height + 'px';
     scrollEl.appendChild(item);
   }
-  updatePageIndicator();
+  window.updatePageIndicator();
 }
 
 // ---- IntersectionObserver: qaysi sahifa render qilinishi va joriy sahifa kuzatuvi ----
@@ -9280,7 +9280,7 @@ function updateCurrentVisiblePage(){
   if(num !== currentVisiblePage){
     currentVisiblePage = num;
     readerPageNum = num;
-    updatePageIndicator();
+    window.updatePageIndicator();
     const aiTitle = document.getElementById('ai-sheet-title');
     if(aiTitle && document.getElementById('ai-sheet')?.classList.contains('open')){
       aiTitle.textContent = activeBook ? activeBook.title + ' • ' + num + '-sahifa' : num + '-sahifa';
@@ -9289,7 +9289,7 @@ function updateCurrentVisiblePage(){
   garbageCollectFarPages();
 }
 
-function updatePageIndicator(){
+window.updatePageIndicator = function(){
   const el = document.getElementById('reader-page-text-desktop');
   if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
 }
@@ -9405,7 +9405,7 @@ function scrollToPage(num, smooth){
   item.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
   currentVisiblePage = num;
   readerPageNum = num;
-  updatePageIndicator();
+  window.updatePageIndicator();
 }
 
 // ================= ZOOM =================
