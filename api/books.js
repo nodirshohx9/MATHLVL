@@ -309,10 +309,14 @@ async function hasBookPurchase(email, bookId) {
 
 async function canOpenBook(book, auth) {
   if (auth.isAdmin) return { ok: true };
-  if (!auth.user) return { ok: false, status: 401, error: 'not_logged_in' };
 
   const access = book.accessType || 'FREE';
+
+  // FREE kitoblar login talab qilmaydi.
+  // Login faqat PLUS/PURCHASE kabi himoyalangan kontent uchun kerak.
   if (access === 'FREE') return { ok: true };
+
+  if (!auth.user) return { ok: false, status: 401, error: 'not_logged_in' };
 
   const email = auth.user.email;
   if (access === 'PLUS') {
