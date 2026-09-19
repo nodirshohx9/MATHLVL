@@ -9228,21 +9228,20 @@ function buildPageContainers(){
     item.style.height = height + 'px';
     scrollEl.appendChild(item);
   }
-  window.__mathlvlUpdatePageIndicator();
+  updatePageIndicator();
 }
 
 // ---- IntersectionObserver: qaysi sahifa render qilinishi va joriy sahifa kuzatuvi ----
 function setupPageObserver(){
   const wrap = document.getElementById('reader-canvas-wrap');
   const scrollEl = document.getElementById('reader-scroll');
-  const isMobile = window.matchMedia('(max-width: 899px)').matches;
-  const renderMargin = isMobile ? '140px 0px' : '280px 0px';
-
   pageObserver = new IntersectionObserver((entries)=>{
     entries.forEach(entry=>{
       const num = parseInt(entry.target.dataset.page, 10);
       if(entry.isIntersecting) renderPageInto(entry.target, num);
     });
+  const isMobile = window.matchMedia('(max-width: 899px)').matches;
+  const renderMargin = isMobile ? '140px 0px' : '280px 0px';
   }, { root: wrap, rootMargin: renderMargin, threshold: 0.01 });
 
   document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
@@ -9281,7 +9280,7 @@ function updateCurrentVisiblePage(){
   if(num !== currentVisiblePage){
     currentVisiblePage = num;
     readerPageNum = num;
-    window.__mathlvlUpdatePageIndicator();
+    updatePageIndicator();
     const aiTitle = document.getElementById('ai-sheet-title');
     if(aiTitle && document.getElementById('ai-sheet')?.classList.contains('open')){
       aiTitle.textContent = activeBook ? activeBook.title + ' • ' + num + '-sahifa' : num + '-sahifa';
@@ -9290,10 +9289,10 @@ function updateCurrentVisiblePage(){
   garbageCollectFarPages();
 }
 
-window.__mathlvlUpdatePageIndicator = function(){
+function updatePageIndicator(){
   const el = document.getElementById('reader-page-text-desktop');
   if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
-};
+}
 
 
 // ---- Bitta sahifani render qilish ----
@@ -9406,7 +9405,7 @@ function scrollToPage(num, smooth){
   item.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
   currentVisiblePage = num;
   readerPageNum = num;
-  window.__mathlvlUpdatePageIndicator();
+  updatePageIndicator();
 }
 
 // ================= ZOOM =================
