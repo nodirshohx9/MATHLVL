@@ -74,11 +74,10 @@ s = s.replace("    scrollEl.style.transform = `scale(${liveScale})`;\n    scroll
 # Current-page tracking used to scan every page and call getBoundingClientRect on all
 # of them. A 190-page book makes that noticeably expensive on mobile.
 visible_pattern = re.compile(
-    r"function updateCurrentVisiblePage\(\)\{.*?\n\}\n\n(?:function updatePageIndicator\(\)|window\.__mathlvlUpdatePageIndicator = function\(\)\{).*?\n\};",
+    r"function updateCurrentVisiblePage\(\)\{.*?\n\}\n\nfunction updatePageIndicator",
     re.S,
 )
-visible_replacement = r"""
-function updateCurrentVisiblePage(){
+visible_replacement = r'''function updateCurrentVisiblePage(){
   const wrap = document.getElementById('reader-canvas-wrap');
   if(!wrap) return;
 
@@ -110,7 +109,7 @@ function updateCurrentVisiblePage(){
     if(Number.isFinite(num) && num !== currentVisiblePage){
       currentVisiblePage = num;
       readerPageNum = num;
-      window.__mathlvlUpdatePageIndicator();
+      updatePageIndicator();
       const sheet = document.getElementById('ai-sheet');
       if(sheet?.classList.contains('open')){
         document.getElementById('ai-sheet-title').textContent = `${activeBook ? activeBook.title : ''} • ${num}-sahifa`;
@@ -119,18 +118,14 @@ function updateCurrentVisiblePage(){
   }
 }
 
-window.__mathlvlUpdatePageIndicator = function(){
-  const el = document.getElementById('reader-page-text-desktop');
-  if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
-};
-"""
+function updatePageIndicator'''
 s2, n = visible_pattern.subn(visible_replacement, s, count=1)
 if n != 1:
     raise SystemExit(f'visible page tracker replacement failed: {n}')
 s = s2
 
 # Keep GC away from the finger gesture. It now runs only after scrolling settles.
-s = s.replace('  garbageCollectFarPages();\n}\n\nwindow.__mathlvlUpdatePageIndicator',
+s = s.replace('  garbageCollectFarPages();\n}\n\nfunction updatePageIndicator',
               '}\n\nfunction updatePageIndicator', 1)
 
 s = s.replace('  if(renderedPages.size <= 10) return;',
