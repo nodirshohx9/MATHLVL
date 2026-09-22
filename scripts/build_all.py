@@ -34,6 +34,7 @@ STEPS = [
     'scripts/mobile_reader_scroll_fix.py',
     'scripts/mobile_reader_scroll_performance.py',
     'scripts/library_restore_and_admin_upload.py',
+    'scripts/fix_reader_observer_runtime.py',
 ]
 
 for step in STEPS:
