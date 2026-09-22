@@ -9299,6 +9299,11 @@ function updateCurrentVisiblePage(){
   garbageCollectFarPages();
 }
 
+window.updatePageIndicator = function(){
+  const el = document.getElementById('reader-page-text-desktop');
+  if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
+};
+
 // ---- Bitta sahifani render qilish ----
 // ---- Har sahifa uchun alohida render holatini kuzatish (poyga holatini oldini olish uchun) ----
 let pageRenderState = {}; // { [pageNum]: { task, token } }
