@@ -9238,14 +9238,15 @@ function buildPageContainers(){
 function setupPageObserver(){
   const wrap = document.getElementById('reader-canvas-wrap');
   const scrollEl = document.getElementById('reader-scroll');
-  pageObserver = new IntersectionObserver((entries)=>{
-    entries.forEach(entry=>{
-      const num = parseInt(entry.target.dataset.page, 10);
-      if(entry.isIntersecting) renderPageInto(entry.target, num);
-    });
   const isMobile = window.matchMedia('(max-width: 899px)').matches;
-  const renderMargin = isMobile ? '140px 0px' : '280px 0px';
-  }, { root: wrap, rootMargin: renderMargin, threshold: 0.01 });
+const renderMargin = isMobile ? '140px 0px' : '280px 0px';
+
+pageObserver = new IntersectionObserver((entries)=>{
+  entries.forEach(entry=>{
+    const num = parseInt(entry.target.dataset.page, 10);
+    if(entry.isIntersecting) renderPageInto(entry.target, num);
+  });
+}, { root: wrap, rootMargin: renderMargin, threshold: 0.01 });
 
   document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
 
