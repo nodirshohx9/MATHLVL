@@ -9218,6 +9218,12 @@ function pageTargetWidth(){
   readerBaseWidth = fitWidth;
   return fitWidth * (readerZoomPercent / 100);
 }
+function updatePageIndicator(){
+  const el = document.getElementById('reader-page-text-desktop');
+  if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
+}
+window.updatePageIndicator = updatePageIndicator;
+
 function buildPageContainers(){
   const scrollEl = document.getElementById('reader-scroll');
   scrollEl.innerHTML = '';
@@ -9231,7 +9237,7 @@ function buildPageContainers(){
     item.style.height = height + 'px';
     scrollEl.appendChild(item);
   }
-  window.updatePageIndicator();
+  updatePageIndicator();
 }
 
 // ---- IntersectionObserver: qaysi sahifa render qilinishi va joriy sahifa kuzatuvi ----
@@ -9284,7 +9290,7 @@ function updateCurrentVisiblePage(){
   if(num !== currentVisiblePage){
     currentVisiblePage = num;
     readerPageNum = num;
-    window.updatePageIndicator();
+    updatePageIndicator();
     const aiTitle = document.getElementById('ai-sheet-title');
     if(aiTitle && document.getElementById('ai-sheet')?.classList.contains('open')){
       aiTitle.textContent = activeBook ? activeBook.title + ' • ' + num + '-sahifa' : num + '-sahifa';
@@ -9292,12 +9298,6 @@ function updateCurrentVisiblePage(){
   }
   garbageCollectFarPages();
 }
-
-window.updatePageIndicator = function(){
-  const el = document.getElementById('reader-page-text-desktop');
-  if(el) el.textContent = readerNumPages ? `${currentVisiblePage} / ${readerNumPages}` : '— / —';
-}
-
 
 // ---- Bitta sahifani render qilish ----
 // ---- Har sahifa uchun alohida render holatini kuzatish (poyga holatini oldini olish uchun) ----
@@ -9409,7 +9409,7 @@ function scrollToPage(num, smooth){
   item.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
   currentVisiblePage = num;
   readerPageNum = num;
-  window.updatePageIndicator();
+  updatePageIndicator();
 }
 
 // ================= ZOOM =================
