@@ -7208,6 +7208,17 @@ html[data-theme="light"] .wawej-footer-copy strong{color:#3a4760}
   .wawej-footer-copy strong{font-size:10.5px}
 }
 </style>
+<style id="mathlvl-books-rebuild-style">
+.books-rebuild-shell{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:52px 24px;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:radial-gradient(circle at 50% 20%,rgba(123,140,255,.09),transparent 42%),#0d121a}
+.books-rebuild-icon{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;margin-bottom:18px;color:#aeb8ff;background:rgba(123,140,255,.10);border:1px solid rgba(123,140,255,.18)}
+.books-rebuild-icon svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.books-rebuild-title{color:#f2f5fb;font:750 20px/1.2 var(--font-display);letter-spacing:-.025em}
+.books-rebuild-text{max-width:560px;margin-top:9px;color:#7f899b;font-size:13px;line-height:1.65}
+html[data-theme="light"] .books-rebuild-shell{background:linear-gradient(145deg,#fff,#f5f8fd);border-color:rgba(31,57,104,.10)}
+html[data-theme="light"] .books-rebuild-title{color:#18243c}
+html[data-theme="light"] .books-rebuild-text{color:#68758f}
+</style>
+
 </head>
 <body>
 
@@ -7609,26 +7620,25 @@ html[data-theme="light"] .wawej-footer-copy strong{color:#3a4760}
         </div>
       </div>
 
-      <div id="book-list-section-outer" style="margin-top:0;">
+      <div id="book-list-section-outer" data-books-rebuild="1" style="margin-top:0;">
         <div class="library-topbar">
           <div>
             <div class="library-kicker">MATHLVL KUTUBXONASI</div>
-            <h3 class="library-heading">Kerakli kitobni tez toping</h3>
-            <p class="library-subheading">Nom, sinf, fan, muallif yoki yil bo‘yicha qidiring.</p>
+            <h3 class="library-heading">Yangi kutubxona tayyorlanmoqda</h3>
+            <p class="library-subheading">Kitoblar bo‘limi boshidan qayta qurilmoqda. Yangi katalog shu dizayn asosida joylanadi.</p>
           </div>
-          <div class="library-count" id="book-search-result-count">0 ta kitob</div>
+          <div class="library-count">YANGILANMOQDA</div>
         </div>
-
-        <div class="library-search-shell">
-          <svg class="library-search-icon" viewBox="0 0 24 24" aria-hidden="true">
-            <circle cx="11" cy="11" r="6.5"></circle>
-            <path d="m16 16 4 4"></path>
-          </svg>
-          <input type="text" id="book-search" placeholder="Masalan: 10-sinf, matematika, 2018..." autocomplete="off" spellcheck="false">
-          <button class="library-search-clear" id="book-search-clear" type="button" aria-label="Qidiruvni tozalash" hidden>×</button>
+        <div class="books-rebuild-shell">
+          <div class="books-rebuild-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24">
+              <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/>
+              <path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/>
+            </svg>
+          </div>
+          <div class="books-rebuild-title">Kitoblar bo‘limi qayta ishlanmoqda</div>
+          <div class="books-rebuild-text">Eski katalog vaqtincha olib tashlandi. Yangi bo‘limda darsliklar, qo‘llanmalar va boshqa ruxsatli kitoblar alohida toifalar bilan joylashtiriladi.</div>
         </div>
-
-        <div id="book-grid" class="book-grid"></div>
       </div>
     </div>
   </section>
@@ -7968,7 +7978,7 @@ function activateTab(tab){
     document.getElementById('panel-teacher-sub').textContent = tab === 'books'
       ? "Matematika kitoblaridan birini tanlab o'qishni boshlang."
       : "Matematika uchun aqlli yordamchi va MATHLVL kutubxonasi qidiruvi.";
-    if(tab === 'books') refreshAllBookViews();
+    if(tab === 'books' && !document.getElementById('book-list-section-outer')?.dataset.booksRebuild) refreshAllBookViews();
   }else{
     const panel = document.getElementById('panel-' + tab);
     if(panel) panel.classList.add('active');
@@ -8488,6 +8498,7 @@ function renderBookGrid(containerEl, books, {selectable, deletable}){
 }
 
 async function refreshAllBookViews(){
+  if(document.getElementById('book-list-section-outer')?.dataset.booksRebuild === '1') return;
   const books = await loadBooks();
   renderBookGrid(document.getElementById('book-grid'), books, { selectable:true, deletable:false });
 }
