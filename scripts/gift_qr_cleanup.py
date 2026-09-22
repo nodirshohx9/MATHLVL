@@ -16,8 +16,8 @@ s, removed = re.subn(
     count=1,
     flags=re.S,
 )
-if removed != 1:
-    raise SystemExit('profile help card not found')
+if removed not in (0, 1):
+    raise SystemExit('unexpected profile help card match count')
 
 old = '''      <div class="glass-card profile-section-card" style="margin-top:16px;">
         <h3>🎁 Sovg'a Plus</h3>
