@@ -80,6 +80,49 @@ function aiSafeBook(book) {
   };
 }
 
+
+function normalizeBook(raw = {}, existing = {}) {
+  const num = (value, fallback = 0) => {
+    const n = Number(value);
+    return Number.isFinite(n) ? n : fallback;
+  };
+  const text = (value, fallback = '') => String(value ?? fallback).trim();
+
+  return {
+    ...existing,
+    title: text(raw.title, existing.title),
+    author: text(raw.author, existing.author),
+    publisher: text(raw.publisher, existing.publisher),
+    isbn: text(raw.isbn, existing.isbn),
+    language: text(raw.language, existing.language || 'uz'),
+    year: text(raw.year, existing.year),
+    pages: Math.max(0, Math.floor(num(raw.pages, existing.pages || 0))),
+    description: text(raw.description, existing.description),
+    fileUrl: text(raw.fileUrl, existing.fileUrl),
+    coverUrl: text(raw.coverUrl, existing.coverUrl),
+    bookType: text(raw.bookType, existing.bookType || 'TEXTBOOK'),
+    subject: text(raw.subject, existing.subject),
+    grade: text(raw.grade, existing.grade),
+    category: text(raw.category, existing.category),
+    tags: Array.isArray(raw.tags) ? raw.tags.map(text).filter(Boolean).slice(0, 20) : (existing.tags || []),
+    accessType: ['FREE','PLUS','PURCHASE','PLUS_OR_PURCHASE'].includes(text(raw.accessType, existing.accessType || 'FREE'))
+      ? text(raw.accessType, existing.accessType || 'FREE')
+      : (existing.accessType || 'FREE'),
+    price: Math.max(0, Math.floor(num(raw.price, existing.price || 0))),
+    published: raw.published !== undefined ? Boolean(raw.published) : (existing.published !== undefined ? Boolean(existing.published) : true),
+    featured: raw.featured !== undefined ? Boolean(raw.featured) : Boolean(existing.featured),
+    sortOrder: Math.floor(num(raw.sortOrder, existing.sortOrder || 0)),
+    licenseStatus: text(raw.licenseStatus, existing.licenseStatus || 'unknown'),
+    updatedAt: Date.now()
+  };
+}
+
+function publicCatalogBook(book, includePrivate = false) {
+  const safe = publicBook(book, includePrivate);
+  if (!includePrivate) delete safe.licenseStatus;
+  return safe;
+}
+
 function parseAiJson(text, fallback) {
   if (!text) return fallback;
   const cleaned = String(text)
@@ -406,16 +449,46 @@ export default async function handler(req, res) {
       }
 
       const flat = await redisCommand(['HGETALL', HASH_KEY]);
-      const books = [];
+      let books = [];
       for (let i = 0; i < flat.length; i += 2) {
         try {
           const book = JSON.parse(flat[i + 1]);
-          books.push(publicBook(book, auth.isAdmin));
+          if (!auth.isAdmin && book.published === false) continue;
+          books.push(publicCatalogBook(book, auth.isAdmin));
         } catch {}
       }
-      books.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+      const q = String(req.query.q || '').trim().toLowerCase();
+      const category = String(req.query.category || '').trim().toLowerCase();
+      const bookType = String(req.query.bookType || '').trim().toLowerCase();
+      const accessType = String(req.query.accessType || '').trim().toUpperCase();
+      const grade = String(req.query.grade || '').trim().toLowerCase();
+      const featured = String(req.query.featured || '').trim();
+
+      if (q) {
+        books = books.filter(book => [
+          book.title, book.author, book.publisher, book.subject, book.grade,
+          book.category, ...(Array.isArray(book.tags) ? book.tags : [])
+        ].join(' ').toLowerCase().includes(q));
+      }
+      if (category) books = books.filter(book => String(book.category || '').toLowerCase() === category);
+      if (bookType) books = books.filter(book => String(book.bookType || '').toLowerCase() === bookType);
+      if (accessType) books = books.filter(book => String(book.accessType || '').toUpperCase() === accessType);
+      if (grade) books = books.filter(book => String(book.grade || '').toLowerCase() === grade);
+      if (featured === 'true') books = books.filter(book => book.featured === true);
+
+      books.sort((a, b) => {
+        const order = Number(b.sortOrder || 0) - Number(a.sortOrder || 0);
+        return order || Number(b.createdAt || 0) - Number(a.createdAt || 0);
+      });
+
+      const limit = Math.min(100, Math.max(1, Number(req.query.limit) || 50));
+      const offset = Math.max(0, Number(req.query.offset) || 0);
+      const total = books.length;
+      books = books.slice(offset, offset + limit);
+
       res.setHeader('Cache-Control', auth.isAdmin ? 'private, no-store' : 'public, max-age=30, s-maxage=60');
-      return res.status(200).json({ books });
+      return res.status(200).json({ books, total, limit, offset });
     }
 
     if (req.method === 'POST' && req.query.action === 'topic-search') {
@@ -434,42 +507,81 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Admin ruxsati kerak' });
     }
 
+    if (req.method === 'GET' && action === 'admin-summary') {
+      const flat = await redisCommand(['HGETALL', HASH_KEY]);
+      const books = [];
+      for (let i = 0; i < flat.length; i += 2) {
+        try { books.push(JSON.parse(flat[i + 1])); } catch {}
+      }
+      const by = key => books.reduce((acc, b) => {
+        const value = String(b[key] || 'Noma’lum');
+        acc[value] = (acc[value] || 0) + 1;
+        return acc;
+      }, {});
+      return res.status(200).json({
+        total: books.length,
+        published: books.filter(b => b.published !== false).length,
+        drafts: books.filter(b => b.published === false).length,
+        free: books.filter(b => (b.accessType || 'FREE') === 'FREE').length,
+        plus: books.filter(b => b.accessType === 'PLUS').length,
+        purchase: books.filter(b => b.accessType === 'PURCHASE').length,
+        plusOrPurchase: books.filter(b => b.accessType === 'PLUS_OR_PURCHASE').length,
+        categories: by('category'),
+        types: by('bookType'),
+        grades: by('grade')
+      });
+    }
+
+    if (req.method === 'GET' && action === 'categories') {
+      const flat = await redisCommand(['HGETALL', HASH_KEY]);
+      const books = [];
+      for (let i = 0; i < flat.length; i += 2) {
+        try { books.push(JSON.parse(flat[i + 1])); } catch {}
+      }
+      const categories = [...new Set(books.map(b => String(b.category || '').trim()).filter(Boolean))].sort();
+      const types = [...new Set(books.map(b => String(b.bookType || '').trim()).filter(Boolean))].sort();
+      const grades = [...new Set(books.map(b => String(b.grade || '').trim()).filter(Boolean))].sort();
+      return res.status(200).json({ categories, types, grades });
+    }
+
     if (req.method === 'POST') {
-      const { title, author, fileUrl, coverUrl, bookType, subject, grade, category, accessType, price } = req.body || {};
-      if (!title || !fileUrl) return res.status(400).json({ error: 'title va fileUrl kerak' });
-      const book = {
-        id: Date.now().toString(36) + Math.random().toString(36).slice(2, 7),
-        title, author: author || '', fileUrl, coverUrl: coverUrl || '',
-        bookType: bookType || 'TEXTBOOK', subject: subject || '', grade: grade || '', category: category || '',
-        accessType: accessType || 'FREE', price: Number(price) || 0,
-        createdAt: Date.now(), updatedAt: Date.now()
-      };
+      const { title, fileUrl } = req.body || {};
+      if (!String(title || '').trim() || !String(fileUrl || '').trim()) {
+        return res.status(400).json({ error: 'title va fileUrl kerak' });
+      }
+      const id = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      const now = Date.now();
+      const book = normalizeBook(req.body || {}, {
+        id,
+        createdAt: now,
+        updatedAt: now,
+        published: req.body?.published !== false
+      });
       await redisCommand(['HSET', HASH_KEY, book.id, JSON.stringify(book)]);
       return res.status(200).json({ book });
     }
 
     if (req.method === 'PUT') {
-      const { id, title, author, fileUrl, coverUrl, bookType, subject, grade, category, accessType, price } = req.body || {};
+      const { id } = req.body || {};
       if (!id) return res.status(400).json({ error: 'id kerak' });
       const existingRaw = await redisCommand(['HGET', HASH_KEY, id]);
       if (!existingRaw) return res.status(404).json({ error: 'Kitob topilmadi' });
       const existing = JSON.parse(existingRaw);
-      const updated = {
-        ...existing,
-        title: title || existing.title,
-        author: author !== undefined ? author : existing.author,
-        fileUrl: fileUrl || existing.fileUrl,
-        coverUrl: coverUrl !== undefined ? coverUrl : existing.coverUrl,
-        bookType: bookType || existing.bookType,
-        subject: subject !== undefined ? subject : existing.subject,
-        grade: grade !== undefined ? grade : existing.grade,
-        category: category !== undefined ? category : existing.category,
-        accessType: accessType || existing.accessType,
-        price: price !== undefined ? (Number(price) || 0) : existing.price,
-        updatedAt: Date.now()
-      };
+      const updated = normalizeBook(req.body || {}, existing);
       await redisCommand(['HSET', HASH_KEY, id, JSON.stringify(updated)]);
       return res.status(200).json({ book: updated });
+    }
+
+    if (req.method === 'POST' && (action === 'publish' || action === 'unpublish')) {
+      const id = String(req.body?.id || '');
+      if (!id) return res.status(400).json({ error: 'id kerak' });
+      const raw = await redisCommand(['HGET', HASH_KEY, id]);
+      if (!raw) return res.status(404).json({ error: 'Kitob topilmadi' });
+      const book = JSON.parse(raw);
+      book.published = action === 'publish';
+      book.updatedAt = Date.now();
+      await redisCommand(['HSET', HASH_KEY, id, JSON.stringify(book)]);
+      return res.status(200).json({ book });
     }
 
     if (req.method === 'DELETE') {
