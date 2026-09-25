@@ -3376,7 +3376,7 @@ async function restoreTeacherMemory(){
     const label = document.getElementById('memory-status');
     label.textContent = 'Suhbat yuklanmoqda…';
     try{
-      const response = await fetch('/api/teacher-memory');
+      const response = await fetch('/api/chat?action=memory');
       if(!response.ok) throw new Error('memory');
       const data = await response.json();
       if(!chatHistory.length && Array.isArray(data.messages)){
@@ -3394,7 +3394,7 @@ document.getElementById('memory-clear').addEventListener('click',async()=>{
   if(chatAbortController || !confirm('Saqlangan suhbatni tozalaysizmi?')) return;
   const button=document.getElementById('memory-clear');button.disabled=true;
   try{
-    const response=await fetch('/api/teacher-memory',{method:'DELETE'});
+    const response=await fetch('/api/chat?action=memory',{method:'DELETE'});
     if(!response.ok) throw new Error('memory');
     chatHistory=[];teacherMemoryReady=true;
     document.getElementById('chat-window').querySelectorAll('.msg').forEach(el=>el.remove());
