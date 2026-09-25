@@ -1488,7 +1488,7 @@ function pumpMobileRenderQueue(){
   while(mobileRenderQueue.length){
     const candidate = mobileRenderQueue.shift();
     mobileQueuedPages.delete(candidate.num);
-    if(candidate.item?.isConnected && !renderedPages.has(candidate.num)){
+    if(candidate.item?.isConnected && Math.abs(candidate.num-currentVisiblePage)<=3 && !renderedPages.has(candidate.num)){
       job = candidate;
       break;
     }
@@ -1541,7 +1541,7 @@ function setupPageObserver(){
 
     for(let i=start; i<=end; i++){
       const num = parseInt(items[i].dataset.page, 10);
-      if(Number.isFinite(num)) renderPageInto(items[i], num);
+      if(Number.isFinite(num)) scheduleMobileReaderPageRender(items[i], num);
     }
 
     const num = parseInt(items[idx]?.dataset.page, 10);
@@ -1552,6 +1552,7 @@ function setupPageObserver(){
     }
   };
 
+  clearMobileRenderQueue();
   renderNearby();
 
   // Replace the old listener so reopening a book uses its new page elements.
@@ -1564,6 +1565,7 @@ function setupPageObserver(){
     raf = requestAnimationFrame(()=>{
       raf = 0;
       renderNearby();
+      scheduleReaderGarbageCollect();
     });
   };
   scrollEl.addEventListener('scroll', scrollEl.readerScrollHandler, { passive:true });
@@ -1643,7 +1645,14 @@ function cancelAllPageRenders(){
   });
 }
 
-async function renderPageInto(item, num, forceRerender){
+function renderPageInto(item, num, forceRerender){
+  const state = getPageRenderState(num);
+  if(state.pending && !forceRerender) return state.pending;
+  const pending = performPageRender(item, num, forceRerender).finally(()=>{ if(state.pending === pending) state.pending = null; });
+  state.pending = pending;
+  return pending;
+}
+async function performPageRender(item, num, forceRerender){
   if(!readerPdfDoc) return;
   const state = getPageRenderState(num);
 
@@ -1675,17 +1684,21 @@ async function renderPageInto(item, num, forceRerender){
       annCanvas = document.createElement('canvas');
       annCanvas.className = 'page-annotation-canvas';
       annCanvas.style.pointerEvents = annotationTool ? 'auto' : 'none';
-      annCanvas.style.touchAction = annotationTool ? 'none' : 'pan-y';
+      annCanvas.style.touchAction = annotationTool ? 'none' : 'pan-x pan-y';
       item.appendChild(annCanvas);
     }
     // Canvas o'lchamini FAQAT oldingi render to'liq bekor qilingandan keyin yangilaymiz
-    canvas.width = viewport.width; canvas.height = viewport.height;
-    annCanvas.width = viewport.width; annCanvas.height = viewport.height;
+    const maxPixels = window.matchMedia('(max-width: 899px)').matches ? 2400000 : 6000000;
+    const resolution = Math.min(1, Math.sqrt(maxPixels / (viewport.width * viewport.height)));
+    canvas.width = Math.ceil(viewport.width * resolution); canvas.height = Math.ceil(viewport.height * resolution);
+    annCanvas.width = canvas.width; annCanvas.height = canvas.height;
+    canvas.style.width = annCanvas.style.width = viewport.width + 'px';
+    canvas.style.height = annCanvas.style.height = viewport.height + 'px';
     item.style.width = viewport.width + 'px';
     item.style.height = viewport.height + 'px';
 
     const ctx = canvas.getContext('2d');
-    const task = page.render({ canvasContext: ctx, viewport });
+    const task = page.render({ canvasContext: ctx, viewport, transform: resolution < 1 ? [resolution,0,0,resolution,0,0] : undefined });
     state.task = task;
     await task.promise;
 
@@ -1735,7 +1748,11 @@ function scrollToPage(num, smooth){
 
 // ================= ZOOM =================
 let zoomDebounceTimer = null;
+let zoomRenderGeneration = 0;
 function reRenderAllForZoom(){
+  const generation = ++zoomRenderGeneration;
+  clearMobileRenderQueue();
+  cancelAllPageRenders();
   const anchorItem = document.querySelector(`.reader-page-item[data-page="${currentVisiblePage}"]`);
   const wrap = document.getElementById('reader-canvas-wrap');
   let anchorFraction = 0;
@@ -1751,11 +1768,14 @@ function reRenderAllForZoom(){
     const num = parseInt(el.dataset.page, 10);
     el.style.width = width + 'px';
     el.style.height = height + 'px';
-    if(renderedPages.has(num)) pagesToRender.push([el, num]);
+    if(Math.abs(num-currentVisiblePage)<=1) pagesToRender.push([el, num]);
+    else { el.querySelectorAll('canvas').forEach(c=>{c.width=0;c.height=0;c.remove();}); }
+    renderedPages.delete(num);
   });
   // Har sahifani ketma-ket (parallel emas) qayta render qilamiz — bir vaqtda ko'p canvas'ga tegmaslik uchun
   (async ()=>{
-    for(const [el, num] of pagesToRender){
+    for(const [el, num] of pagesToRender.sort((a,b)=>Math.abs(a[1]-currentVisiblePage)-Math.abs(b[1]-currentVisiblePage))){
+      if(generation !== zoomRenderGeneration) break;
       await renderPageInto(el, num, true);
     }
   })();
@@ -1775,7 +1795,7 @@ function setZoom(percent){
   document.getElementById('reader-scroll').classList.toggle('zoomed-pan', readerZoomPercent > 100);
   if(!readerPdfDoc) return;
   clearTimeout(zoomDebounceTimer);
-  zoomDebounceTimer = setTimeout(()=> reRenderAllForZoom(), 80);
+  zoomDebounceTimer = setTimeout(()=> reRenderAllForZoom(), 160);
 }
 // Zoom endi faqat Ctrl/Cmd+wheel (desktop) va pinch (mobil) orqali ishlaydi, UI tugmasiz
 
@@ -1812,6 +1832,7 @@ function setZoom(percent){
   scrollEl.addEventListener('touchstart', (e)=>{
     if(annotationTool) return;
     if(e.touches.length === 2){
+      liveScale = 1;
       pinchStartDist = dist(e.touches[0], e.touches[1]);
       pinchStartZoom = readerZoomPercent;
     }
@@ -1819,9 +1840,10 @@ function setZoom(percent){
 
   scrollEl.addEventListener('touchmove', (e)=>{
     if(annotationTool || !pinchStartDist || e.touches.length !== 2) return;
+    if(e.cancelable) e.preventDefault();
     const newDist = dist(e.touches[0], e.touches[1]);
     liveScale = newDist / pinchStartDist;
-  }, { passive:true });
+  }, { passive:false });
 
   scrollEl.addEventListener('touchend', (e)=>{
     if(!pinchStartDist) return;
@@ -1829,12 +1851,15 @@ function setZoom(percent){
       scrollEl.style.transform = 'none';
       const target = Math.max(100, Math.min(400, Math.round(pinchStartZoom * liveScale)));
       pinchStartDist = null;
+      tapMoved = true;
+      lastTap = 0;
       liveScale = 1;
       clearTimeout(zoomRerenderTimer);
       zoomRerenderTimer = setTimeout(()=> setZoom(target), 120);
     }
   });
 
+  scrollEl.addEventListener('touchcancel', ()=>{pinchStartDist=null;liveScale=1;tapMoved=true;lastTap=0;}, {passive:true});
   let lastTap = 0;
   let tapStartX = 0;
   let tapStartY = 0;
