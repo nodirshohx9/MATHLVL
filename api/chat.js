@@ -139,7 +139,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' });
 
   try {
-    const { system, messages = [], tools, max_tokens, mode, teacherProfile } = req.body || {};
+    const { system, messages = [], tools, max_tokens, mode } = req.body || {};
     const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
     const isSolve = mode === 'solve';
 
@@ -163,7 +163,7 @@ export default async function handler(req, res) {
       contents,
       generationConfig
     };
-    const effectiveSystem = !isSolve && (teacherProfile === 'male' || teacherProfile === 'female') ? teacherSystem(system, teacherProfile) : system;
+    const effectiveSystem = isSolve ? system : teacherSystem(system);
     if (effectiveSystem) geminiBody.systemInstruction = { parts: [{ text: effectiveSystem }] };
     if (Array.isArray(tools) && tools.some(t => t.type === 'web_search_20250305')) geminiBody.tools = [{ google_search: {} }];
 

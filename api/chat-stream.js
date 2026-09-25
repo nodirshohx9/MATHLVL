@@ -111,13 +111,13 @@ export default async function handler(request) {
   try { body = await request.json(); }
   catch { return jsonResponse({ error: "So'rov matni noto'g'ri" }, 400); }
 
-  const { system, messages = [], max_tokens, teacherProfile } = body;
+  const { system, messages = [], max_tokens } = body;
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
   const geminiBody = {
     contents,
     generationConfig: { maxOutputTokens: Math.max(max_tokens || 1000, 1500), thinkingConfig: { thinkingBudget: 0 } }
   };
-  const effectiveSystem = (teacherProfile === 'male' || teacherProfile === 'female') ? teacherSystem(system, teacherProfile) : system;
+  const effectiveSystem = teacherSystem(system);
   if (effectiveSystem) geminiBody.systemInstruction = { parts: [{ text: effectiveSystem }] };
 
   const encoder = new TextEncoder();
