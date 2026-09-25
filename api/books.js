@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { Readable } from 'stream';
 
 export const config = { maxDuration: 30 };
 
@@ -409,22 +410,41 @@ export default async function handler(req, res) {
         if (!access.ok) return res.status(access.status).json({ error: access.error });
         if (!book.fileUrl) return res.status(404).json({ error: 'Kitob fayli topilmadi' });
 
-        const upstream = await fetch(book.fileUrl, { redirect:'follow' });
-        if (!upstream.ok) return res.status(502).json({ error: 'PDF faylini olishda xato' });
+        // PDF.js katta fayllarda Range so'rovlaridan foydalanadi. Oldingi kod
+        // butun PDF'ni RAMga yuklab keyin yuborardi; katta kitoblarda bu Vercel
+        // timeout/xotira/response limitlariga urilib, reader ochilmay qolardi.
+        // Range headerni upstreamga uzatib, javobni bufferlamasdan stream qilamiz.
+        const range = req.headers.range;
+        const upstreamHeaders = range ? { Range: range } : {};
+        const upstream = await fetch(book.fileUrl, {
+          redirect: 'follow',
+          headers: upstreamHeaders
+        });
+
+        if (!upstream.ok && upstream.status !== 206) {
+          return res.status(502).json({ error: 'PDF faylini olishda xato' });
+        }
 
         const contentType = (upstream.headers.get('content-type') || '').toLowerCase();
         if (contentType && !contentType.includes('pdf') && !String(book.fileUrl).toLowerCase().includes('.pdf')) {
           return res.status(502).json({ error: 'Fayl PDF emas' });
         }
+        if (!upstream.body) return res.status(502).json({ error: 'PDF bo‘sh' });
 
-        const buffer = Buffer.from(await upstream.arrayBuffer());
-        if (!buffer.length) return res.status(502).json({ error: 'PDF bo‘sh' });
+        res.statusCode = upstream.status === 206 ? 206 : 200;
+        res.setHeader('Content-Type', upstream.headers.get('content-type') || 'application/pdf');
+        res.setHeader('Content-Disposition', 'inline');
+        res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+        res.setHeader('Accept-Ranges', upstream.headers.get('accept-ranges') || 'bytes');
 
-        res.setHeader('Content-Type','application/pdf');
-        res.setHeader('Content-Length',String(buffer.length));
-        res.setHeader('Content-Disposition','inline');
-        res.setHeader('Cache-Control','private, no-store, max-age=0');
-        return res.status(200).send(buffer);
+        const contentLength = upstream.headers.get('content-length');
+        const contentRange = upstream.headers.get('content-range');
+        if (contentLength) res.setHeader('Content-Length', contentLength);
+        if (contentRange) res.setHeader('Content-Range', contentRange);
+
+        // Stream to the browser instead of materializing the whole PDF in memory.
+        Readable.fromWeb(upstream.body).pipe(res);
+        return;
       }
 
       if (action === 'open') {
