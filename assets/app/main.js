@@ -2129,6 +2129,10 @@ document.getElementById('annotation-clear-confirm-btn').addEventListener('click'
 
 // ---- In-reader AI tutor: mobil'da drawer, desktop'da split-view ----
 function openAiSheet(){
+  if(!bookChatBusy){
+    document.getElementById('ai-sheet-chat').replaceChildren();
+    for(const message of (bookChatHistories.get(String(activeBook?.id || 'general')) || [])) appendAiSheetMsg(message.role === 'assistant' ? 'teacher' : 'user', message.content);
+  }
   const sheet = document.getElementById('ai-sheet');
   const backdrop = document.getElementById('ai-sheet-backdrop');
   const title = document.getElementById('ai-sheet-title');
@@ -2745,7 +2749,7 @@ document.getElementById('google-btn').addEventListener('click', ()=>{
 });
 document.getElementById('logout-row').addEventListener('click', async ()=>{
   await fetch('/api/auth', { method:'POST' });
-  showSignedOutUI();
+  window.location.reload();
 });
 
 const urlParams = new URLSearchParams(window.location.search);

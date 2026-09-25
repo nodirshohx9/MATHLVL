@@ -30,3 +30,10 @@ test('library failure is distinguishable from empty successful catalog',async()=
  vm.runInContext(source.slice(source.indexOf("let booksLoadError ="),source.indexOf('// O‘qish jarayoni')),ctx);
  await ctx.loadBooks();assert.ok(vm.runInContext('booksLoadError',ctx));ctx.fetch=async()=>({ok:true,json:async()=>({books:[]})});await ctx.loadBooks();assert.equal(vm.runInContext('booksLoadError',ctx),'');
 });
+test('reader renders initial pages and nearby pages on scroll without IntersectionObserver',()=>{
+ const rendered=[];const items=Array.from({length:10},(_,i)=>({dataset:{page:String(i+1)},offsetHeight:100}));
+ const scroll={scrollTop:0,querySelectorAll:()=>items,addEventListener(){},removeEventListener(){}};
+ const ctx={document:{getElementById:()=>scroll},pageObserver:null,getComputedStyle:()=>({marginBottom:'0'}),renderPageInto:(_,n)=>rendered.push(n),currentVisiblePage:1,readerPageNum:1,updatePageIndicator(){},requestAnimationFrame:fn=>{fn();return 1;}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function setupPageObserver()'),source.indexOf('// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V4')),ctx);
+ ctx.setupPageObserver();assert.deepEqual(rendered,[1,2,3]);scroll.scrollTop=500;scroll.readerScrollHandler();assert.equal(ctx.currentVisiblePage,6);assert.ok(rendered.includes(7));
+});
