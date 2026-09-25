@@ -37,3 +37,15 @@ test('reader renders initial pages and nearby pages on scroll without Intersecti
  vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function setupPageObserver()'),source.indexOf('// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V4')),ctx);
  ctx.setupPageObserver();assert.deepEqual(rendered,[1,2,3]);scroll.scrollTop=500;scroll.readerScrollHandler();assert.equal(ctx.currentVisiblePage,6);assert.ok(rendered.includes(7));
 });
+test('teacher tab exits book mode and hides the library while books hide chat',()=>{
+ const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{classList:{add(){},remove(){},toggle(){}},dataset:{},hidden:false});return nodes.get(id);};
+ const ctx={document:{querySelectorAll:()=>[],getElementById:node,querySelector:node,body:node('body')},closeAiSheet(){},refreshAllBookViews(){},window:{scrollTo(){}}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function activateTab('),source.indexOf("document.querySelectorAll('.sidebar-nav-item[data-sidebar-tab]').forEach(btn")),ctx);
+ ctx.activateTab('teacher');assert.equal(node('book-list-section-outer').hidden,true);assert.equal(node('#teacher-layout .book-col').hidden,true);assert.equal(node('#teacher-layout .chat-col').hidden,false);
+ ctx.activateTab('books');assert.equal(node('book-list-section-outer').hidden,false);assert.equal(node('#teacher-layout .chat-col').hidden,true);
+});
+test('persistent memory excludes image bytes and bounds stored text',async()=>{
+ const {memoryMessages}=await import('../lib/memory.js');
+ const result=memoryMessages(Array.from({length:30},()=>({role:'user',content:[{type:'image',source:{data:'SECRET_IMAGE'}},{type:'text',text:'x'.repeat(4000)}]})));
+ assert.equal(result.length,20);assert.equal(result[0].content.length,2500);assert.ok(!JSON.stringify(result).includes('SECRET_IMAGE'));
+});

@@ -1,3 +1,4 @@
+import {memoryRequest} from '../lib/memory.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 import crypto from 'crypto';
@@ -129,6 +130,15 @@ async function requestGeminiWithFallback(apiKey, body) {
 }
 
 export default async function handler(req, res) {
+  if(req.query?.action === 'memory'){
+    res.setHeader('Cache-Control','private, no-store');
+    if(!['GET','DELETE'].includes(req.method))return res.status(405).json({error:'Method not allowed'});
+    if(!verifySession(req))return res.status(401).json({error:'Hisobingizga kiring.'});
+    if(req.method==='DELETE' && req.headers.origin && req.headers.origin!==`https://${req.headers.host}`)return res.status(403).json({error:'Forbidden'});
+    try{return res.status(200).json(await memoryRequest(req.headers.cookie,req.method==='GET'?'read':'clear'));}
+    catch{return res.status(503).json({error:'Suhbat xotirasi hozir mavjud emas.'});}
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: "Faqat POST so'rovlar qabul qilinadi" });
 
   const session = verifySession(req);
