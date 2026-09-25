@@ -1,0 +1,107 @@
+
+/* MATHLVL_READER_AI_ZERO_LATENCY_V4 */
+body.reader-mode #panel-teacher{animation:none !important}
+body.reader-mode .reader-body{position:relative}
+body.reader-mode .reader-header-desktop-controls{
+  display:flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+}
+body.reader-mode #ai-desktop-btn{
+  display:inline-flex !important;
+  visibility:visible !important;
+  opacity:1 !important;
+  touch-action:manipulation;
+}
+
+@media (min-width:900px){
+  body.reader-mode .ai-panel{
+    display:flex !important;
+    position:absolute !important;
+    top:0 !important; right:0 !important; bottom:0 !important; left:auto !important;
+    width:min(360px,34vw) !important;
+    height:auto !important;
+    z-index:90 !important;
+    border-left:1px solid rgba(255,255,255,.08) !important;
+    border-radius:14px 0 0 14px !important;
+    background:rgba(13,17,23,.985) !important;
+    box-shadow:-18px 0 55px rgba(0,0,0,.30) !important;
+    transform:translate3d(102%,0,0) !important;
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    transition:none !important;
+    will-change:transform,opacity;
+    contain:layout paint;
+  }
+  body.reader-mode .ai-panel.open{
+    transform:translate3d(0,0,0) !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transition:none !important;
+  }
+  body.reader-mode .ai-panel-backdrop{display:none !important}
+}
+
+@media (max-width:899px){
+  body.reader-mode .bottom-nav{display:none !important}
+  body.reader-mode .app{max-width:none !important;padding:10px 10px max(10px,env(safe-area-inset-bottom,0px)) !important}
+  body.reader-mode #panel-teacher{margin-top:0 !important}
+  body.reader-mode #panel-teacher>.glass-card{padding:0 !important}
+  body.reader-mode .reader-header{margin-bottom:8px !important}
+  body.reader-mode .reader-body{height:calc(100dvh - 70px) !important;min-height:0 !important;border-radius:12px !important}
+
+  .ai-panel-backdrop{
+    position:fixed !important;
+    inset:0 !important;
+    z-index:10000 !important;
+    background:rgba(4,7,11,.22) !important;
+    backdrop-filter:none !important;
+    -webkit-backdrop-filter:none !important;
+  }
+  body.reader-mode .ai-panel{
+    display:flex !important;
+    position:fixed !important;
+    top:auto !important;
+    left:8px !important; right:8px !important;
+    bottom:calc(8px + env(safe-area-inset-bottom,0px)) !important;
+    width:auto !important;
+    height:clamp(350px,62dvh,590px) !important;
+    max-height:62dvh !important;
+    min-height:0 !important;
+    z-index:10001 !important;
+    padding:12px 12px calc(12px + env(safe-area-inset-bottom,0px)) !important;
+    border:1px solid rgba(255,255,255,.09) !important;
+    border-radius:18px !important;
+    background:rgba(13,17,23,.985) !important;
+    box-shadow:0 -18px 70px rgba(0,0,0,.40) !important;
+    overflow:hidden !important;
+    transform:translate3d(0,calc(100% + 22px),0) !important;
+    opacity:0 !important;
+    visibility:hidden !important;
+    pointer-events:none !important;
+    transition:none !important;
+    will-change:transform,opacity;
+    contain:layout paint;
+  }
+  body.reader-mode .ai-panel.open{
+    transform:translate3d(0,0,0) !important;
+    opacity:1 !important;
+    visibility:visible !important;
+    pointer-events:auto !important;
+    transition:none !important;
+  }
+  .ai-panel-header{flex:0 0 auto;min-height:42px;margin-bottom:8px !important;padding:0 2px 8px;border-bottom:1px solid rgba(255,255,255,.055)}
+  .ai-panel-header::before{content:"";position:absolute;top:7px;left:50%;width:34px;height:3px;transform:translateX(-50%);border-radius:999px;background:rgba(255,255,255,.16);pointer-events:none}
+  .ai-panel-header span{min-width:0;padding-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ai-sheet-chat{min-height:0 !important;flex:1 1 auto !important;padding:4px 2px 2px !important;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+  .ai-panel .chat-input-wrap{flex:0 0 auto;margin-top:8px !important}
+  #ai-sheet-input{min-height:46px !important;max-height:96px !important;resize:none !important}
+  body.ai-drawer-open{overflow:hidden !important}
+}
+
+html[data-theme="light"] body.reader-mode .ai-panel{
+  background:rgba(255,255,255,.985) !important;
+  border-color:rgba(31,45,67,.10) !important;
+}

@@ -1,0 +1,19 @@
+
+/* MATHLVL_MOBILE_SIDEBAR_LABEL_CLEANUP_V1 */
+@media (max-width:899px){
+  .mathlvl-mobile-topbar{
+    grid-template-columns:42px minmax(0,1fr)!important;
+  }
+  .mathlvl-mobile-section{
+    display:none!important;
+  }
+  .app-sidebar .sidebar-logo:after{
+    content:none!important;
+    display:none!important;
+  }
+}
+@media (max-width:420px){
+  .mathlvl-mobile-topbar{
+    grid-template-columns:42px minmax(0,1fr)!important;
+  }
+}

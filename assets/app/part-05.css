@@ -1,0 +1,62 @@
+
+  #mathlvl-guest-login{
+    position:fixed; top:18px; right:20px; z-index:120;
+    display:inline-flex; align-items:center; gap:8px;
+    min-height:40px; padding:0 16px; border-radius:12px;
+    border:1px solid rgba(120,150,255,.26);
+    background:rgba(10,14,31,.84); color:#EDF1FF;
+    box-shadow:0 12px 34px rgba(0,0,0,.22);
+    backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    font:700 13px 'Inter',sans-serif; cursor:pointer;
+    opacity:0; pointer-events:none; transform:translateY(-4px);
+    transition:opacity .18s ease, transform .18s ease, border-color .18s ease, background .18s ease;
+  }
+  #mathlvl-guest-login.ready{ opacity:1; pointer-events:auto; transform:none; }
+  #mathlvl-guest-login:hover{ border-color:#3DA9FC; background:rgba(16,21,43,.95); }
+  #mathlvl-guest-login svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+
+  #mathlvl-auth-gate[hidden]{ display:none !important; }
+  #mathlvl-auth-gate{
+    position:fixed; inset:0; z-index:1000; display:grid; place-items:center;
+    padding:20px; background:rgba(3,5,14,.72);
+    backdrop-filter:blur(10px); -webkit-backdrop-filter:blur(10px);
+  }
+  .mathlvl-auth-card{
+    width:min(430px,100%); position:relative; overflow:hidden;
+    border:1px solid rgba(120,150,255,.22); border-radius:22px;
+    background:linear-gradient(180deg,rgba(16,21,43,.98),rgba(8,11,26,.98));
+    box-shadow:0 28px 80px rgba(0,0,0,.5); padding:28px;
+  }
+  .mathlvl-auth-card:before{
+    content:''; position:absolute; width:220px; height:220px; border-radius:50%;
+    right:-110px; top:-120px; background:rgba(61,169,252,.12); filter:blur(4px); pointer-events:none;
+  }
+  .mathlvl-auth-icon{
+    width:48px; height:48px; border-radius:14px; display:grid; place-items:center;
+    background:rgba(61,169,252,.12); border:1px solid rgba(61,169,252,.22);
+    color:#3DA9FC; margin-bottom:18px;
+  }
+  .mathlvl-auth-icon svg{ width:23px; height:23px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  .mathlvl-auth-title{ margin:0 0 8px; font:800 21px 'Sora',sans-serif; color:#EDF1FF; letter-spacing:-.02em; }
+  .mathlvl-auth-copy{ margin:0 0 22px; color:#9AA2C6; font:500 13.5px/1.65 'Inter',sans-serif; }
+  .mathlvl-auth-actions{ display:grid; gap:10px; }
+  .mathlvl-auth-provider,.mathlvl-auth-secondary{
+    width:100%; min-height:46px; border-radius:12px; padding:0 16px; cursor:pointer;
+    font:750 13px 'Inter',sans-serif; display:flex; align-items:center; justify-content:center; gap:9px;
+  }
+  .mathlvl-auth-provider svg{ width:18px; height:18px; flex:none; }
+  .mathlvl-auth-google{
+    border:1px solid #3DA9FC; background:#3DA9FC; color:#07101B;
+    box-shadow:0 10px 24px rgba(61,169,252,.18);
+  }
+.mathlvl-auth-secondary{ border:1px solid rgba(255,255,255,.1); background:transparent; color:#AAB1CE; min-height:42px; }
+  .mathlvl-auth-note{ margin-top:13px; color:#717A9F; font:500 11px/1.5 'Inter',sans-serif; text-align:center; }
+  .mathlvl-auth-close{
+    position:absolute; top:14px; right:14px; width:34px; height:34px; border-radius:10px;
+    border:1px solid rgba(255,255,255,.08); background:rgba(255,255,255,.03); color:#8C93B8;
+    display:grid; place-items:center; cursor:pointer; font-size:18px;
+  }
+  @media(max-width:700px){
+    #mathlvl-guest-login{ top:12px; right:12px; min-height:38px; padding:0 13px; border-radius:11px; }
+    .mathlvl-auth-card{ padding:24px 20px 20px; border-radius:20px; }
+  }

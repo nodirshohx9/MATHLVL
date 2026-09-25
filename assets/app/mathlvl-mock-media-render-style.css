@@ -1,0 +1,5 @@
+
+/* MATHLVL_MOCK_MEDIA_RENDER_V1 */
+.mock-question-visual{margin:0 0 18px;text-align:center}
+.mock-question-visual img{display:block;max-width:min(100%,760px);max-height:480px;object-fit:contain;margin:0 auto;border-radius:12px;border:1px solid var(--border);background:#fff}
+@media(max-width:600px){.mock-question-visual img{max-height:330px;border-radius:10px}}

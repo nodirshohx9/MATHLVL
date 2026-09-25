@@ -4,54 +4,19 @@ from pathlib import Path
 from html.parser import HTMLParser
 from tempfile import TemporaryDirectory
 
-STEPS = [
-    'scripts/build_official_mock.py',
-    'scripts/inject_auth_gate.py',
-    'scripts/remove_apple_auth.py',
-    'scripts/fix_solver_auth.py',
-    'scripts/title_build_compat.py',
-    'scripts/product_hardening.py',
-    'scripts/final_cleanup.py',
-    'scripts/finish_sync.py',
-    'scripts/final_polish.py',
-    'scripts/mock_history_sync.py',
-    'scripts/telegram_support_link.py',
-    'scripts/remove_support_inbox.py',
-    'scripts/mobile_reader_ai_fix.py',
-    'scripts/mock_modern_ui.py',
-    'scripts/mobile_sidebar_nav.py',
-    'scripts/mobile_sidebar_nav_polish.py',
-    'scripts/mobile_sidebar_label_cleanup.py',
-    'scripts/gift_qr_cleanup.py',
-    'scripts/mock_pdf_admin.py',
-    'scripts/title_finalize.py',
-    'scripts/light_mode_contrast_fix.py',
-    'scripts/mock_mobile_redesign.py',
-    'scripts/mock_pdf_media_fix.py',
-    'scripts/mock_pdf_formula_fidelity.py',
-    'scripts/mock_pdf_resilience.py',
-    'scripts/mock_answer_key_grid_fix.py',
-    'scripts/mock_learning_review.py',
-    'scripts/mock_selection_visibility.py',
-    'scripts/mock_math_keyboard_toggle_fix.py',
-    'scripts/mobile_reader_scroll_fix.py',
-    'scripts/mobile_reader_scroll_performance.py',
-    'scripts/library_restore_and_admin_upload.py',
-    'scripts/fix_reader_observer_runtime.py',
-]
-
-for step in STEPS:
-    print(f'==> {step}', flush=True)
-    subprocess.run([sys.executable, step], check=True)
+# Source assets are canonical. Historical migration scripts are never run at build time.
+for path in sorted(Path('assets').rglob('*.js')) + sorted(Path('api').glob('*.js')) + sorted(Path('lib').glob('*.js')):
+    subprocess.run(['node', '--check', str(path)], check=True)
 
 html = Path('index.html').read_text(encoding='utf-8')
+reader_source = html + '\n'.join(p.read_text() for p in Path('assets/app').glob('*.js'))
 required_reader_functions = (
     'function setupPageObserver()',
     'function updateCurrentVisiblePage()',
     'function getPageRenderState(',
     'function renderPageInto(',
 )
-missing = [name for name in required_reader_functions if name not in html]
+missing = [name for name in required_reader_functions if name not in reader_source]
 if missing:
     raise SystemExit(f'PDF reader build is incomplete: {missing}')
 
@@ -85,3 +50,13 @@ with TemporaryDirectory() as directory:
             raise SystemExit(f'Inline script {number} syntax error:\n{result.stderr}')
 
 print('MATHLVL production build tayyor.', flush=True)
+
+
+# Referenced local assets must exist before deployment.
+import re
+for page in ['index.html','admin.html']:
+    source = Path(page).read_text()
+    for asset in re.findall(r'(?:src|href)=["\'](/assets/[^"\']+)', source):
+        if not Path(asset.split('?')[0].lstrip('/')).is_file():
+            raise SystemExit(f'Missing asset: {asset}')
+subprocess.run(['node', '--test', 'tests/chat.test.mjs'], check=True)

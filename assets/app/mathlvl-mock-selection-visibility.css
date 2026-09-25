@@ -1,0 +1,77 @@
+
+/* MATHLVL_MOCK_SELECTION_VISIBILITY_V1 */
+#panel-mocktest #mock-answer-area .ghost-btn.mathlvl-answer-selected{
+  position:relative;
+  background:linear-gradient(135deg,rgba(103,121,255,.24),rgba(124,98,239,.18))!important;
+  border-color:rgba(130,145,255,.78)!important;
+  color:#fff!important;
+  box-shadow:0 0 0 2px rgba(111,128,255,.12),0 10px 26px rgba(48,64,170,.18)!important;
+}
+#panel-mocktest #mock-answer-area .ghost-btn.mathlvl-answer-selected::after{
+  content:'✓';
+  position:absolute;
+  right:13px;
+  top:50%;
+  transform:translateY(-50%);
+  width:22px;
+  height:22px;
+  display:grid;
+  place-items:center;
+  border-radius:50%;
+  background:#7685ff;
+  color:white;
+  font-size:12px;
+  font-weight:900;
+  box-shadow:0 4px 12px rgba(77,92,210,.28);
+}
+#panel-mocktest #mock-answer-area .ghost-btn.mathlvl-answer-selected .katex{
+  color:#fff!important;
+}
+#panel-mocktest #mock-nav-grid .ghost-btn.mathlvl-nav-answered{
+  position:relative;
+  background:rgba(105,123,255,.13)!important;
+  border-color:rgba(111,132,255,.42)!important;
+  color:#dfe4ff!important;
+}
+#panel-mocktest #mock-nav-grid .ghost-btn.mathlvl-nav-answered::after{
+  content:'';
+  position:absolute;
+  right:4px;
+  top:4px;
+  width:5px;
+  height:5px;
+  border-radius:50%;
+  background:#7e8dff;
+  box-shadow:0 0 8px rgba(126,141,255,.72);
+}
+#panel-mocktest #mock-nav-grid .ghost-btn.mathlvl-nav-partial{
+  border-color:rgba(244,178,65,.38)!important;
+  color:#ffd071!important;
+}
+#panel-mocktest #mock-nav-grid .ghost-btn.mathlvl-nav-current{
+  box-shadow:0 0 0 2px rgba(111,128,255,.28)!important;
+}
+#panel-mocktest .mock-open-input.mathlvl-open-filled{
+  border-color:rgba(112,132,255,.58)!important;
+  background:rgba(92,110,255,.055)!important;
+  box-shadow:0 0 0 2px rgba(111,128,255,.08)!important;
+}
+html[data-theme="light"] #panel-mocktest #mock-answer-area .ghost-btn.mathlvl-answer-selected{
+  background:linear-gradient(135deg,rgba(91,110,230,.14),rgba(116,92,214,.10))!important;
+  border-color:rgba(84,101,219,.58)!important;
+  color:#253257!important;
+  box-shadow:0 0 0 2px rgba(84,101,219,.08),0 9px 22px rgba(54,72,130,.10)!important;
+}
+html[data-theme="light"] #panel-mocktest #mock-answer-area .ghost-btn.mathlvl-answer-selected .katex{
+  color:#253257!important;
+}
+html[data-theme="light"] #panel-mocktest #mock-nav-grid .ghost-btn.mathlvl-nav-answered{
+  background:rgba(91,110,230,.08)!important;
+  border-color:rgba(84,101,219,.28)!important;
+  color:#33446d!important;
+}
+@media(max-width:600px){
+  #panel-mocktest #mock-answer-area .ghost-btn.mathlvl-answer-selected{
+    padding-right:46px!important;
+  }
+}

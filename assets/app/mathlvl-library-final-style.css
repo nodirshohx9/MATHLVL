@@ -1,0 +1,45 @@
+
+.library-filter-row{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin:-8px 0 18px;
+}
+.library-filter{
+  border:1px solid rgba(255,255,255,.075);
+  background:#0e131b;
+  color:#778295;
+  border-radius:999px;
+  padding:8px 12px;
+  font:650 11.5px/1 var(--font-body);
+  cursor:pointer;
+  transition:all .16s ease;
+}
+.library-filter:hover{
+  color:#dce2ed;
+  border-color:rgba(105,138,255,.32);
+  background:#111824;
+}
+.library-filter.active{
+  color:#f3f6fb;
+  background:rgba(105,138,255,.12);
+  border-color:rgba(105,138,255,.38);
+}
+.library-empty{
+  grid-column:1/-1;
+  min-height:220px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  border:1px dashed rgba(255,255,255,.09);
+  border-radius:16px;
+  color:#7f899b;
+  padding:30px;
+}
+@media(max-width:899px){
+  .library-topbar{align-items:flex-start;flex-direction:column;gap:10px}
+  .library-filter-row{overflow-x:auto;flex-wrap:nowrap;padding-bottom:2px;scrollbar-width:none}
+  .library-filter-row::-webkit-scrollbar{display:none}
+  .library-filter{white-space:nowrap;flex:none}
+}

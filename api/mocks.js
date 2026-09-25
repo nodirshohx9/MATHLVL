@@ -216,6 +216,82 @@ function extractJson(text) {
   throw new Error("AI javobidan JSON o'qib bo'lmadi");
 }
 
+
+// MATHLVL_MOCK_PDF_RESILIENCE_V1
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function isRetryableGeminiError(status, message) {
+  const text = String(message || '').toLowerCase();
+  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504 ||
+    text.includes('high demand') || text.includes('overloaded') || text.includes('temporarily unavailable') ||
+    text.includes('resource exhausted') || text.includes('try again later');
+}
+
+async function callGeminiPdf(geminiBody, apiKey) {
+  const fallbackModel = cleanText(process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash', 120);
+  const models = [...new Set([GEMINI_MODEL, fallbackModel].filter(Boolean))];
+  let lastStatus = 500;
+  let lastMessage = 'Gemini PDF tahlilida xatolik';
+
+  for (let modelIndex = 0; modelIndex < models.length; modelIndex += 1) {
+    const model = models[modelIndex];
+    const maxAttempts = modelIndex === 0 ? 3 : 2;
+
+    for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+      let response;
+      let data = {};
+
+      try {
+        response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(geminiBody)
+        });
+        data = await response.json();
+      } catch (error) {
+        lastStatus = 503;
+        lastMessage = error?.message || 'AI serveriga ulanib bo‘lmadi';
+        if (attempt < maxAttempts - 1) {
+          await sleep(900 * (attempt + 1));
+          continue;
+        }
+        break;
+      }
+
+      if (response.ok) return { data, model };
+
+      lastStatus = response.status;
+      lastMessage = data.error?.message || `Gemini xatosi (${response.status})`;
+      const retryable = isRetryableGeminiError(response.status, lastMessage);
+
+      if (!retryable) {
+        // 400/401 kabi doimiy sozlama xatolarida boshqa modelga bekorga o'tmaymiz.
+        const err = new Error(lastMessage);
+        err.status = response.status;
+        throw err;
+      }
+
+      if (attempt < maxAttempts - 1) {
+        const retryAfter = Number(response.headers.get('retry-after') || 0);
+        const waitMs = retryAfter > 0 ? Math.min(retryAfter * 1000, 5000) : 900 * (attempt + 1);
+        await sleep(waitMs);
+      }
+    }
+  }
+
+  const busy = isRetryableGeminiError(lastStatus, lastMessage);
+  const err = new Error(
+    busy
+      ? "AI serveri hozir band. MATHLVL avtomatik bir necha marta qayta urindi, lekin javob kelmadi. 20–30 soniyadan keyin yana 'PDFni elektron mockka aylantirish'ni bosing."
+      : lastMessage
+  );
+  err.status = busy ? 503 : lastStatus;
+  throw err;
+}
+
 async function importPdfWithGemini(pdfUrl, fallbackTitle) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) throw new Error('Server sozlanmagan: GEMINI_API_KEY topilmadi');
@@ -229,15 +305,22 @@ async function importPdfWithGemini(pdfUrl, fallbackTitle) {
   if (!pdfBuffer.length) throw new Error('PDF bo‘sh');
   if (pdfBuffer.length > MAX_PDF_BYTES) throw new Error('PDF juda katta. 18 MB gacha bo‘lgan fayl yuklang');
 
+  // MATHLVL_MOCK_FORMULA_FIDELITY_V1
   const prompt = `
 Siz MATHLVL admin import tizimisiz. Berilgan matematika mock PDFni elektron testga STRUKTURALI tarzda ajrating.
 
 Kutiladigan format: O‘zbekiston matematika Milliy sertifikat mashq varianti — 35 ta yopiq savol va 10 ta ochiq savol. Har bir ochiq savolda A va B qism bor. Jami 45 topshiriq va 55 baholanadigan javob elementi.
 
 MUHIM QOIDALAR:
-1) PDFdagi savol matnini va formulalarni mazmunini o‘zgartirmang. Matematik formulalarni LaTeX ($...$) ko‘rinishida yozing. Oddiy matnni LaTeX ichiga tiqmang.
+1) PDFdagi savol matnini va formulalarni HECH NARSASINI o‘zgartirmang. Matematik formulalarni LaTeX ($...$) ko‘rinishida yozing. Oddiy matnni LaTeX ichiga tiqmang. FORMULA ANIQLIGI ENG MUHIM: kasr, daraja, indeks, modul, integral, logarifm va ayniqsa ILDIZ DARAJASINI PDFdagi ko‘rinish bilan aynan saqlang.
+1a) Oddiy kvadrat ildiz: √x → \sqrt{x}. Kub ildiz: ∛x yoki ildiz belgisining chap yuqorisida kichik 3 bo‘lsa → \sqrt[3]{x}. n-darajali ildiz → \sqrt[n]{x}. HECH QACHON \sqrt[3]{x} ni \sqrt{x} ga aylantirmang. Masalan PDFdagi ∛7, ∛3, ∛49 lar mos ravishda $\sqrt[3]{7}$, $\sqrt[3]{3}$, $\sqrt[3]{49}$ bo‘lishi shart.
+1b) Ildiz indekslari ko‘pincha juda kichik yoziladi. Har bir ildiz belgisining chap yuqori qismini alohida tekshiring. Formula JSONga yozilishidan oldin uni PDF bilan ikkinchi marta vizual solishtiring. Agar ildiz darajasi yoki boshqa kichik indeks noaniq bo‘lsa, taxmin qilmang: needsReview=true qiling va warningsga qaysi savolda formula tekshirilishi kerakligini yozing.
 2) Yopiq savollarda aynan 4 variantni A/B/C/D tartibida qaytaring. "a" 0=A, 1=B, 2=C, 3=D.
 3) To‘g‘ri javob PDFdagi JAVOBLAR KALITI yoki aniq ko‘rsatilgan javobdan topilsa kiriting. Javob kaliti yo‘q yoki ishonchsiz bo‘lsa HECH QACHON o‘zingiz yechib/taxmin qilib to‘ldirmang: a=null yoki ans="" qoldiring, needsReview=true qiling va warningsga yozing.
+3a) JAVOBLAR KALITI ixcham jadval bo‘lishi mumkin. Ayniqsa yuqorida 0,1,2,...,9 ustunlari va chapda 0,1,2,3 qatorlari bo‘lsa, savol raqamini o‘nlik qator + birlik ustun orqali map qiling: qator 0 / ustun 6 = 6-savol; qator 1 / ustun 0 = 10-savol; qator 3 / ustun 5 = 35-savol. 0-savol mavjud emas, uning katagini e’tiborsiz qoldiring.
+3b) Kalit jadvali topilganda 1 dan 35 gacha HAR BIR yopiq savolni ketma-ket tekshirib chiqing. Katakda A/B/C/D aniq ko‘rinsa mos ravishda a=0/1/2/3 yozing. Bitta katakni tasodifan tashlab ketmang. Jadvaldagi harf noaniq bo‘lsagina a=null qoldiring va aynan qaysi savol noaniq ekanini warningsga yozing.
+3c) Ochiq savollar kaliti alohida T/R, a, b jadvalida bo‘lishi mumkin. 36–45 savollar uchun a va b ustunlarini mos ravishda A/B qismlarining ans qiymatiga ko‘chiring; formulalarni LaTeXga sodiq o‘giring.
+// MATHLVL_MOCK_ANSWER_KEY_GRID_V1
 4) Har savolga qisqa topic yozing: masalan "Kvadrat tenglama", "Trigonometriya", "Planimetriya".
 5) sourcePage — savol joylashgan PDF sahifasi (1 dan boshlab).
 6) Agar savolni yechish uchun chizma, grafik, jadval, koordinata rasmi yoki boshqa vizual kerak bo‘lsa visual.present=true qiling. visual.page — shu vizual turgan sahifa. visual.bbox — FAQAT kerakli rasm/chizma hududining [ymin,xmin,ymax,xmax] koordinatasi, sahifaning yuqori chapidan boshlab 0..1000 oralig‘ida normallashtirilgan. Savol matni va variantlarni bbox ichiga keraksiz qo‘shmang. visual.kind qisqa tur: "geometriya chizmasi", "grafik", "jadval" kabi. imageAlt — rasm nimani ko‘rsatishini qisqa yozing. Vizual zarur bo‘lsa needsReview=true qiling, lekin rasm ichidagi qiymatlarni o‘zingiz to‘qimang.
@@ -273,18 +356,12 @@ JSON SHAKLI:
     generationConfig: {
       maxOutputTokens: 24000,
       responseMimeType: 'application/json',
-      thinkingConfig: { thinkingBudget: 0 }
+      temperature: 0.1,
+      thinkingConfig: { thinkingBudget: 1024 }
     }
   };
 
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
-  const geminiRes = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(geminiBody)
-  });
-  const data = await geminiRes.json();
-  if (!geminiRes.ok) throw new Error(data.error?.message || 'Gemini PDF tahlilida xatolik');
+  const { data } = await callGeminiPdf(geminiBody, apiKey);
   const text = (data.candidates?.[0]?.content?.parts || []).map(p => p.text || '').join('');
   const parsed = extractJson(text);
 
@@ -383,6 +460,9 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Bu metod qo'llab-quvvatlanmaydi" });
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    const status = Number(error?.status);
+    const safeStatus = Number.isInteger(status) && status >= 400 && status <= 599 ? status : 500;
+    return res.status(safeStatus).json({ error: error.message });
   }
 }
+

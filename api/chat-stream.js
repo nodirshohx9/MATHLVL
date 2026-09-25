@@ -1,3 +1,4 @@
+import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
 
@@ -10,7 +11,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
   });
   return cookies;
 }
@@ -101,7 +102,8 @@ export default async function handler(request) {
   const session = await verifySession(request);
   if (!session) return jsonResponse({ error: 'Ustoz AI uchun avval tizimga kiring.' }, 401);
 
-  const limit = await checkRateLimit(session.email);
+  let limit;
+  try { limit = await checkRateLimit(session.email); } catch { return jsonResponse({error:'AI vaqtincha band. Qayta urinib ko‘ring.'},503); }
   if (!limit.ok) return jsonResponse({ error: limit.message }, 429);
 
   const apiKey = process.env.GEMINI_API_KEY;
@@ -111,11 +113,13 @@ export default async function handler(request) {
   try { body = await request.json(); }
   catch { return jsonResponse({ error: "So'rov matni noto'g'ri" }, 400); }
 
+  const invalid = validateChat(body);
+  if(invalid) return jsonResponse({error:invalid},400);
   const { system, messages = [], max_tokens } = body;
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
   const geminiBody = {
     contents,
-    generationConfig: { maxOutputTokens: Math.max(max_tokens || 1000, 1500), thinkingConfig: { thinkingBudget: 0 } }
+    generationConfig: { maxOutputTokens: outputLimit(max_tokens), thinkingConfig: { thinkingBudget: 0 } }
   };
   const effectiveSystem = teacherSystem(system);
   if (effectiveSystem) geminiBody.systemInstruction = { parts: [{ text: effectiveSystem }] };
@@ -142,10 +146,12 @@ export default async function handler(request) {
       // Keep the connection alive while Gemini is preparing its first token.
       const heartbeat = setInterval(() => sendRaw(': ping\n\n'), 8000);
 
+      const upstreamAbort = new AbortController();
+      const upstreamTimeout = setTimeout(() => upstreamAbort.abort(), 60000);
+      const disconnect = () => upstreamAbort.abort();
+      request.signal.addEventListener('abort', disconnect, {once:true});
       try {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-        const upstreamAbort = new AbortController();
-        const upstreamTimeout = setTimeout(() => upstreamAbort.abort(), 60000);
 
         let geminiRes;
         try {
@@ -155,9 +161,7 @@ export default async function handler(request) {
             body: JSON.stringify(geminiBody),
             signal: upstreamAbort.signal
           });
-        } finally {
-          clearTimeout(upstreamTimeout);
-        }
+        } catch(error) { throw error; }
 
         if (!geminiRes.ok || !geminiRes.body) {
           const errData = await geminiRes.json().catch(() => ({}));
@@ -200,6 +204,9 @@ export default async function handler(request) {
         sendEvent({ error: message });
         sendRaw('data: [DONE]\n\n');
       } finally {
+        clearTimeout(upstreamTimeout);
+        request.signal.removeEventListener('abort', disconnect);
+        upstreamAbort.abort();
         clearInterval(heartbeat);
         closed = true;
         try { controller.close(); } catch {}
@@ -216,4 +223,5 @@ export default async function handler(request) {
     }
   });
 }
+
 
