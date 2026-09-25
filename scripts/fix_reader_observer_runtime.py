@@ -75,6 +75,11 @@ replacement = r'''function setupPageObserver(){
 
 pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\n// ---- Ekrandan uzoq sahifalarni", re.S)
 s2, n = pattern.subn(replacement + "\n// ---- Ekrandan uzoq sahifalarni", s, count=1)
+if n == 0:
+    # Some later build steps may already have replaced setupPageObserver. In that
+    # case, repair the runtime directly before verification.
+    setup_pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\nfunction updateCurrentVisiblePage\(\)", re.S)
+    s2, n = setup_pattern.subn(replacement + "\nfunction updateCurrentVisiblePage()", s, count=1)
 if n != 1:
     raise SystemExit(f'setupPageObserver replacement failed: {n}')
 
