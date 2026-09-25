@@ -15,39 +15,48 @@ replacement = r'''function setupPageObserver(){
     pageObserver = null;
   }
 
-  const isMobileReader = window.matchMedia('(max-width:899px)').matches;
-  const rootMargin = isMobileReader ? '120px 0px' : '700px 0px';
+  // Keep this reader path deliberately simple: render the first few pages
+  // immediately and render the next nearby page on scroll. This avoids runtime
+  // dependencies on IntersectionObserver callbacks/helpers that were being
+  // rewritten by other build patches.
+  const items = Array.from(scrollEl.querySelectorAll('.reader-page-item'));
+  const renderNearby = ()=>{
+    if(!items.length) return;
+    const first = items[0];
+    const stride = first.offsetHeight + (parseFloat(getComputedStyle(first).marginBottom) || 0);
+    const idx = stride ? Math.max(0, Math.min(items.length - 1, Math.round(scrollEl.scrollTop / stride))) : 0;
+    const start = Math.max(0, idx - 1);
+    const end = Math.min(items.length - 1, idx + 2);
 
-  pageObserver = new IntersectionObserver((entries)=>{
-    for(const entry of entries){
-      const num = parseInt(entry.target.dataset.page, 10);
-      if(!Number.isFinite(num) || !entry.isIntersecting) continue;
-      renderPageInto(entry.target, num);
+    for(let i=start; i<=end; i++){
+      const num = parseInt(items[i].dataset.page, 10);
+      if(Number.isFinite(num)) renderPageInto(items[i], num);
     }
-  }, { root: scrollEl, rootMargin, threshold: 0.01 });
 
-  document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
+    const num = parseInt(items[idx]?.dataset.page, 10);
+    if(Number.isFinite(num)){
+      currentVisiblePage = num;
+      readerPageNum = num;
+      updatePageIndicator();
+    }
+  };
 
-  if(!scrollEl.dataset.readerSimpleV2Bound){
-    scrollEl.dataset.readerSimpleV2Bound = '1';
+  renderNearby();
+
+  if(!scrollEl.dataset.readerSimpleV3Bound){
+    scrollEl.dataset.readerSimpleV3Bound = '1';
+    let raf = 0;
     scrollEl.addEventListener('scroll', ()=>{
-      const first = scrollEl.querySelector('.reader-page-item');
-      if(!first) return;
-      const stride = first.offsetHeight + (parseFloat(getComputedStyle(first).marginBottom) || 0);
-      if(!stride) return;
-      const items = scrollEl.querySelectorAll('.reader-page-item');
-      const idx = Math.max(0, Math.min(items.length - 1, Math.round(scrollEl.scrollTop / stride)));
-      const num = parseInt(items[idx]?.dataset.page, 10);
-      if(Number.isFinite(num)){
-        currentVisiblePage = num;
-        readerPageNum = num;
-        updatePageIndicator();
-      }
+      if(raf) return;
+      raf = requestAnimationFrame(()=>{
+        raf = 0;
+        renderNearby();
+      });
     }, { passive:true });
   }
 }
 
-// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V2
+// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V3
 '''
 
 pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\n// ---- Ekrandan uzoq sahifalarni", re.S)
@@ -63,10 +72,10 @@ if n != 1:
 idx = s2.find('function setupPageObserver(){')
 end = s2.find('// ---- Ekrandan uzoq sahifalarni', idx)
 block = s2[idx:end]
-if "const rootMargin =" not in block or "root: scrollEl" not in block or "renderPageInto(entry.target, num)" not in block:
-    raise SystemExit('observer fix verification failed')
-if "rootMargin: renderMargin" in block:
-    raise SystemExit('old renderMargin bug still present')
+if "const renderNearby =" not in block or "renderPageInto(items[i], num)" not in block:
+    raise SystemExit('simple reader fix verification failed')
+if "IntersectionObserver(" in block or "renderPageInto(entry.target, num)" in block:
+    raise SystemExit('old observer runtime still present')
 
 p.write_text(s2, encoding='utf-8')
 print('Book reader IntersectionObserver fixed.')
