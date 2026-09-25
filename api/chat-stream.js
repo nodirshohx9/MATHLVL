@@ -1,3 +1,4 @@
+import { teacherSystem } from '../lib/teacher.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
 
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
@@ -110,13 +111,14 @@ export default async function handler(request) {
   try { body = await request.json(); }
   catch { return jsonResponse({ error: "So'rov matni noto'g'ri" }, 400); }
 
-  const { system, messages = [], max_tokens } = body;
+  const { system, messages = [], max_tokens, teacherProfile } = body;
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
   const geminiBody = {
     contents,
     generationConfig: { maxOutputTokens: Math.max(max_tokens || 1000, 1500), thinkingConfig: { thinkingBudget: 0 } }
   };
-  if (system) geminiBody.systemInstruction = { parts: [{ text: system }] };
+  const effectiveSystem = (teacherProfile === 'male' || teacherProfile === 'female') ? teacherSystem(system, teacherProfile) : system;
+  if (effectiveSystem) geminiBody.systemInstruction = { parts: [{ text: effectiveSystem }] };
 
   const encoder = new TextEncoder();
   const decoder = new TextDecoder();
@@ -214,3 +216,4 @@ export default async function handler(request) {
     }
   });
 }
+
