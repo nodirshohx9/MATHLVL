@@ -1,0 +1,5 @@
+/* Custom pinch sets page dimensions; native one-finger scrolling works on both axes. */
+body.reader-mode #reader-scroll{overflow:auto!important;touch-action:pan-x pan-y!important;align-items:flex-start!important;scroll-behavior:auto!important;overscroll-behavior:contain!important}
+body.reader-mode #reader-scroll .reader-page-item{flex-shrink:0!important;max-width:none!important;margin-inline:auto!important;touch-action:pan-x pan-y!important}
+body.reader-mode #reader-scroll canvas.page-canvas,body.reader-mode #reader-scroll canvas.page-annotation-canvas{max-width:none!important;touch-action:pan-x pan-y!important}
+body.reader-mode #reader-scroll.draw-lock,body.reader-mode #reader-scroll.draw-lock canvas.page-annotation-canvas{touch-action:none!important}
