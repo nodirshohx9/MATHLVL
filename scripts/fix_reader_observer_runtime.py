@@ -43,20 +43,22 @@ replacement = r'''function setupPageObserver(){
 
   renderNearby();
 
-  if(!scrollEl.dataset.readerSimpleV3Bound){
-    scrollEl.dataset.readerSimpleV3Bound = '1';
-    let raf = 0;
-    scrollEl.addEventListener('scroll', ()=>{
-      if(raf) return;
-      raf = requestAnimationFrame(()=>{
-        raf = 0;
-        renderNearby();
-      });
-    }, { passive:true });
+  // Replace the old listener so reopening a book uses its new page elements.
+  if(scrollEl.readerScrollHandler){
+    scrollEl.removeEventListener('scroll', scrollEl.readerScrollHandler);
   }
+  let raf = 0;
+  scrollEl.readerScrollHandler = ()=>{
+    if(raf) return;
+    raf = requestAnimationFrame(()=>{
+      raf = 0;
+      renderNearby();
+    });
+  };
+  scrollEl.addEventListener('scroll', scrollEl.readerScrollHandler, { passive:true });
 }
 
-// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V3
+// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V4
 '''
 
 pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\n// ---- Ekrandan uzoq sahifalarni", re.S)
