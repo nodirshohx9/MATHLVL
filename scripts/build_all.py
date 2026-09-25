@@ -1,6 +1,8 @@
 import subprocess
 import sys
 from pathlib import Path
+from html.parser import HTMLParser
+from tempfile import TemporaryDirectory
 
 STEPS = [
     'scripts/build_official_mock.py',
@@ -52,5 +54,34 @@ required_reader_functions = (
 missing = [name for name in required_reader_functions if name not in html]
 if missing:
     raise SystemExit(f'PDF reader build is incomplete: {missing}')
+
+class InlineScripts(HTMLParser):
+    def __init__(self):
+        super().__init__()
+        self.scripts = []
+        self.in_script = False
+
+    def handle_starttag(self, tag, attrs):
+        if tag == 'script' and not dict(attrs).get('src'):
+            self.in_script = True
+            self.scripts.append('')
+
+    def handle_endtag(self, tag):
+        if tag == 'script':
+            self.in_script = False
+
+    def handle_data(self, data):
+        if self.in_script:
+            self.scripts[-1] += data
+
+parser = InlineScripts()
+parser.feed(html)
+with TemporaryDirectory() as directory:
+    script_file = Path(directory) / 'inline.js'
+    for number, script in enumerate(parser.scripts):
+        script_file.write_text(script, encoding='utf-8')
+        result = subprocess.run(['node', '--check', str(script_file)], capture_output=True, text=True)
+        if result.returncode:
+            raise SystemExit(f'Inline script {number} syntax error:\n{result.stderr}')
 
 print('MATHLVL production build tayyor.', flush=True)
