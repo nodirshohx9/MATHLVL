@@ -1,0 +1,30 @@
+:root{--teacher-accent:#a9b6ff;--teacher-panel:#121a29;--teacher-border:rgba(160,178,220,.2)}
+.teacher-picker{flex:none;margin:0 0 18px;padding:20px;border:1px solid var(--teacher-border);border-radius:20px;background:linear-gradient(120deg,rgba(91,111,211,.13),transparent 70%),var(--teacher-panel);color:#f3f5ff;box-sizing:border-box}
+.teacher-picker-heading{display:flex;justify-content:space-between;align-items:center;gap:14px;margin-bottom:14px}
+.teacher-eyebrow{font-size:10px;font-weight:700;letter-spacing:.16em;color:var(--teacher-accent)}
+.teacher-picker h3{margin:6px 0 0;font-size:18px;line-height:1.3;letter-spacing:-.03em}
+.teacher-ai-badge{font-size:11px;padding:6px 9px;border:1px solid var(--teacher-border);border-radius:20px;white-space:nowrap;color:#b9c4db}
+.teacher-options{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.teacher-option{display:flex;align-items:center;gap:12px;text-align:left;padding:13px;border:1px solid var(--teacher-border);border-radius:14px;background:rgba(255,255,255,.025);color:inherit;cursor:pointer;font:inherit;transition:background .18s,border-color .18s}
+.teacher-option:hover{background:rgba(151,169,255,.09)}
+.teacher-option[aria-pressed="true"]{border-color:#9aaaff;background:rgba(135,157,255,.12);box-shadow:inset 0 0 0 1px rgba(154,170,255,.2)}
+.teacher-avatar{display:grid;place-items:center;flex:none;width:42px;height:42px;border-radius:13px;background:#d9e0ff;color:#243569;font-size:19px;font-weight:800}
+.teacher-option[data-teacher-profile="female"] .teacher-avatar{background:#ded9f4;color:#49406e}
+.teacher-option-copy{display:grid;gap:5px}.teacher-option-copy strong{font-size:14px}.teacher-option-copy small{font-size:12px;color:#abb8d1}.teacher-check{margin-left:auto;color:var(--teacher-accent);opacity:0}.teacher-option[aria-pressed="true"] .teacher-check{opacity:1}
+.teacher-selection-status{font-size:11px!important;line-height:1.5!important;margin:12px 0 0!important;color:#b2bdd4!important}
+#panel-teacher:not(.view-teacher) .chat-col>.teacher-picker{display:none}
+#panel-teacher.view-teacher .chat-col{min-height:0!important}
+#panel-teacher.view-teacher .chat-window{min-height:180px!important}
+#panel-teacher.view-teacher .ai-welcome{padding-top:20px!important;padding-bottom:20px!important}
+#panel-teacher.view-teacher .ai-welcome .ai-orb{width:62px!important;height:62px!important;margin-bottom:18px!important}
+#panel-teacher.view-teacher .ai-welcome h3{font-size:clamp(25px,3vw,38px)!important;letter-spacing:-.045em!important}
+#panel-teacher.view-teacher .ai-welcome>p{max-width:470px!important;line-height:1.75!important;color:#aebbd2!important}
+#panel-teacher.view-teacher .bubble{line-height:1.8!important;font-size:15px!important}
+#panel-teacher.view-teacher .chat-input-wrap{border-radius:18px!important;border-color:rgba(166,184,232,.27)!important}
+.teacher-picker-compact{margin:12px;padding:12px;border-radius:14px}.teacher-picker-compact h3{font-size:14px}.teacher-picker-compact .teacher-eyebrow,.teacher-picker-compact .teacher-selection-status{display:none}.teacher-picker-compact .teacher-option{padding:8px;gap:7px}.teacher-picker-compact .teacher-avatar{width:30px;height:30px;font-size:14px}.teacher-picker-compact .teacher-option-copy strong{font-size:12px}.teacher-picker-compact .teacher-option-copy small{font-size:10px}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid #a9b6ff!important;outline-offset:4px!important}
+.book-card{transition:transform .18s ease,border-color .18s ease!important}.book-card:hover{transform:translateY(-3px);border-color:rgba(165,183,255,.55)!important}
+html[data-theme="light"]{--teacher-panel:#f8faff;--teacher-border:#d8dfec;--teacher-accent:#4b5eae}
+html[data-theme="light"] .teacher-picker{color:#1e2b45}html[data-theme="light"] .teacher-option-copy small,html[data-theme="light"] .teacher-ai-badge{color:#53637c}html[data-theme="light"] .teacher-selection-status{color:#586882!important}html[data-theme="light"] #panel-teacher.view-teacher .ai-welcome>p{color:#53637c!important}
+@media(max-width:600px){.teacher-picker{padding:13px;margin-bottom:10px;border-radius:16px}.teacher-picker h3{font-size:16px}.teacher-option{padding:10px;gap:8px}.teacher-avatar{width:34px;height:34px;font-size:16px}.teacher-option-copy strong{font-size:12px}.teacher-option-copy small{font-size:10px}.teacher-ai-badge{font-size:10px}.teacher-selection-status{font-size:10px!important}#panel-teacher.view-teacher .ai-welcome{padding:14px 8px!important}#panel-teacher.view-teacher .ai-orb{display:none!important}.teacher-picker-compact .teacher-check{display:none}}
+@media(prefers-reduced-motion:reduce){.teacher-option,.book-card{transition:none!important}.book-card:hover{transform:none}}
