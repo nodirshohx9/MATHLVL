@@ -15,8 +15,6 @@ replacement = r'''function setupPageObserver(){
     pageObserver = null;
   }
 
-  if(typeof clearMobileRenderQueue === 'function') clearMobileRenderQueue();
-
   const isMobileReader = window.matchMedia('(max-width:899px)').matches;
   const rootMargin = isMobileReader ? '120px 0px' : '700px 0px';
 
@@ -24,53 +22,32 @@ replacement = r'''function setupPageObserver(){
     for(const entry of entries){
       const num = parseInt(entry.target.dataset.page, 10);
       if(!Number.isFinite(num) || !entry.isIntersecting) continue;
-
-      if(isMobileReader && typeof scheduleMobileReaderPageRender === 'function'){
-        scheduleMobileReaderPageRender(entry.target, num);
-      }else{
-        renderPageInto(entry.target, num);
-      }
+      renderPageInto(entry.target, num);
     }
+  }, { root: scrollEl, rootMargin, threshold: 0.01 });
 
-    if(typeof scheduleReaderVisibleUpdate === 'function'){
-      scheduleReaderVisibleUpdate();
-    }else{
-      updateCurrentVisiblePage();
-    }
-  }, {
-    root: scrollEl,
-    rootMargin,
-    threshold: 0.01
-  });
+  document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
 
-  document.querySelectorAll('.reader-page-item').forEach(el=>{
-    pageObserver.observe(el);
-  });
-
-  if(!scrollEl.dataset.readerObserverV1Bound){
-    scrollEl.dataset.readerObserverV1Bound = '1';
-
+  if(!scrollEl.dataset.readerSimpleV2Bound){
+    scrollEl.dataset.readerSimpleV2Bound = '1';
     scrollEl.addEventListener('scroll', ()=>{
-      if(typeof scheduleReaderVisibleUpdate === 'function'){
-        scheduleReaderVisibleUpdate();
-      }else{
-        updateCurrentVisiblePage();
+      const first = scrollEl.querySelector('.reader-page-item');
+      if(!first) return;
+      const stride = first.offsetHeight + (parseFloat(getComputedStyle(first).marginBottom) || 0);
+      if(!stride) return;
+      const items = scrollEl.querySelectorAll('.reader-page-item');
+      const idx = Math.max(0, Math.min(items.length - 1, Math.round(scrollEl.scrollTop / stride)));
+      const num = parseInt(items[idx]?.dataset.page, 10);
+      if(Number.isFinite(num)){
+        currentVisiblePage = num;
+        readerPageNum = num;
+        updatePageIndicator();
       }
     }, { passive:true });
   }
-
-  if(typeof scheduleReaderVisibleUpdate === 'function'){
-    scheduleReaderVisibleUpdate();
-  }else{
-    updateCurrentVisiblePage();
-  }
-
-  if(typeof pumpMobileRenderQueue === 'function'){
-    pumpMobileRenderQueue();
-  }
 }
 
-// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V1
+// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V2
 '''
 
 pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\n// ---- Ekrandan uzoq sahifalarni", re.S)
@@ -86,7 +63,7 @@ if n != 1:
 idx = s2.find('function setupPageObserver(){')
 end = s2.find('// ---- Ekrandan uzoq sahifalarni', idx)
 block = s2[idx:end]
-if "const rootMargin =" not in block or "root: scrollEl" not in block:
+if "const rootMargin =" not in block or "root: scrollEl" not in block or "renderPageInto(entry.target, num)" not in block:
     raise SystemExit('observer fix verification failed')
 if "rootMargin: renderMargin" in block:
     raise SystemExit('old renderMargin bug still present')
