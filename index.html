@@ -9242,33 +9242,58 @@ function buildPageContainers(){
 
 // ---- IntersectionObserver: qaysi sahifa render qilinishi va joriy sahifa kuzatuvi ----
 function setupPageObserver(){
-  const wrap = document.getElementById('reader-canvas-wrap');
   const scrollEl = document.getElementById('reader-scroll');
-  const isMobile = window.matchMedia('(max-width: 899px)').matches;
-const renderMargin = isMobile ? '140px 0px' : '280px 0px';
+  if(!scrollEl) return;
 
-pageObserver = new IntersectionObserver((entries)=>{
-  entries.forEach(entry=>{
-    const num = parseInt(entry.target.dataset.page, 10);
-    if(entry.isIntersecting) renderPageInto(entry.target, num);
-  });
-}, { root: wrap, rootMargin: renderMargin, threshold: 0.01 });
+  if(pageObserver){
+    pageObserver.disconnect();
+    pageObserver = null;
+  }
 
-  document.querySelectorAll('.reader-page-item').forEach(el=> pageObserver.observe(el));
+  // Keep this reader path deliberately simple: render the first few pages
+  // immediately and render the next nearby page on scroll. This avoids runtime
+  // dependencies on IntersectionObserver callbacks/helpers that were being
+  // rewritten by other build patches.
+  const items = Array.from(scrollEl.querySelectorAll('.reader-page-item'));
+  const renderNearby = ()=>{
+    if(!items.length) return;
+    const first = items[0];
+    const stride = first.offsetHeight + (parseFloat(getComputedStyle(first).marginBottom) || 0);
+    const idx = stride ? Math.max(0, Math.min(items.length - 1, Math.round(scrollEl.scrollTop / stride))) : 0;
+    const start = Math.max(0, idx - 1);
+    const end = Math.min(items.length - 1, idx + 2);
 
-  let scrollRaf = 0;
-  let lastScrollUpdate = 0;
-  scrollEl.addEventListener('scroll', ()=>{
-    if(scrollRaf) return;
-    scrollRaf = requestAnimationFrame(()=>{
-      scrollRaf = 0;
-      const now = performance.now();
-      if(now - lastScrollUpdate < 180) return;
-      lastScrollUpdate = now;
-      updateCurrentVisiblePage();
+    for(let i=start; i<=end; i++){
+      const num = parseInt(items[i].dataset.page, 10);
+      if(Number.isFinite(num)) renderPageInto(items[i], num);
+    }
+
+    const num = parseInt(items[idx]?.dataset.page, 10);
+    if(Number.isFinite(num)){
+      currentVisiblePage = num;
+      readerPageNum = num;
+      updatePageIndicator();
+    }
+  };
+
+  renderNearby();
+
+  // Replace the old listener so reopening a book uses its new page elements.
+  if(scrollEl.readerScrollHandler){
+    scrollEl.removeEventListener('scroll', scrollEl.readerScrollHandler);
+  }
+  let raf = 0;
+  scrollEl.readerScrollHandler = ()=>{
+    if(raf) return;
+    raf = requestAnimationFrame(()=>{
+      raf = 0;
+      renderNearby();
     });
-  }, {passive:true});
+  };
+  scrollEl.addEventListener('scroll', scrollEl.readerScrollHandler, { passive:true });
 }
+
+// MATHLVL_READER_OBSERVER_RUNTIME_FIX_V4
 
 function updateCurrentVisiblePage(){
   const wrap = document.getElementById('reader-canvas-wrap');
