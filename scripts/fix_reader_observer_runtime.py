@@ -61,18 +61,13 @@ replacement = r'''function setupPageObserver(){
 // MATHLVL_READER_OBSERVER_RUNTIME_FIX_V4
 '''
 
-pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\n// ---- Ekrandan uzoq sahifalarni", re.S)
-s2, n = pattern.subn(replacement + "\n// ---- Ekrandan uzoq sahifalarni", s, count=1)
-if n == 0:
-    # Some later build steps may already have replaced setupPageObserver. In that
-    # case, repair the runtime directly before verification.
-    setup_pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n\nfunction updateCurrentVisiblePage\(\)", re.S)
-    s2, n = setup_pattern.subn(replacement + "\nfunction updateCurrentVisiblePage()", s, count=1)
+pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n(?=\nfunction updateCurrentVisiblePage\(\))", re.S)
+s2, n = pattern.subn(replacement.rstrip('\n') + "\n", s, count=1)
 if n != 1:
     raise SystemExit(f'setupPageObserver replacement failed: {n}')
 
 idx = s2.find('function setupPageObserver(){')
-end = s2.find('// ---- Ekrandan uzoq sahifalarni', idx)
+end = s2.find('function updateCurrentVisiblePage()', idx)
 block = s2[idx:end]
 if "const renderNearby =" not in block or "renderPageInto(items[i], num)" not in block:
     raise SystemExit('simple reader fix verification failed')
