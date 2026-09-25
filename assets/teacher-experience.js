@@ -33,6 +33,8 @@
     panels.push(panel);
   }
   function init() {
+    const homeHero = document.querySelector('#panel-home .dash-home-hero');
+    createPicker(homeHero?.parentElement, homeHero?.nextSibling, false);
     const chat = document.getElementById('chat-window');
     createPicker(chat?.parentElement, chat, false);
     const sheet = document.getElementById('ai-sheet-chat');
