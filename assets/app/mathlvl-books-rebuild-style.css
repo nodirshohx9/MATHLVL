@@ -1,0 +1,9 @@
+
+.books-rebuild-shell{min-height:300px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:52px 24px;border:1px solid rgba(255,255,255,.075);border-radius:18px;background:radial-gradient(circle at 50% 20%,rgba(123,140,255,.09),transparent 42%),#0d121a}
+.books-rebuild-icon{width:64px;height:64px;border-radius:18px;display:grid;place-items:center;margin-bottom:18px;color:#aeb8ff;background:rgba(123,140,255,.10);border:1px solid rgba(123,140,255,.18)}
+.books-rebuild-icon svg{width:29px;height:29px;fill:none;stroke:currentColor;stroke-width:1.55;stroke-linecap:round;stroke-linejoin:round}
+.books-rebuild-title{color:#f2f5fb;font:750 20px/1.2 var(--font-display);letter-spacing:-.025em}
+.books-rebuild-text{max-width:560px;margin-top:9px;color:#7f899b;font-size:13px;line-height:1.65}
+html[data-theme="light"] .books-rebuild-shell{background:linear-gradient(145deg,#fff,#f5f8fd);border-color:rgba(31,57,104,.10)}
+html[data-theme="light"] .books-rebuild-title{color:#18243c}
+html[data-theme="light"] .books-rebuild-text{color:#68758f}

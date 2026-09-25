@@ -1,3 +1,4 @@
+import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 import crypto from 'crypto';
 
@@ -18,7 +19,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
   });
   return cookies;
 }
@@ -100,7 +101,8 @@ async function requestGeminiWithFallback(apiKey, body) {
         const response = await fetch(url, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body: JSON.stringify(body),
+          signal: AbortSignal.timeout(12000)
         });
         const data = await response.json().catch(() => ({}));
 
@@ -132,21 +134,22 @@ export default async function handler(req, res) {
   const session = verifySession(req);
   if (!session) return res.status(401).json({ error: 'Ustoz AI uchun avval tizimga kiring.' });
 
-  const limit = await checkRateLimit(session.email);
+  let limit;
+  try { limit = await checkRateLimit(session.email); } catch { return res.status(503).json({error:'AI vaqtincha band. Qayta urinib ko‘ring.'}); }
   if (!limit.ok) return res.status(429).json({ error: limit.message });
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' });
 
   try {
+    const invalid = validateChat(req.body);
+    if(invalid) return res.status(400).json({error:invalid});
     const { system, messages = [], tools, max_tokens, mode } = req.body || {};
     const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
     const isSolve = mode === 'solve';
 
     const generationConfig = {
-      maxOutputTokens: isSolve
-        ? Math.max(Math.min(Number(max_tokens) || 6000, 8000), 4000)
-        : Math.max(Number(max_tokens) || 1000, 1500),
+      maxOutputTokens: outputLimit(max_tokens, isSolve),
       temperature: isSolve ? 0.1 : 0.35,
       thinkingConfig: {
         // Solver gets real reasoning budget; ordinary non-stream calls stay fast.
@@ -202,4 +205,5 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: err.message });
   }
 }
+
 
