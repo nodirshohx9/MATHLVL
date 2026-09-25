@@ -118,7 +118,7 @@ visible_replacement = r'''function updateCurrentVisiblePage(){
   }
 }
 
-window.updatePageIndicator = function(){'''
+window.updatePageIndicator = function()'''
 s2, n = visible_pattern.subn(visible_replacement, s, count=1)
 if n != 1:
     raise SystemExit(f'visible page tracker replacement failed: {n}')
