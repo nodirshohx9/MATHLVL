@@ -1,3 +1,4 @@
+import {memoryRequest, memoryMessages} from '../lib/memory.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
@@ -115,7 +116,7 @@ export default async function handler(request) {
 
   const invalid = validateChat(body);
   if(invalid) return jsonResponse({error:invalid},400);
-  const { system, messages = [], max_tokens } = body;
+  const { system, messages = [], max_tokens, memory_scope } = body;
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
   const geminiBody = {
     contents,
@@ -134,6 +135,7 @@ export default async function handler(request) {
   const stream = new ReadableStream({
     async start(controller) {
       let closed = false;
+      let answer = '';
       const sendRaw = (chunk) => {
         if (closed) return;
         try { controller.enqueue(encoder.encode(chunk)); } catch {}
@@ -191,11 +193,17 @@ export default async function handler(request) {
               const text = (parsed.candidates?.[0]?.content?.parts || [])
                 .map(p => p.text || '')
                 .join('');
-              if (text) sendEvent({ text });
+              if (text) { answer += text; sendEvent({ text }); }
             } catch {}
           }
         }
 
+        if(memory_scope === 'teacher' && answer){
+          try {
+            await memoryRequest(request.headers.get('cookie'), 'write', memoryMessages([...messages,{role:'assistant',content:answer}]));
+            sendEvent({memorySaved:true});
+          } catch { sendEvent({memorySaved:false}); }
+        }
         sendRaw('data: [DONE]\n\n');
       } catch (err) {
         const message = err?.name === 'AbortError'

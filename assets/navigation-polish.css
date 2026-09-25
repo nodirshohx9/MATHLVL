@@ -1,0 +1,14 @@
+#panel-teacher [hidden]{display:none!important}
+#panel-teacher.view-teacher .book-col,
+#panel-teacher.view-teacher #book-list-section-outer{display:none!important}
+#panel-teacher.view-teacher .chat-col{display:flex!important;width:100%;min-width:0}
+#panel-teacher.view-teacher .teacher-layout{display:flex;max-width:960px;margin-inline:auto}
+#panel-teacher.view-teacher .chat-input-wrap{border-radius:20px;box-shadow:0 8px 30px #00000012}
+#book-detail-screen{scroll-margin-top:24px}
+.book-detail-actions .book-start-reading{min-height:48px;border-radius:14px}
+@media(max-width:640px){#panel-teacher.view-teacher .chat-window{min-height:42vh}.book-detail-actions .book-start-reading{width:100%}}
+
+.memory-toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 16px;color:#8997ae;font-size:12px;border-bottom:1px solid #ffffff12}
+.memory-toolbar button{font:inherit;color:inherit;background:transparent;border:1px solid #8798b333;border-radius:10px;padding:7px 11px;cursor:pointer}
+.memory-toolbar button:hover{color:#699aff;border-color:#699aff}
+#panel-teacher.view-teacher .chat-col{flex-direction:column}

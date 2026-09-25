@@ -46,6 +46,12 @@ function activateTab(tab){
   document.querySelectorAll('.bottom-nav-item[data-tab]').forEach(b=> b.classList.toggle('active', b.dataset.tab === tab));
   if(tab === 'profile'){ document.getElementById('bottom-nav-profile').classList.add('active'); }
   document.querySelectorAll('.panel').forEach(p=> p.classList.remove('active'));
+  document.body.classList.remove('reader-mode', 'ai-drawer-open');
+  document.getElementById('teacher-layout').classList.remove('book-mode');
+  closeAiSheet();
+  document.getElementById('book-list-section-outer').hidden = tab !== 'books';
+  document.querySelector('#teacher-layout .book-col').hidden = tab !== 'books';
+  document.querySelector('#teacher-layout .chat-col').hidden = tab !== 'teacher';
 
   if(tab === 'books' || tab === 'teacher'){
     const panel = document.getElementById('panel-teacher');
@@ -55,7 +61,7 @@ function activateTab(tab){
     document.getElementById('panel-teacher-title').textContent = tab === 'books' ? 'Kitoblar' : 'Ustoz AI';
     document.getElementById('panel-teacher-sub').textContent = tab === 'books'
       ? "Matematika kitoblaridan birini tanlab o'qishni boshlang."
-      : "Matematika uchun aqlli yordamchi va MATHLVL kutubxonasi qidiruvi.";
+      : "Savol bering, birga tushuning va mashq qiling.";
     if(tab === 'books' && !document.getElementById('book-list-section-outer')?.dataset.booksRebuild) refreshAllBookViews();
   }else{
     const panel = document.getElementById('panel-' + tab);
@@ -1013,6 +1019,7 @@ function renderTeacherBookRecommendations(messageDiv, matches, verified){
 
 async function sendChat(){
   const input = document.getElementById('chat-input');
+  await restoreTeacherMemory();
   const text = input.value.trim();
   const statusEl = document.getElementById('chat-status');
   const btn = document.getElementById('chat-send');
@@ -1090,7 +1097,7 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
     const res = await fetch('/api/chat-stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: chatHistory.slice(-20), max_tokens: 1000 }),
+      body: JSON.stringify({ system, messages: chatHistory.slice(-20), max_tokens: 1000, memory_scope:'teacher' }),
       signal: chatAbortController.signal
     });
     if(!res.ok || !res.body){
@@ -1115,6 +1122,9 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
         if(payload === '[DONE]') continue;
         let parsed = null;
         try{ parsed = JSON.parse(payload); }catch(e){}
+        if(typeof parsed?.memorySaved === 'boolean'){
+          document.getElementById('memory-status').textContent = parsed.memorySaved ? 'Suhbat saqlandi' : 'Javob tayyor. Xotiraga saqlanmadi.';
+        }
         if(parsed?.error){
           throw new Error(parsed.error);
         }
@@ -1230,6 +1240,7 @@ async function resolveBookForReading(book){
 }
 
 function openBookInChat(book){
+  activateTab('books');
   activeBook = book;
   document.getElementById('teacher-layout').classList.add('book-mode');
   document.body.classList.add('reader-mode');
@@ -1270,6 +1281,12 @@ function openBookInChat(book){
     activeBook = readableBook;
     startReading(readableBook);
   };
+  requestAnimationFrame(()=>{
+    window.scrollTo({top:0, left:0, behavior:'instant'});
+    document.querySelectorAll('main, .main-content, .content').forEach(el=>el.scrollTo({top:0,left:0,behavior:'instant'}));
+    document.getElementById('book-detail-screen').scrollIntoView({block:'start',behavior:'instant'});
+    window.scrollTo({top:0,left:0,behavior:'instant'});
+  });
 }
 
 async function startReading(book){
@@ -2370,7 +2387,7 @@ async function openPurchasedBookFromProfile(bookId){
     book.fileUrl = data.fileUrl || book.fileUrl;
     if(!book.id || !book.fileUrl) throw new Error("Kitob fayli topilmadi");
 
-    activateTab('teacher');
+    activateTab('books');
     window.setTimeout(()=> openBookInChat(book), 60);
   }catch(err){
     const el = document.getElementById('my-books-body');
@@ -2740,7 +2757,7 @@ async function refreshAuthState(){
   try{
     const res = await fetch('/api/auth');
     const data = await res.json();
-    if(data.loggedIn){ showSignedInUI(data); }
+    if(data.loggedIn){ showSignedInUI(data); restoreTeacherMemory(); }
     else{ showSignedOutUI(); }
   }catch(e){ showSignedOutUI(); }
 }
@@ -3348,3 +3365,40 @@ if(mockResultsBtn){
 loadMockTests();
 renderMockTestList();
 
+
+
+let teacherMemoryReady = false;
+let teacherMemoryLoading = null;
+async function restoreTeacherMemory(){
+  if(teacherMemoryReady) return;
+  if(teacherMemoryLoading) return teacherMemoryLoading;
+  teacherMemoryLoading = (async()=>{
+    const label = document.getElementById('memory-status');
+    label.textContent = 'Suhbat yuklanmoqda…';
+    try{
+      const response = await fetch('/api/teacher-memory');
+      if(!response.ok) throw new Error('memory');
+      const data = await response.json();
+      if(!chatHistory.length && Array.isArray(data.messages)){
+        chatHistory = data.messages;
+        for(const message of chatHistory) appendMsg(message.role === 'assistant' ? 'teacher' : 'user', message.content);
+      }
+      teacherMemoryReady = true;
+      label.textContent = 'Oxirgi 20 xabar hisobingizda saqlanadi';
+    }catch{ label.textContent = 'Xotira yuklanmadi. Suhbatni davom ettirishingiz mumkin.'; }
+    finally{teacherMemoryLoading = null;}
+  })();
+  return teacherMemoryLoading;
+}
+document.getElementById('memory-clear').addEventListener('click',async()=>{
+  if(chatAbortController || !confirm('Saqlangan suhbatni tozalaysizmi?')) return;
+  const button=document.getElementById('memory-clear');button.disabled=true;
+  try{
+    const response=await fetch('/api/teacher-memory',{method:'DELETE'});
+    if(!response.ok) throw new Error('memory');
+    chatHistory=[];teacherMemoryReady=true;
+    document.getElementById('chat-window').querySelectorAll('.msg').forEach(el=>el.remove());
+    document.getElementById('memory-status').textContent='Yangi suhbat boshlashingiz mumkin';
+  }catch{document.getElementById('memory-status').textContent='Tozalab bo‘lmadi. Qayta urinib ko‘ring.';}
+  finally{button.disabled=false;}
+});
