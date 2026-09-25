@@ -1,5 +1,6 @@
 import subprocess
 import sys
+from pathlib import Path
 
 STEPS = [
     'scripts/build_official_mock.py',
@@ -40,5 +41,16 @@ STEPS = [
 for step in STEPS:
     print(f'==> {step}', flush=True)
     subprocess.run([sys.executable, step], check=True)
+
+html = Path('index.html').read_text(encoding='utf-8')
+required_reader_functions = (
+    'function setupPageObserver()',
+    'function updateCurrentVisiblePage()',
+    'function getPageRenderState(',
+    'function renderPageInto(',
+)
+missing = [name for name in required_reader_functions if name not in html]
+if missing:
+    raise SystemExit(f'PDF reader build is incomplete: {missing}')
 
 print('MATHLVL production build tayyor.', flush=True)

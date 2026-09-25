@@ -61,7 +61,7 @@ replacement = r'''function setupPageObserver(){
 // MATHLVL_READER_OBSERVER_RUNTIME_FIX_V4
 '''
 
-pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n(?=\nfunction updateCurrentVisiblePage\(\))", re.S)
+pattern = re.compile(r"function setupPageObserver\(\)\{.*?\n\}\n", re.S)
 s2, n = pattern.subn(replacement.rstrip('\n') + "\n", s, count=1)
 if n != 1:
     raise SystemExit(f'setupPageObserver replacement failed: {n}')

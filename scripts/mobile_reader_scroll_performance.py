@@ -212,7 +212,7 @@ function scheduleMobileReaderPageRender(item, num){
 # One PDF canvas render at a time on phones. Rendering multiple pages concurrently is
 # the main source of the freeze felt while dragging the book with a finger.
 observer_pattern = re.compile(
-    r"function setupPageObserver\(\)\{.*?\n\}\n\n// ---- Ekrandan uzoq sahifalarni",
+    r"function setupPageObserver\(\)\{.*?\n\}\n",
     re.S,
 )
 observer_replacement = r'''function setupPageObserver(){
@@ -273,7 +273,7 @@ observer_replacement = r'''function setupPageObserver(){
   pumpMobileRenderQueue();
 }
 
-// ---- Ekrandan uzoq sahifalarni'''
+'''
 s2, n = observer_pattern.subn(observer_replacement, s, count=1)
 if n != 1:
     raise SystemExit(f'setupPageObserver replacement failed: {n}')
