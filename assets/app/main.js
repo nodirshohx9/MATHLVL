@@ -68,6 +68,7 @@ function activateTab(tab){
     if(panel) panel.classList.add('active');
   }
   window.scrollTo(0,0);
+  if(tab === 'teacher') refreshTeacherAiUsage();
 }
 document.querySelectorAll('.sidebar-nav-item[data-sidebar-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -85,6 +86,7 @@ document.querySelectorAll('.bottom-nav-item[data-tab]').forEach(btn=>{
 });
 document.getElementById('bottom-nav-profile').addEventListener('click', ()=> activateTab('profile'));
 document.getElementById('sidebar-logo-btn').addEventListener('click', ()=> activateTab('home'));
+document.getElementById('book-back')?.addEventListener('click', ()=> activateTab('home'));
 
 // ---------- Helper: call Claude API ----------
 async function callMathlvlAI({system, messages, tools, max_tokens, mode}){
@@ -110,6 +112,42 @@ function extractText(data){
   return (data.content || []).map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('\n');
 }
 function stripFences(text){ return text.replace(/```json/g,'').replace(/```/g,'').trim(); }
+let teacherUsageLoading = null;
+async function refreshTeacherAiUsage(){
+  const panel = document.getElementById('teacher-ai-usage');
+  if(!panel) return;
+  const session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE || {};
+  if(!session.loggedIn){ panel.hidden = true; return; }
+  panel.hidden = false;
+  if(teacherUsageLoading) return teacherUsageLoading;
+  teacherUsageLoading = (async()=>{
+    try{
+      const response = await fetch('/api/chat-usage',{credentials:'include',cache:'no-store'});
+      const data = await response.json().catch(()=>({}));
+      if(!response.ok) throw new Error(data.error || 'Limit ma’lumoti mavjud emas.');
+      const remaining = document.getElementById('teacher-ai-usage-remaining');
+      const count = document.getElementById('teacher-ai-usage-count');
+      const reset = document.getElementById('teacher-ai-usage-reset');
+      const plan = document.getElementById('teacher-ai-usage-plan');
+      const track = document.getElementById('teacher-ai-usage-track');
+      const fill = document.getElementById('teacher-ai-usage-fill');
+      if(remaining) remaining.textContent = String(data.dailyRemaining);
+      if(count) count.textContent = `Bugun ${data.dailyUsed} / ${data.dailyLimit} ta so‘rov ishlatildi`;
+      if(plan) plan.textContent = data.isGuest ? 'Mehmon • kunlik limit' : 'Akkaunt • kunlik limit';
+      if(reset){ const time = new Date(data.resetsAt).toLocaleTimeString('uz-UZ',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'}); reset.textContent = `Yangilanish: ${time} (Toshkent)`; }
+      if(track){ track.setAttribute('aria-valuemax',String(data.dailyLimit)); track.setAttribute('aria-valuenow',String(data.dailyUsed)); }
+      if(fill) fill.style.width = `${Math.min(100,Math.max(0,(data.dailyUsed/data.dailyLimit)*100))}%`;
+      panel.classList.remove('is-error');
+    }catch(error){
+      const remaining = document.getElementById('teacher-ai-usage-remaining');
+      const count = document.getElementById('teacher-ai-usage-count');
+      if(remaining) remaining.textContent = '—';
+      if(count) count.textContent = 'Limit ma’lumoti hozir olinmadi';
+      panel.classList.add('is-error');
+    }finally{ teacherUsageLoading = null; }
+  })();
+  return teacherUsageLoading;
+}
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
 // ---------- Image upload (Solve) ----------
@@ -1173,6 +1211,7 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
     btn.querySelector('.chat-send-icon')?.removeAttribute('hidden');
     btn.disabled = false;
     chatAbortController = null;
+    refreshTeacherAiUsage();
   }
 }
 document.getElementById('chat-send').addEventListener('click', sendChat);
@@ -2790,6 +2829,7 @@ async function refreshAuthState(){
   }catch(e){
     showSignedOutUI();
   }
+  window.MATHLVL_CURRENT_SESSION = data;
   window.dispatchEvent(new CustomEvent('mathlvl:authchange', { detail:data }));
   return data;
 }
@@ -3006,7 +3046,14 @@ let mockOpenAnswers = [];
 let mockSecondsLeft = 0;
 let mockTimerId = null;
 const MOCK_DRAFT_KEY = 'mathlvl_mock_draft_v1';
+function isAccountMockSession(session=window.MATHLVL_CURRENT_SESSION||window.MATHLVL_AUTH_STATE||{}){
+  return !!session.loggedIn && !session.isGuest;
+}
+function clearGuestMockStorage(){
+  try{ localStorage.removeItem(MOCK_DRAFT_KEY); localStorage.removeItem('mathlvl_mock_results'); }catch(e){}
+}
 function saveMockDraft(){
+  if(!isAccountMockSession()){ clearGuestMockStorage(); return; }
   if(!activeMock) return;
   try{
     localStorage.setItem(MOCK_DRAFT_KEY, JSON.stringify({
@@ -3020,6 +3067,7 @@ function saveMockDraft(){
   }catch(e){}
 }
 function loadMockDraft(testId){
+  if(!isAccountMockSession()){ clearGuestMockStorage(); return null; }
   try{
     const draft = JSON.parse(localStorage.getItem(MOCK_DRAFT_KEY) || 'null');
     if(!draft || draft.testId !== testId) return null;
@@ -3032,31 +3080,28 @@ function clearMockDraft(){
 }
 async function syncMockHistoryFromServer(){
   try{
+    let session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE;
+    if(!session || typeof session.loggedIn !== 'boolean'){
+      const authRes = await fetch('/api/auth',{credentials:'include',cache:'no-store'});
+      session = await authRes.json();
+      window.MATHLVL_CURRENT_SESSION = session;
+    }
+    if(!isAccountMockSession(session)){ clearGuestMockStorage(); return; }
     const res = await fetch('/api/progress?action=mock-history', {credentials:'include',cache:'no-store'});
     if(!res.ok) return;
     const data = await res.json();
-    let local = [];
-    try{ local = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); }catch(e){}
-    const merged = new Map();
-    [...(data.results || []), ...local].forEach(item=>{
-      if(!item || !item.at || !item.title) return;
-      const key = `${item.title}|${item.at}`;
-      if(!merged.has(key)) merged.set(key, item);
-    });
-    const results = Array.from(merged.values())
-      .sort((a,b)=>new Date(b.at).getTime()-new Date(a.at).getTime())
-      .slice(0,50);
-    localStorage.setItem('mathlvl_mock_results', JSON.stringify(results));
-
-    const remoteKeys = new Set((data.results || []).map(item=>`${item.title}|${item.at}`));
-    await Promise.all(local.filter(item=>item?.title && item?.at && !remoteKeys.has(`${item.title}|${item.at}`)).slice(0,20).map(item=>
-      fetch('/api/progress?action=mock-history', {
-        method:'POST',credentials:'include',headers:{'Content-Type':'application/json'},body:JSON.stringify(item)
-      }).catch(()=>{})
-    ));
+    localStorage.setItem('mathlvl_mock_results', JSON.stringify(Array.isArray(data.results) ? data.results : []));
   }catch(e){}
 }
+window.addEventListener('mathlvl:authchange', event=>{
+  window.MATHLVL_CURRENT_SESSION = event.detail || {};
+  if(isAccountMockSession(event.detail)) syncMockHistoryFromServer();
+  else clearGuestMockStorage();
+  if(typeof renderMockTestList === 'function') renderMockTestList();
+  refreshTeacherAiUsage();
+});
 function saveMockResultToServer(result){
+  if(!isAccountMockSession()) return;
   fetch('/api/progress?action=mock-history', {
     method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(result)
   }).catch(()=>{});
@@ -3313,12 +3358,14 @@ function finishMockTest(autoFinish){
     items:feedbackItems
   };
   const result = {title:activeMock.title,correct,total:totalElements,answered,percent,at:new Date().toISOString()};
-  try{
-    const history = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]');
-    history.unshift(result);
-    localStorage.setItem('mathlvl_mock_results', JSON.stringify(history.slice(0,20)));
-  }catch(e){}
-  saveMockResultToServer(result);
+  if(isAccountMockSession()){
+    try{
+      const history = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]');
+      history.unshift(result);
+      localStorage.setItem('mathlvl_mock_results', JSON.stringify(history.slice(0,20)));
+    }catch(e){}
+    saveMockResultToServer(result);
+  }else clearGuestMockStorage();
 
   clearMockDraft();
   const list = document.getElementById('mocktest-list');
@@ -3378,12 +3425,14 @@ const mockResultsBtn = document.getElementById('mocktest-results-btn');
 if(mockResultsBtn){
   mockResultsBtn.addEventListener('click', () => {
     let history = [];
-    try{ history = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); }catch(e){}
+    if(isAccountMockSession()){
+      try{ history = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); }catch(e){}
+    }else clearGuestMockStorage();
     const list = document.getElementById('mocktest-list');
     list.innerHTML = `
       <div class="glass-card" style="padding:20px;">
         <h3 style="margin-top:0;">Oxirgi natijalar</h3>
-        ${history.length ? history.map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);"><b>${r.title}</b><div style="font-size:12px;color:var(--text-dim);">${r.correct}/${r.total} element • ${r.percent}%</div></div>`).join('') : '<div class="empty-note">Hali natija yo‘q.</div>'}
+        ${history.length ? history.map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);"><b>${r.title}</b><div style="font-size:12px;color:var(--text-dim);">${r.correct}/${r.total} element • ${r.percent}%</div></div>`).join('') : (isAccountMockSession() ? '<div class="empty-note">Hali natija yo‘q.</div>' : '<div class="empty-note">Mehmon rejimida test natijalari saqlanmaydi. Hisobga kirsangiz, natijalar hisobingizda saqlanadi.</div>')}
         <button class="ghost-btn" id="mock-results-back" type="button" style="margin-top:16px;">Orqaga</button>
       </div>`;
     document.getElementById('mock-results-back').addEventListener('click', renderMockTestList);
