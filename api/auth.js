@@ -43,9 +43,10 @@ export default async function handler(req, res) {
     }
     return res.status(200).json({
       loggedIn: true,
-      email: session.email,
-      name: session.name,
-      picture: session.picture
+      email: session.guest ? null : session.email,
+      name: session.guest ? 'Mehmon (sinov)' : session.name,
+      picture: session.guest ? null : session.picture,
+      isGuest: !!session.guest
     });
   }
 

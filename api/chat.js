@@ -1,5 +1,6 @@
 import {memoryRequest} from '../lib/memory.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
+import { checkGuestRateLimit } from '../lib/guest-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 import crypto from 'crypto';
 
@@ -133,8 +134,10 @@ export default async function handler(req, res) {
   if(req.query?.action === 'memory'){
     res.setHeader('Cache-Control','private, no-store');
     if(!['GET','DELETE'].includes(req.method))return res.status(405).json({error:'Method not allowed'});
-    if(!verifySession(req))return res.status(401).json({error:'Hisobingizga kiring.'});
-    if(req.method==='DELETE' && req.headers.origin && req.headers.origin!==`https://${req.headers.host}`)return res.status(403).json({error:'Forbidden'});
+    const session=verifySession(req);
+    if(!session)return res.status(401).json({error:'Hisobingizga kiring.'});
+    if(req.method==='DELETE'&&req.headers.origin&&req.headers.origin!==`https://${req.headers.host}`)return res.status(403).json({error:'Forbidden'});
+    if(session.guest)return res.status(200).json({messages:[],isGuest:true});
     try{return res.status(200).json(await memoryRequest(req.headers.cookie,req.method==='GET'?'read':'clear'));}
     catch{return res.status(503).json({error:'Suhbat xotirasi hozir mavjud emas.'});}
   }
@@ -147,6 +150,12 @@ export default async function handler(req, res) {
   let limit;
   try { limit = await checkRateLimit(session.email); } catch { return res.status(503).json({error:'AI vaqtincha band. Qayta urinib ko‘ring.'}); }
   if (!limit.ok) return res.status(429).json({ error: limit.message });
+  if (session.guest) {
+    let guestLimit;
+    try { guestLimit=await checkGuestRateLimit(req,{scope:'ai',perMinute:6,perDay:40}); }
+    catch { return res.status(503).json({error:'Mehmon rejimidagi AI vaqtincha ishlamayapti.'}); }
+    if (!guestLimit.ok) return res.status(guestLimit.status).json({error:guestLimit.message});
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' });

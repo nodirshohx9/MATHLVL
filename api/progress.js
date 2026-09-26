@@ -81,12 +81,13 @@ async function getMockHistory(email) {
   return results.slice(0, 50);
 }
 
-async function saveMockHistory(email, input) {
+async function saveMockHistory(email, input, isGuest = false) {
   const result = cleanMockResult(input);
   if (!result) return null;
   const key = mockKey(email);
   const id = crypto.createHash('sha256').update(`${result.title}|${result.at}`).digest('hex').slice(0, 24);
   await redisCommand(['HSET', key, id, JSON.stringify({ id, ...result })]);
+  if (isGuest) await redisCommand(['EXPIRE', key, 12 * 60 * 60]);
 
   const flat = await redisCommand(['HGETALL', key]);
   if ((flat || []).length / 2 > 60) {
@@ -117,7 +118,7 @@ export default async function handler(req, res) {
     if (action === 'mock-history') {
       if (req.method === 'GET') return res.status(200).json({ results: await getMockHistory(session.email) });
       if (req.method === 'POST') {
-        const result = await saveMockHistory(session.email, req.body);
+        const result = await saveMockHistory(session.email, req.body, !!session.guest);
         if (!result) return res.status(400).json({ error: 'Natija noto‘g‘ri' });
         return res.status(201).json({ ok: true, result });
       }
@@ -142,6 +143,7 @@ export default async function handler(req, res) {
       const clean = cleanProgress(req.body);
       if (!clean) return res.status(400).json({ error: 'notogri_progress' });
       await redisCommand(['HSET', key, clean.bookId, JSON.stringify(clean)]);
+      if (session.guest) await redisCommand(['EXPIRE', key, 12 * 60 * 60]);
       return res.status(200).json({ ok: true, progress: clean });
     }
 
