@@ -60,3 +60,8 @@ for page in ['index.html','admin.html']:
         if not Path(asset.split('?')[0].lstrip('/')).is_file():
             raise SystemExit(f'Missing asset: {asset}')
 subprocess.run(['node', '--test', 'tests/chat.test.mjs'], check=True)
+
+# Branding assets are referenced outside /assets/ as well.
+logo = Path('mathlvl-logo.png')
+if not logo.is_file() or logo.read_bytes()[:8] != b'\x89PNG\r\n\x1a\n':
+    raise SystemExit('Missing or invalid mathlvl-logo.png')
