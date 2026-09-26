@@ -1,55 +1,39 @@
 (() => {
-  const authState={ready:false,loggedIn:false,isGuest:false,user:null};
+  const authState={ready:false,loggedIn:false,user:null};
   const pendingKey='mathlvl_pending_auth_tab';
   let pendingTab='home';
   const gate=document.getElementById('mathlvl-auth-gate');
-  const guestLogin=document.getElementById('mathlvl-guest-login');
-  const guestButton=document.getElementById('mathlvl-auth-guest');
-  const guestStatus=document.getElementById('mathlvl-auth-status');
+  const loginOpen=document.getElementById('mathlvl-login-open');
   const title=document.getElementById('mathlvl-auth-title');
   const copy=document.getElementById('mathlvl-auth-copy');
   const messages={
     generic:['Kirish yoki ro‘yxatdan o‘tish','Progressingiz va hisob ma’lumotlaringiz saqlanishi uchun Google orqali davom eting.'],
-    teacher:['Ustoz AI’dan foydalanish uchun kiring','Ustoz AI suhbatlari va progress saqlanishi uchun Google orqali kiring. Mehmon rejimida ham sinab ko‘rishingiz mumkin.'],
-    mock:['Mock testni boshlash uchun kiring','Natijangiz va test tarixini saqlash uchun Google orqali kiring yoki vaqtinchalik mehmon rejimida sinab ko‘ring.'],
-    book:['O‘qishni boshlash uchun kiring','Oxirgi o‘qilgan sahifa va kitob progressini saqlash uchun Google orqali kiring yoki mehmon sifatida sinab ko‘ring.'],
-    solve:['Masalani yechish uchun kiring','Yechimni olish uchun Google orqali kiring yoki vaqtinchalik mehmon rejimida sinab ko‘ring.'],
+    teacher:['Ustoz AI’dan foydalanish uchun kiring','Ustoz AI suhbatlari va progress saqlanishi uchun Google orqali davom eting.'],
+    mock:['Mock testni boshlash uchun kiring','Natijangiz va test tarixini hisobingizda saqlash uchun Google orqali davom eting.'],
+    book:['O‘qishni boshlash uchun kiring','Oxirgi o‘qilgan sahifa va kitob progressini saqlash uchun Google orqali davom eting.'],
+    solve:['Masalani yechish uchun kiring','Yechimni olish uchun Google orqali davom eting.'],
     plus:['MATHLVL Plus uchun hisob kerak','Obuna, xarid va sovg‘alarni hisobingizga bog‘lash uchun Google orqali kiring.']
   };
   function openGate(feature='generic',tab='home'){
     const msg=messages[feature]||messages.generic;
     pendingTab=tab||'home';
     title.textContent=msg[0];copy.textContent=msg[1];
-    if(guestStatus)guestStatus.textContent='';
     gate.hidden=false;document.documentElement.style.overflow='hidden';
     setTimeout(()=>document.getElementById('mathlvl-auth-google')?.focus(),20);
   }
   function closeGate(){gate.hidden=true;document.documentElement.style.overflow=''}
   function rememberPendingTab(){try{localStorage.setItem(pendingKey,pendingTab||'home')}catch{}}
   function goGoogle(){rememberPendingTab();window.location.assign('/api/auth-google-start')}
-  async function goGuest(){
-    if(!guestButton||guestButton.disabled)return;
-    guestButton.disabled=true;guestButton.textContent='Mehmon sessiyasi ochilmoqda…';
-    if(guestStatus)guestStatus.textContent='';
-    try{
-      const response=await fetch('/api/auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'guest'})});
-      const data=await response.json().catch(()=>({}));
-      if(!response.ok||!data.ok)throw new Error(data.error||'Mehmon rejimini yoqib bo‘lmadi.');
-      rememberPendingTab();window.location.reload();
-    }catch(error){
-      if(guestStatus)guestStatus.textContent=error.message||'Mehmon rejimini yoqib bo‘lmadi.';
-      guestButton.disabled=false;guestButton.textContent='Mehmon sifatida sinab ko‘rish';
-    }
-  }
-  function updateGuestButton(){
-    if(!authState.ready||authState.loggedIn){guestLogin?.classList.remove('ready');if(guestLogin)guestLogin.hidden=authState.loggedIn;return}
-    if(guestLogin){guestLogin.hidden=false;guestLogin.classList.add('ready')}
+  function updateLoginButton(){
+    if(!authState.ready){loginOpen?.classList.remove('ready');return}
+    if(authState.loggedIn){loginOpen?.classList.remove('ready');if(loginOpen)loginOpen.hidden=true;return}
+    if(loginOpen){loginOpen.hidden=false;loginOpen.classList.add('ready')}
   }
   function applyAuthState(data={}){
-    authState.loggedIn=!!data.loggedIn;authState.isGuest=!!data.isGuest;
+    authState.loggedIn=!!data.loggedIn&&!data.isGuest;
     authState.user=authState.loggedIn?data:null;
-    authState.ready=true;updateGuestButton();
-    if(!authState.loggedIn || authState.isGuest){
+    authState.ready=true;updateLoginButton();
+    if(!authState.loggedIn){
       try{localStorage.removeItem('mathlvl_mock_results');localStorage.removeItem('mathlvl_mock_draft_v1')}catch{}
     }
     if(authState.loggedIn){
@@ -71,9 +55,16 @@
     openGate(feature,tab);return false;
   };
   document.addEventListener('click',event=>{
-    if(!authState.ready||authState.loggedIn)return;
+    if(authState.loggedIn)return;
     const target=event.target.closest('button,a,[role="button"],.dash-quick-card,.sidebar-nav-item,.bottom-nav-item');
     if(!target)return;
+    if(target.id==='sidebar-login-open'){
+      event.preventDefault();event.stopImmediatePropagation();
+      document.getElementById('sidebar-profile-menu')?.setAttribute('hidden','');
+      document.getElementById('sidebar-profile-wrap')?.classList.remove('open');
+      document.getElementById('sidebar-footer')?.setAttribute('aria-expanded','false');
+      openGate('generic','profile');return
+    }
     const solve=target.id==='solve-btn'||!!target.closest('#solve-btn');
     if(solve){event.preventDefault();event.stopImmediatePropagation();openGate('solve','home');return}
     const teacher=target.matches('[data-sidebar-tab="teacher"],[data-tab="teacher"],#dash-quick-teacher')||!!target.closest('#dash-quick-teacher');
@@ -94,8 +85,7 @@
       wrapped.__mathlvlAuthWrapped=true;window.openBookInChat=wrapped;
     }
   }
-  guestLogin?.addEventListener('click',()=>openGate('generic','home'));
-  guestButton?.addEventListener('click',goGuest);
+  loginOpen?.addEventListener('click',()=>openGate('generic','profile'));
   document.getElementById('mathlvl-auth-google')?.addEventListener('click',goGoogle);
   document.getElementById('mathlvl-auth-later')?.addEventListener('click',closeGate);
   document.getElementById('mathlvl-auth-close')?.addEventListener('click',closeGate);
