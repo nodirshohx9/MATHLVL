@@ -79,7 +79,7 @@
               aria-expanded="false" aria-controls="sidebar-profile-menu">
         <div class="sidebar-footer-avatar" id="sidebar-footer-avatar">?</div>
         <div class="sidebar-footer-text">
-          <div class="sft-name" id="sidebar-footer-name">Mehmon</div>
+          <div class="sft-name" id="sidebar-footer-name">Hisobga kiring</div>
           <div class="sft-plan" id="sidebar-footer-plan">Bepul plan</div>
         </div>
         <svg class="profile-chevron" viewBox="0 0 24 24" aria-hidden="true">
@@ -110,7 +110,7 @@
         </button>
 
         
-        <button class="sidebar-profile-action" id="sidebar-login-open" data-guest-only="true" type="button">
+        <button class="sidebar-profile-action" id="sidebar-login-open" data-signed-out-only="true" type="button">
           <svg viewBox="0 0 24 24"><path d="M10 5H5v14h5"/><path d="M14 8l4 4-4 4"/><path d="M8 12h10"/></svg>
           <span>Kirish</span>
         </button>
@@ -592,7 +592,7 @@
       <div id="current-plan-note" style="display:none;"></div>
       <div class="plan-ai-limit-panel" id="plan-ai-usage-copy">
         <div class="plan-ai-limit-icon" aria-hidden="true">✦</div>
-        <div><strong>Ustoz AI limiti</strong><p>Akkauntda kuniga 100 ta, mehmon rejimida 40 ta so‘rov. Limit har kuni Toshkent vaqti bilan 05:00 da yangilanadi.</p></div>
+        <div><strong>Ustoz AI limiti</strong><p>Akkauntda kuniga 100 ta Ustoz AI so‘rovi. Limit har kuni Toshkent vaqti bilan 05:00 da yangilanadi.</p></div>
       </div>
 
       <div class="plan-toggle">
@@ -860,7 +860,7 @@ UUIAAAAAAAAA
 <!-- MATHLVL_AUTH_GATE_START -->
 <link rel="stylesheet" href="/assets/app/part-05.css">
 
-<button id="mathlvl-guest-login" type="button" aria-label="MATHLVL hisobiga kirish yoki ro‘yxatdan o‘tish">
+<button id="mathlvl-login-open" type="button" aria-label="MATHLVL hisobiga kirish">
   <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
   <span>Kirish</span>
 </button>
@@ -876,14 +876,12 @@ UUIAAAAAAAAA
     <div class="mathlvl-auth-actions">
       <button class="mathlvl-auth-provider mathlvl-auth-google" id="mathlvl-auth-google" type="button">
         <svg viewBox="0 0 18 18" aria-hidden="true"><path fill="#4285F4" d="M17.6 9.2c0-.6-.05-1.2-.15-1.8H9v3.4h4.8c-.2 1.1-.85 2-1.8 2.6v2.2h2.9c1.7-1.55 2.7-3.85 2.7-6.4z"/><path fill="#34A853" d="M9 18c2.4 0 4.45-.8 5.9-2.15l-2.9-2.2c-.8.55-1.85.85-3 .85-2.3 0-4.25-1.55-4.95-3.65H1.05v2.3C2.5 15.95 5.5 18 9 18z"/><path fill="#FBBC05" d="M4.05 10.85c-.2-.55-.3-1.15-.3-1.85s.1-1.3.3-1.85V4.85H1.05C.4 6.15 0 7.55 0 9s.4 2.85 1.05 4.15l3-2.3z"/><path fill="#EA4335" d="M9 3.58c1.3 0 2.5.45 3.4 1.35l2.55-2.55C13.45.9 11.4 0 9 0 5.5 0 2.5 2.05 1.05 4.85l3 2.3C4.75 5.05 6.7 3.58 9 3.58z"/></svg>
-        <span>Google bilan davom etish</span>
+        <span>Google bilan kirish</span>
       </button>
-      <button class="mathlvl-auth-provider mathlvl-auth-guest" id="mathlvl-auth-guest" type="button"><span>Mehmon sifatida sinab ko‘rish</span></button>
-      <button class="mathlvl-auth-secondary" id="mathlvl-auth-later" type="button">Hozir emas</button>
+            <button class="mathlvl-auth-secondary" id="mathlvl-auth-later" type="button">Hozir emas</button>
     </div>
-    <div class="mathlvl-auth-guest-note">Vaqtinchalik 12 soatlik sinov. Progress shu brauzerda vaqtincha saqlanadi; AI suhbat xotiraga yozilmaydi. Plus va xaridlar mehmon rejimida ishlamaydi.</div>
     <div class="mathlvl-auth-status" id="mathlvl-auth-status" role="status" aria-live="polite"></div>
-    <div class="mathlvl-auth-note">Google bilan kirsangiz, hisob va progress uzoq muddat saqlanadi.</div>
+    <div class="mathlvl-auth-note">Google orqali kirsangiz, hisob va o‘qish jarayoni saqlanadi.</div>
   </div>
 </div>
 
