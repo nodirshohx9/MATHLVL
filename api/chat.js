@@ -72,6 +72,32 @@ async function checkRateLimit(email) {
   return { ok: true };
 }
 
+async function readUsage(req, session) {
+  if (!REDIS_URL || !REDIS_TOKEN) throw new Error('Redis sozlanmagan');
+  const emailId = crypto.createHash('sha256').update(String(session.email).toLowerCase()).digest('hex').slice(0,24);
+  const now = Date.now();
+  const minuteBucket = Math.floor(now / 60000);
+  const dayBucket = new Date(now).toISOString().slice(0,10);
+  const keys = [
+    `mathlvl:ai:min:${emailId}:${minuteBucket}`,
+    `mathlvl:ai:day:${emailId}:${dayBucket}`
+  ];
+  let minuteLimit = 15, dayLimit = 100;
+  if (session.guest) {
+    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
+      || String(req.headers['x-real-ip'] || '').trim() || req.socket?.remoteAddress || '';
+    if (!ip) throw new Error('Mehmon IP topilmadi');
+    const ipId = crypto.createHash('sha256').update(ip).digest('hex').slice(0,24);
+    keys.push(`mathlvl:guest:ai:min:${ipId}:${minuteBucket}`, `mathlvl:guest:ai:day:${ipId}:${dayBucket}`);
+    minuteLimit = 6; dayLimit = 40;
+  }
+  const counts = await Promise.all(keys.map(async key => Number(await redisCommand(['GET',key])) || 0));
+  const minuteUsed = Math.max(counts[0], session.guest ? counts[2] : 0);
+  const dayUsed = Math.max(counts[1], session.guest ? counts[3] : 0);
+  const today = new Date(now);
+  const resetsAt = new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate()+1));
+  return { isGuest:!!session.guest, dailyLimit:dayLimit, dailyUsed:dayUsed, dailyRemaining:Math.max(0,dayLimit-dayUsed), minuteLimit, minuteUsed, minuteRemaining:Math.max(0,minuteLimit-minuteUsed), resetsAt:resetsAt.toISOString(), intervalHours:24 };
+}
 function toGeminiParts(content) {
   if (typeof content === 'string') return [{ text: content }];
   if (Array.isArray(content)) {
@@ -131,6 +157,15 @@ async function requestGeminiWithFallback(apiKey, body) {
 }
 
 export default async function handler(req, res) {
+  if(req.query?.action === 'usage'){
+    res.setHeader('Cache-Control','private, no-store, max-age=0');
+    res.setHeader('Pragma','no-cache');
+    if(req.method !== 'GET') return res.status(405).json({error:'Faqat GET so‘rovi qabul qilinadi'});
+    const session = verifySession(req);
+    if(!session) return res.status(401).json({error:'Hisob yoki mehmon sessiyasi topilmadi.'});
+    try { return res.status(200).json(await readUsage(req,session)); }
+    catch(error) { console.error('CHAT_USAGE_ERROR:',error); return res.status(503).json({error:'Limit ma’lumoti vaqtincha olinmadi.'}); }
+  }
   if(req.query?.action === 'memory'){
     res.setHeader('Cache-Control','private, no-store');
     if(!['GET','DELETE'].includes(req.method))return res.status(405).json({error:'Method not allowed'});
