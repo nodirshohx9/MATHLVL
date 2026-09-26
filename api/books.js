@@ -1,5 +1,6 @@
 import crypto from 'crypto';
 import { Readable } from 'stream';
+import { checkGuestRateLimit } from '../lib/guest-limits.js';
 
 export const config = { maxDuration: 30 };
 
@@ -13,7 +14,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
   });
   return cookies;
 }
@@ -23,7 +24,7 @@ function verifySignedCookie(token, secret) {
   const [data, sig] = token.split('.');
   if (!data || !sig) return null;
   const expected = crypto.createHmac('sha256', secret).update(data).digest('hex');
-  if (sig.length !== expected.length) return null;
+  if (!/^[a-f0-9]{64}$/i.test(sig)) return null;
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
@@ -149,7 +150,7 @@ async function callGeminiForBooks(parts, maxOutputTokens = 700) {
     generationConfig: {
       maxOutputTokens,
       temperature: 0.1,
-      thinkingConfig: { thinkingBudget: 0 }
+      thinkingConfig: { thinkingLevel: 'low' }
     }
   };
 
@@ -518,6 +519,19 @@ export default async function handler(req, res) {
       const query = String(req.body?.query || '').trim().slice(0, 500);
       if (query.length < 2) return res.status(400).json({ error: 'Mavzuni yozing' });
 
+      let limit;
+      try {
+        limit = await checkGuestRateLimit(req, {
+          scope: 'book-search',
+          perMinute: 8,
+          perDay: 80,
+          message: 'Bugungi kitob qidiruvi limiti tugadi. Keyinroq urinib ko‘ring.'
+        });
+      } catch {
+        return res.status(503).json({ error: 'Kitob qidiruvi vaqtincha ishlamayapti.' });
+      }
+      if (!limit.ok) return res.status(limit.status).json({ error: limit.message });
+
       const payload = await searchBooksByTopic(query);
       res.setHeader('Cache-Control', 'private, no-store');
       return res.status(200).json(payload);
@@ -613,6 +627,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Bu metod qo'llab-quvvatlanmaydi" });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('BOOKS_API_ERROR:', err);
+    return res.status(500).json({ error: 'Kitoblar bilan ishlashda xatolik yuz berdi.' });
   }
 }
