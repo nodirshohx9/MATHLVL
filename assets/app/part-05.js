@@ -32,7 +32,7 @@
     guestButton.disabled=true;guestButton.textContent='Mehmon sessiyasi ochilmoqda…';
     if(guestStatus)guestStatus.textContent='';
     try{
-      const response=await fetch('/api/guest-session',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:'{}'});
+      const response=await fetch('/api/auth',{method:'POST',credentials:'same-origin',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'guest'})});
       const data=await response.json().catch(()=>({}));
       if(!response.ok||!data.ok)throw new Error(data.error||'Mehmon rejimini yoqib bo‘lmadi.');
       rememberPendingTab();window.location.reload();
