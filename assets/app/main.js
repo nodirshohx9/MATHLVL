@@ -3322,9 +3322,10 @@ function finishMockTest(autoFinish){
       <div style="color:var(--text-dim);margin:8px 0 8px;">Yopiq: ${correctClosed}/${activeMock.closed.length} • Ochiq A/B: ${correctOpen}/${totalElements-activeMock.closed.length} • Javob berilgan: ${answered}/${totalElements}${autoFinish?' • Vaqt tugadi':''}</div>
       <div style="max-width:650px;margin:0 auto 20px;font-size:12px;line-height:1.55;color:var(--text-dim);">Bu MATHLVL mashq ko‘rsatkichi. Rasmiy Milliy sertifikat natijasi oddiy foiz bilan emas, BBAning statistik baholash usuli (Rash modeli) asosida hisoblanadi.</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button class="glow-btn" id="mock-ai-feedback" type="button">✨ Ustoz AI tahlili · PLUS</button>
+        <button class="glow-btn" id="mock-ai-feedback" type="button">✨ Ustoz AI tahlili</button>
         <button class="ghost-btn" id="mock-back-list" type="button">Mock testlarga qaytish</button>
       </div>
+      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">Mehmonlar kuniga 1 marta bepul AI tahlilini sinab ko‘rishi mumkin. Oddiy hisoblarda bu funksiya PLUS tarifida.</div>
       <div id="mock-ai-feedback-box" style="display:none;max-width:720px;margin:18px auto 0;text-align:left;padding:18px;border:1px solid var(--border-soft);border-radius:14px;background:rgba(255,255,255,.025);line-height:1.65;"></div>
     </div>`;
   document.getElementById('mock-back-list').addEventListener('click', renderMockTestList);
@@ -3335,14 +3336,6 @@ function finishMockTest(autoFinish){
     box.style.display = 'block';
     box.textContent = "Ustoz AI natijangizni tahlil qilmoqda...";
     try{
-      const plusRes = await fetch('/api/gift?action=status', {credentials:'include', cache:'no-store'});
-      const plusData = await plusRes.json().catch(()=>({active:false}));
-      if(!plusData.active){
-        box.style.display = 'none';
-        await openPlanSelect({active:false});
-        return;
-      }
-
       const res = await fetch('/api/mock-feedback', {
         method:'POST',
         credentials:'include',
