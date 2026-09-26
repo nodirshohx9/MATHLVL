@@ -16,7 +16,7 @@ function verifySession(cookieVal,secret){
   const [data,sig]=cookieVal.split('.');
   if(!data||!sig)return null;
   const expected=crypto.createHmac('sha256',secret).update(data).digest('hex');
-  if(sig.length!==expected.length||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(expected)))return null;
+  if(!/^[a-f0-9]{64}$/i.test(sig)||!crypto.timingSafeEqual(Buffer.from(sig),Buffer.from(expected)))return null;
   try{
     const payload=JSON.parse(Buffer.from(data,'base64url').toString());
     return payload.email&&payload.exp&&payload.exp>Date.now()?payload:null;
