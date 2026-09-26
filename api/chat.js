@@ -37,7 +37,7 @@ function verifySession(req) {
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
-    if (!payload.email || !payload.exp || payload.exp < Date.now()) return null;
+    if (!payload.email || !payload.exp || payload.exp < Date.now() || payload.guest) return null;
     return payload;
   } catch {
     return null;
