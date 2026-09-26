@@ -17,13 +17,21 @@ test('math renderer distinguishes block and inline delimiters',()=>{
 test('book tutor sends successful history and displays chunks before stream ends',async()=>{
  const bubble={classList:{remove(){}},textContent:''};const win={appendChild(){},scrollHeight:10};const send={disabled:false};
  const requests=[];let n=0;
- const ctx={Map,TextDecoder,AbortSignal,activeBook:{id:'book-a',title:'Test'},currentVisiblePage:1,readerNumPages:3,
+ const ctx={Map,TextDecoder,AbortSignal,window:{MATHLVL_PLUS_ACTIVE:true},refreshAiUsage(){},activeBook:{id:'book-a',title:'Test'},currentVisiblePage:1,readerNumPages:3,
  document:{getElementById:id=>id==='ai-sheet-send'?send:id==='ai-sheet-chat'?win:null,createElement:()=>({querySelector:()=>bubble})},
  appendAiSheetMsg(){},getCurrentPageText:async()=>'',cleanAiText:x=>x,renderAiAnswer:(el,text)=>el.textContent=text,
  fetch:async(_,opts)=>{requests.push(JSON.parse(opts.body));let i=0;return {ok:true,body:{getReader:()=>({read:async()=>{if(i++===0)return {value:new TextEncoder().encode('data: {"text":"Javob"}\n\n'),done:false};assert.equal(bubble.textContent,'Javob');return {done:true};}})}};}};
  vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('const bookChatHistories'),source.indexOf("document.getElementById('ai-sheet-send').addEventListener")),ctx);
  await ctx.sendAiSheetMessage('Savol');await ctx.sendAiSheetMessage('Nega?');assert.equal(requests[1].messages.length,3);assert.equal(requests[1].messages[1].role,'assistant');assert.equal(send.disabled,false);
  ctx.activeBook={id:'book-b'};await ctx.sendAiSheetMessage('Boshqa');assert.equal(requests[2].messages.length,1);
+});
+test('free plan cannot send reader tutor requests',async()=>{
+ const ctx={window:{MATHLVL_PLUS_ACTIVE:false},openAiSheet:async()=>{ctx.planOpened=(ctx.planOpened||0)+1;},fetch:async()=>{ctx.requested=true;}};
+ vm.createContext(ctx);
+ vm.runInContext(source.slice(source.indexOf('const bookChatHistories'),source.indexOf("document.getElementById('ai-sheet-send').addEventListener")),ctx);
+ await ctx.sendAiSheetMessage('Savol');
+ assert.equal(ctx.planOpened,1);
+ assert.equal(ctx.requested,undefined);
 });
 test('library failure is distinguishable from empty successful catalog',async()=>{
  const ctx={AbortSignal,booksCache:[],fetch:async()=>({ok:false})};vm.createContext(ctx);
