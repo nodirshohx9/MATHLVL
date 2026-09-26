@@ -72,8 +72,12 @@
 
   document.getElementById('sidebar-logout')?.addEventListener('click', async ()=>{
     closeProfileMenu();
-    try{ await fetch('/api/auth', {method:'POST'}); }catch(e){}
-    if(typeof showSignedOutUI === 'function') showSignedOutUI();
-    if(typeof activateTab === 'function') activateTab('home');
+    try{
+      await fetch('/api/auth', {method:'POST', credentials:'include', cache:'no-store'});
+      if(typeof window.refreshMathlvlAuthState === 'function') await window.refreshMathlvlAuthState();
+      if(typeof activateTab === 'function') activateTab('home');
+    }catch(e){
+      console.error('MATHLVL hisobidan chiqishda xatolik:', e);
+    }
   });
 })();
