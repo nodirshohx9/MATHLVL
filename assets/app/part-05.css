@@ -1,5 +1,5 @@
 
-  #mathlvl-guest-login{
+  #mathlvl-login-open{
     position:fixed; top:18px; right:20px; z-index:120;
     display:inline-flex; align-items:center; gap:8px;
     min-height:40px; padding:0 16px; border-radius:12px;
@@ -11,9 +11,10 @@
     opacity:0; pointer-events:none; transform:translateY(-4px);
     transition:opacity .18s ease, transform .18s ease, border-color .18s ease, background .18s ease;
   }
-  #mathlvl-guest-login.ready{ opacity:1; pointer-events:auto; transform:none; }
-  #mathlvl-guest-login:hover{ border-color:#3DA9FC; background:rgba(16,21,43,.95); }
-  #mathlvl-guest-login svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
+  #mathlvl-login-open.ready{ opacity:1; pointer-events:auto; transform:none; }
+  #mathlvl-login-open[hidden]{display:none !important;}
+  #mathlvl-login-open:hover{ border-color:#3DA9FC; background:rgba(16,21,43,.95); }
+  #mathlvl-login-open svg{ width:17px; height:17px; fill:none; stroke:currentColor; stroke-width:1.8; stroke-linecap:round; stroke-linejoin:round; }
 
   #mathlvl-auth-gate[hidden]{ display:none !important; }
   #mathlvl-auth-gate{
@@ -57,13 +58,8 @@
     display:grid; place-items:center; cursor:pointer; font-size:18px;
   }
   @media(max-width:700px){
-    #mathlvl-guest-login{ top:12px; right:12px; min-height:38px; padding:0 13px; border-radius:11px; }
+    #mathlvl-login-open{ top:12px; right:12px; min-height:38px; padding:0 13px; border-radius:11px; }
     .mathlvl-auth-card{ padding:24px 20px 20px; border-radius:20px; }
   }
 
-/* Temporary guest access */
-.mathlvl-auth-guest{border:1px solid rgba(120,150,255,.24);background:rgba(255,255,255,.035);color:#edf1ff}
-.mathlvl-auth-guest:hover{border-color:#8da4ff;background:rgba(120,150,255,.09)}
-.mathlvl-auth-guest:disabled{opacity:.62;cursor:wait}
-.mathlvl-auth-guest-note{margin-top:13px;color:#8792ae;font:500 11px/1.55 'Inter',sans-serif;text-align:center}
 .mathlvl-auth-status{min-height:16px;margin-top:10px;color:#ff9d9d;font:500 12px/1.45 'Inter',sans-serif;text-align:center}
