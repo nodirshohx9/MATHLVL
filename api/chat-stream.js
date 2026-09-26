@@ -4,7 +4,8 @@ import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+// Keep interactive tutoring on the lower-latency model; operators can override it separately.
+const GEMINI_MODEL = process.env.GEMINI_STREAM_MODEL || 'gemini-3.1-flash-lite';
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
