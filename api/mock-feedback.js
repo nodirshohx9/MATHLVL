@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { checkGuestRateLimit } from '../lib/guest-limits.js';
 
 export const config = { maxDuration: 60 };
 
@@ -293,11 +294,13 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'not_logged_in' });
 
   try {
-    if (!(await hasPlus(session.email))) {
-      return res.status(403).json({ error: 'plus_required' });
-    }
-    if (!(await checkLimit(session.email))) {
-      return res.status(429).json({ error: 'Bugungi Ustoz AI mock tahlili limiti tugadi.' });
+    if (!session.guest) {
+      if (!(await hasPlus(session.email))) {
+        return res.status(403).json({ error: 'plus_required' });
+      }
+      if (!(await checkLimit(session.email))) {
+        return res.status(429).json({ error: 'Bugungi Ustoz AI mock tahlili limiti tugadi.' });
+      }
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -329,6 +332,21 @@ export default async function handler(req, res) {
 
     if (!items.length) {
       return res.status(400).json({ error: 'Tahlil uchun savollar topilmadi.' });
+    }
+
+    if (session.guest) {
+      let guestLimit;
+      try {
+        guestLimit = await checkGuestRateLimit(req, {
+          scope: 'mock-feedback',
+          perMinute: 1,
+          perDay: 1,
+          message: 'Mehmon rejimida bugun uchun bepul AI tahlil ishlatildi. Ertaga yana urinib ko‘ring.'
+        });
+      } catch {
+        return res.status(503).json({ error: 'Mehmon tahlili hozircha ishlamayapti. Qayta urinib ko‘ring.' });
+      }
+      if (!guestLimit.ok) return res.status(guestLimit.status).json({ error: guestLimit.message });
     }
 
     const batches = [];
