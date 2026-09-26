@@ -9,7 +9,7 @@ function parseCookies(header) {
     if (idx === -1) return;
     const key = pair.slice(0, idx).trim();
     const val = pair.slice(idx + 1).trim();
-    cookies[key] = decodeURIComponent(val);
+    try { cookies[key] = decodeURIComponent(val); } catch {}
   });
   return cookies;
 }
@@ -55,6 +55,9 @@ export default async function handler(req, res) {
       headers: { Authorization: `Bearer ${tokenData.access_token}` }
     });
     const profile = await userRes.json();
+    if (!userRes.ok || !profile.email || profile.email_verified !== true) {
+      throw new Error('Google hisobining email manzili tasdiqlanmagan.');
+    }
 
     const session = {
       email: profile.email,
