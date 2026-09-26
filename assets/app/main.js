@@ -3325,7 +3325,7 @@ function finishMockTest(autoFinish){
         <button class="glow-btn" id="mock-ai-feedback" type="button">✨ Ustoz AI tahlili</button>
         <button class="ghost-btn" id="mock-back-list" type="button">Mock testlarga qaytish</button>
       </div>
-      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">Mehmonlar kuniga 1 marta bepul AI tahlilini sinab ko‘rishi mumkin. Oddiy hisoblarda bu funksiya PLUS tarifida.</div>
+      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">Mehmonlar kuniga 1 marta bepul AI tahlilini sinab ko‘rishi mumkin. AI 5 tagacha xato yoki javobsiz savolni batafsil ko‘radi. Oddiy hisoblarda bu funksiya PLUS tarifida.</div>
       <div id="mock-ai-feedback-box" style="display:none;max-width:720px;margin:18px auto 0;text-align:left;padding:18px;border:1px solid var(--border-soft);border-radius:14px;background:rgba(255,255,255,.025);line-height:1.65;"></div>
     </div>`;
   document.getElementById('mock-back-list').addEventListener('click', renderMockTestList);
