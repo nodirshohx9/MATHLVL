@@ -7224,3 +7224,32 @@ html[data-theme="light"] .reader-header-tool.active{
   .teacher-ai-usage-foot{align-items:flex-start;flex-direction:column;gap:4px}
   .plan-ai-limit-panel{padding:14px}
 }
+
+
+/* Profile daily AI usage summary */
+.profile-ai-usage-card{
+  margin:0 0 16px;
+  padding:22px!important;
+  border-color:rgba(111,124,255,.22)!important;
+}
+.profile-ai-usage-card[hidden]{display:none!important}
+.profile-ai-usage-main{display:flex;align-items:center;justify-content:space-between;gap:20px}
+.profile-ai-usage-copy h3{margin:5px 0 6px!important;font-size:17px!important}
+.profile-ai-usage-copy p{margin:0;color:var(--text-dim);font-size:13px;line-height:1.5}
+.profile-ai-usage-total{display:flex;align-items:baseline;gap:8px;white-space:nowrap}
+.profile-ai-usage-total strong{font-size:38px;line-height:1;font-variant-numeric:tabular-nums;letter-spacing:-.05em;color:#fff}
+.profile-ai-usage-total span{font-size:12px;color:var(--text-dim)}
+.profile-ai-usage-card .teacher-ai-usage-track{height:8px;margin:18px 0 10px}
+.profile-ai-usage-access{margin:12px 0 0;color:var(--text-dim);font-size:12px;line-height:1.55}
+.profile-ai-upgrade{width:auto;min-height:42px;margin-top:14px;padding:0 16px;font-size:13px}
+@media(max-width:600px){
+  .profile-ai-usage-card{padding:16px!important}
+  .profile-ai-usage-main{align-items:flex-start;gap:12px}
+  .profile-ai-usage-total{flex-direction:column;align-items:flex-end;gap:3px}
+  .profile-ai-usage-total strong{font-size:32px}
+  .profile-ai-usage-copy p{max-width:30ch}
+  .profile-ai-upgrade{width:100%}
+}
+
+.profile-ai-upgrade[hidden]{display:none!important}
+html[data-theme="light"] .profile-ai-usage-total strong{color:#172033}

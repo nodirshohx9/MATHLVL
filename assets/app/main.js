@@ -68,7 +68,7 @@ function activateTab(tab){
     if(panel) panel.classList.add('active');
   }
   window.scrollTo(0,0);
-  if(tab === 'teacher' && typeof refreshTeacherAiUsage === 'function') refreshTeacherAiUsage();
+  if(tab === 'profile' && typeof refreshAiUsage === 'function') refreshAiUsage();
 }
 document.querySelectorAll('.sidebar-nav-item[data-sidebar-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
@@ -104,49 +104,57 @@ async function callMathlvlAI({system, messages, tools, max_tokens, mode}){
   if(!res.ok){
     const err = new Error(payload?.error || ("So'rovda xatolik: " + res.status));
     err.status = res.status;
+    if(res.status === 429) refreshAiUsage();
     throw err;
   }
+  refreshAiUsage();
   return payload;
 }
 function extractText(data){
   return (data.content || []).map(b => b.type === 'text' ? b.text : '').filter(Boolean).join('\n');
 }
 function stripFences(text){ return text.replace(/```json/g,'').replace(/```/g,'').trim(); }
-let teacherUsageLoading = null;
-async function refreshTeacherAiUsage(){
-  const panel = document.getElementById('teacher-ai-usage');
+let aiUsageLoading = null;
+async function refreshAiUsage(){
+  const panel = document.getElementById('profile-ai-usage');
   if(!panel) return;
   const session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE || {};
   if(!session.loggedIn){ panel.hidden = true; return; }
   panel.hidden = false;
-  if(teacherUsageLoading) return teacherUsageLoading;
-  teacherUsageLoading = (async()=>{
+  if(aiUsageLoading) return aiUsageLoading;
+  aiUsageLoading = (async()=>{
     try{
       const response = await fetch('/api/chat?action=usage',{credentials:'include',cache:'no-store'});
       const data = await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(data.error || 'Limit ma’lumoti mavjud emas.');
-      const remaining = document.getElementById('teacher-ai-usage-remaining');
-      const count = document.getElementById('teacher-ai-usage-count');
-      const reset = document.getElementById('teacher-ai-usage-reset');
-      const plan = document.getElementById('teacher-ai-usage-plan');
-      const track = document.getElementById('teacher-ai-usage-track');
-      const fill = document.getElementById('teacher-ai-usage-fill');
+      const remaining = document.getElementById('profile-ai-usage-remaining');
+      const count = document.getElementById('profile-ai-usage-count');
+      const reset = document.getElementById('profile-ai-usage-reset');
+      const plan = panel.querySelector('.teacher-ai-usage-kicker');
+      const track = document.getElementById('profile-ai-usage-track');
+      const fill = document.getElementById('profile-ai-usage-fill');
+      const access = document.getElementById('profile-ai-usage-access');
+      const upgrade = document.getElementById('profile-ai-upgrade');
       if(remaining) remaining.textContent = String(data.dailyRemaining);
-      if(count) count.textContent = `Bugun ${data.dailyUsed} / ${data.dailyLimit} ta so‘rov ishlatildi`;
-      if(plan) plan.textContent = 'Akkaunt • kunlik limit';
+      if(count) count.textContent = `Bugun ${data.dailyUsed} / ${data.dailyLimit} ta umumiy AI so‘rovi ishlatildi`;
+      if(plan) plan.textContent = data.isPlus ? 'MATHLVL PLUS · 250 TA / KUN' : 'MATHLVL FREE · 100 TA / KUN';
+      if(access) access.textContent = data.isPlus
+        ? 'Misol yechish, Ustoz AI, kitob ichidagi yordam va mock tahlili shu umumiy limitdan sarflanadi.'
+        : 'Misol yechish va Ustoz AI shu limitdan sarflanadi. Kitob ichidagi AI yordam va mock tahlili Plus tarifida ochiladi.';
+      if(upgrade) upgrade.hidden = !!data.isPlus;
       if(reset){ const time = new Date(data.resetsAt).toLocaleTimeString('uz-UZ',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'}); reset.textContent = `Yangilanish: ${time} (Toshkent)`; }
       if(track){ track.setAttribute('aria-valuemax',String(data.dailyLimit)); track.setAttribute('aria-valuenow',String(data.dailyUsed)); }
       if(fill) fill.style.width = `${Math.min(100,Math.max(0,(data.dailyUsed/data.dailyLimit)*100))}%`;
       panel.classList.remove('is-error');
     }catch(error){
-      const remaining = document.getElementById('teacher-ai-usage-remaining');
-      const count = document.getElementById('teacher-ai-usage-count');
+      const remaining = document.getElementById('profile-ai-usage-remaining');
+      const count = document.getElementById('profile-ai-usage-count');
       if(remaining) remaining.textContent = '—';
       if(count) count.textContent = 'Limit ma’lumoti hozir olinmadi';
       panel.classList.add('is-error');
-    }finally{ teacherUsageLoading = null; }
+    }finally{ aiUsageLoading = null; }
   })();
-  return teacherUsageLoading;
+  return aiUsageLoading;
 }
 function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str; return d.innerHTML; }
 
@@ -1211,7 +1219,7 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
     btn.querySelector('.chat-send-icon')?.removeAttribute('hidden');
     btn.disabled = false;
     chatAbortController = null;
-    refreshTeacherAiUsage();
+    refreshAiUsage();
   }
 }
 document.getElementById('chat-send').addEventListener('click', sendChat);
@@ -2211,7 +2219,14 @@ document.getElementById('annotation-clear-confirm-btn').addEventListener('click'
 
 
 // ---- In-reader AI tutor: mobil'da drawer, desktop'da split-view ----
-function openAiSheet(){
+async function openAiSheet(){
+  const session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE || {};
+  if(!session.loggedIn){
+    if(typeof window.requireMathlvlAuth === 'function') window.requireMathlvlAuth('book-ai','books');
+    return;
+  }
+  const planData = await refreshPlusStatus();
+  if(!planData?.active){ await openPlanSelect(planData || {active:false}); return; }
   if(!bookChatBusy){
     document.getElementById('ai-sheet-chat').replaceChildren();
     for(const message of (bookChatHistories.get(String(activeBook?.id || 'general')) || [])) appendAiSheetMsg(message.role === 'assistant' ? 'teacher' : 'user', message.content);
@@ -2234,6 +2249,7 @@ function closeAiSheet(){
   document.body.classList.remove('ai-drawer-open');
 }
 document.getElementById('ai-desktop-btn').addEventListener('click', openAiSheet);
+document.getElementById('profile-ai-upgrade')?.addEventListener('click', ()=>openPlanSelect(window.MATHLVL_PLUS_DATA||{active:false}));
 document.getElementById('ai-sheet-close').addEventListener('click', closeAiSheet);
 document.getElementById('ai-sheet-backdrop').addEventListener('click', closeAiSheet);
 
@@ -2268,6 +2284,7 @@ const bookChatHistories = new Map();
 let bookChatBusy = false;
 async function sendAiSheetMessage(text){
   if(!text || bookChatBusy) return;
+  if(window.MATHLVL_PLUS_ACTIVE !== true){ await openAiSheet(); return; }
   bookChatBusy = true;
   document.getElementById('ai-sheet-send').disabled = true;
   const bookKey = String(activeBook?.id || 'general');
@@ -2333,6 +2350,7 @@ async function sendAiSheetMessage(text){
   }finally{
     bookChatBusy = false;
     document.getElementById('ai-sheet-send').disabled = false;
+    refreshAiUsage();
   }
 }
 
@@ -2401,10 +2419,14 @@ function showSignedInUI(user){
   if(sidebarName) sidebarName.textContent = user.name || user.email || 'Profil';
 
   refreshPlusStatus();
+  refreshAiUsage();
   renderMyBooks();
 }
 
 function renderSubscriptionCard(plusData){
+  plusData = plusData || {active:false};
+  window.MATHLVL_PLUS_ACTIVE = !!plusData.active;
+  window.MATHLVL_PLUS_DATA = plusData;
   const el = document.getElementById('subscription-card-body');
   const footerPlan = document.getElementById('sidebar-footer-plan');
   if(footerPlan) footerPlan.textContent = plusData && plusData.active ? 'MATHLVL Plus' : 'Bepul plan';
@@ -2433,11 +2455,14 @@ function renderSubscriptionCard(plusData){
 
 async function refreshPlusStatus(){
   try{
-    const res = await fetch('/api/gift?action=status');
+    const res = await fetch('/api/gift?action=status',{credentials:'include',cache:'no-store'});
     const data = await res.json();
     renderSubscriptionCard(data);
+    return data;
   }catch(e){
-    renderSubscriptionCard({ active:false });
+    const data = { active:false };
+    renderSubscriptionCard(data);
+    return data;
   }
 }
 
@@ -3098,7 +3123,7 @@ window.addEventListener('mathlvl:authchange', event=>{
   if(isAccountMockSession(event.detail)) syncMockHistoryFromServer();
   else clearGuestMockStorage();
   if(typeof renderMockTestList === 'function') renderMockTestList();
-  refreshTeacherAiUsage();
+  refreshAiUsage();
 });
 function saveMockResultToServer(result){
   if(!isAccountMockSession()) return;
@@ -3369,6 +3394,7 @@ function finishMockTest(autoFinish){
 
   clearMockDraft();
   const list = document.getElementById('mocktest-list');
+  const mockCanAnalyze = window.MATHLVL_PLUS_ACTIVE === true;
   list.innerHTML = `
     <div class="glass-card" style="text-align:center;padding:28px;">
       <div style="font-size:42px;">${percent>=70?'🏆':percent>=50?'📈':'📚'}</div>
@@ -3377,16 +3403,28 @@ function finishMockTest(autoFinish){
       <div style="color:var(--text-dim);margin:8px 0 8px;">Yopiq: ${correctClosed}/${activeMock.closed.length} • Ochiq A/B: ${correctOpen}/${totalElements-activeMock.closed.length} • Javob berilgan: ${answered}/${totalElements}${autoFinish?' • Vaqt tugadi':''}</div>
       <div style="max-width:650px;margin:0 auto 20px;font-size:12px;line-height:1.55;color:var(--text-dim);">Bu MATHLVL mashq ko‘rsatkichi. Rasmiy Milliy sertifikat natijasi oddiy foiz bilan emas, BBAning statistik baholash usuli (Rash modeli) asosida hisoblanadi.</div>
       <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button class="glow-btn" id="mock-ai-feedback" type="button">✨ Ustoz AI tahlili</button>
+        <button class="glow-btn" id="mock-ai-feedback" type="button">${mockCanAnalyze?'✨ Ustoz AI tahlili':'🔒 Ustoz AI tahlili — Plus'}</button>
         <button class="ghost-btn" id="mock-back-list" type="button">Mock testlarga qaytish</button>
       </div>
-      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">Mock testdan keyingi batafsil AI tahlili PLUS tarifida mavjud. AI 5 tagacha xato yoki javobsiz savolni ko‘rib chiqadi.</div>
+      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">${mockCanAnalyze?'AI 5 tagacha xato yoki javobsiz savolni tahlil qiladi.':'Batafsil tahlil MATHLVL Plus tarifida mavjud.'}</div>
       <div id="mock-ai-feedback-box" style="display:none;max-width:720px;margin:18px auto 0;text-align:left;padding:18px;border:1px solid var(--border-soft);border-radius:14px;background:rgba(255,255,255,.025);line-height:1.65;"></div>
     </div>`;
   document.getElementById('mock-back-list').addEventListener('click', renderMockTestList);
   document.getElementById('mock-ai-feedback').addEventListener('click', async ()=>{
     const btn = document.getElementById('mock-ai-feedback');
     const box = document.getElementById('mock-ai-feedback-box');
+    if(!isAccountMockSession()){
+      box.style.display = 'none';
+      if(typeof window.requireMathlvlAuth === 'function') window.requireMathlvlAuth('mock','mocktest');
+      return;
+    }
+    let currentPlan = window.MATHLVL_PLUS_DATA;
+    if(window.MATHLVL_PLUS_ACTIVE !== true) currentPlan = await refreshPlusStatus();
+    if(!currentPlan?.active){
+      box.style.display = 'none';
+      await openPlanSelect(currentPlan || {active:false});
+      return;
+    }
     btn.disabled = true;
     box.style.display = 'block';
     box.textContent = "Ustoz AI natijangizni tahlil qilmoqda...";
@@ -3416,6 +3454,7 @@ function finishMockTest(autoFinish){
       box.textContent = err.message || "Ustoz AI tahlilini olishda muammo yuz berdi.";
     }finally{
       btn.disabled = false;
+      refreshAiUsage();
     }
   });
   activeMock = null;

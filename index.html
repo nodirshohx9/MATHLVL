@@ -325,11 +325,6 @@
               </div>
             </div>
             <div class="status" id="chat-status"></div>
-            <section class="teacher-ai-usage" id="teacher-ai-usage" hidden aria-label="Ustoz AI limiti">
-              <div class="teacher-ai-usage-head"><div><span class="teacher-ai-usage-kicker">USTOZ AI</span><strong id="teacher-ai-usage-plan">Kunlik limit</strong></div><strong class="teacher-ai-usage-remaining" id="teacher-ai-usage-remaining">—</strong></div>
-              <div class="teacher-ai-usage-track" id="teacher-ai-usage-track" role="progressbar" aria-label="Bugungi AI so‘rovlari" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="teacher-ai-usage-fill"></span></div>
-              <div class="teacher-ai-usage-foot"><span id="teacher-ai-usage-count">Limit yuklanmoqda…</span><span id="teacher-ai-usage-reset">Yangilanish vaqti yuklanmoqda…</span></div>
-            </section>
           </div>
         </div>
         <div class="book-col" id="book-col">
@@ -541,6 +536,21 @@
         </div>
       </div>
 
+      <section class="glass-card profile-section-card profile-ai-usage-card" id="profile-ai-usage" hidden aria-label="Kunlik umumiy AI limiti">
+        <div class="profile-ai-usage-main">
+          <div class="profile-ai-usage-copy">
+            <span class="teacher-ai-usage-kicker">MATHLVL AI</span>
+            <h3>Kunlik umumiy limit</h3>
+            <p>Misol yechish va Ustoz AI so‘rovlari bitta hisoblagichdan foydalanadi.</p>
+          </div>
+          <div class="profile-ai-usage-total"><strong id="profile-ai-usage-remaining">—</strong><span>so‘rov qoldi</span></div>
+        </div>
+        <div class="teacher-ai-usage-track" id="profile-ai-usage-track" role="progressbar" aria-label="Bugungi umumiy AI so‘rovlari" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="profile-ai-usage-fill"></span></div>
+        <div class="teacher-ai-usage-foot"><span id="profile-ai-usage-count">Limit yuklanmoqda…</span><span id="profile-ai-usage-reset">Yangilanish vaqti yuklanmoqda…</span></div>
+        <p class="profile-ai-usage-access" id="profile-ai-usage-access">Kitob ichidagi AI yordam va mock tahlili Plus tarifida.</p>
+        <button class="glow-btn profile-ai-upgrade" id="profile-ai-upgrade" type="button" hidden>Plus bilan kuniga 250 ta so‘rov</button>
+      </section>
+
       <div class="profile-grid">
         <div class="glass-card profile-section-card">
           <h3>Tarif</h3>
@@ -592,7 +602,7 @@
       <div id="current-plan-note" style="display:none;"></div>
       <div class="plan-ai-limit-panel" id="plan-ai-usage-copy">
         <div class="plan-ai-limit-icon" aria-hidden="true">✦</div>
-        <div><strong>Ustoz AI limiti</strong><p>Akkauntda kuniga 100 ta Ustoz AI so‘rovi. Limit har kuni Toshkent vaqti bilan 05:00 da yangilanadi.</p></div>
+        <div><strong>Kunlik umumiy AI limiti</strong><p>Free: kuniga 100 ta, Plus: 250 ta. Misol yechish va Ustoz AI so‘rovlari birgalikda sanaladi; limit 05:00 da yangilanadi.</p></div>
       </div>
 
       <div class="plan-toggle">

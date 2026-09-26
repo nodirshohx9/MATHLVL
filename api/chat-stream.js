@@ -1,5 +1,5 @@
 import {memoryRequest, memoryMessages} from '../lib/memory.js';
-import { checkGuestRateLimit } from '../lib/guest-limits.js';
+import { consumeAiUsage, hasPlus } from '../lib/ai-usage.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
@@ -54,37 +54,6 @@ async function verifySession(request) {
   }
 }
 
-async function redisCommand(command) {
-  if (!REDIS_URL || !REDIS_TOKEN) return null;
-  const r = await fetch(REDIS_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command)
-  });
-  const data = await r.json();
-  if (data.error) throw new Error(data.error);
-  return data.result;
-}
-
-async function hashId(text) {
-  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text.toLowerCase())));
-  return Array.from(digest.slice(0, 12)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
-async function checkRateLimit(email) {
-  if (!REDIS_URL || !REDIS_TOKEN) return { ok: true };
-  const id = await hashId(email);
-  const minuteKey = `mathlvl:ai:min:${id}:${Math.floor(Date.now() / 60000)}`;
-  const dayKey = `mathlvl:ai:day:${id}:${new Date().toISOString().slice(0, 10)}`;
-  const minuteCount = Number(await redisCommand(['INCR', minuteKey]));
-  if (minuteCount === 1) await redisCommand(['EXPIRE', minuteKey, 120]);
-  const dayCount = Number(await redisCommand(['INCR', dayKey]));
-  if (dayCount === 1) await redisCommand(['EXPIRE', dayKey, 172800]);
-  if (minuteCount > 15) return { ok: false, message: "Juda ko'p so'rov yuborildi. Bir ozdan keyin urinib ko'ring." };
-  if (dayCount > 100) return { ok: false, message: 'Bugungi Ustoz AI limiti tugadi.' };
-  return { ok: true };
-}
-
 function toGeminiParts(content) {
   if (typeof content === 'string') return [{ text: content }];
   if (Array.isArray(content)) {
@@ -105,25 +74,26 @@ export default async function handler(request) {
   const session = await verifySession(request);
   if (!session) return jsonResponse({ error: 'Ustoz AI uchun avval tizimga kiring.' }, 401);
 
-  let limit;
-  try { limit = await checkRateLimit(session.email); } catch { return jsonResponse({error:'AI vaqtincha band. Qayta urinib ko‘ring.'},503); }
-  if (!limit.ok) return jsonResponse({ error: limit.message }, 429);
-  if (session.guest) {
-    let guestLimit;
-    try { guestLimit=await checkGuestRateLimit(request,{scope:'ai',perMinute:6,perDay:40}); }
-    catch { return jsonResponse({error:'Mehmon rejimidagi AI vaqtincha ishlamayapti.'},503); }
-    if (!guestLimit.ok) return jsonResponse({error:guestLimit.message},guestLimit.status);
-  }
-
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) return jsonResponse({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' }, 500);
-
   let body;
   try { body = await request.json(); }
   catch { return jsonResponse({ error: "So'rov matni noto'g'ri" }, 400); }
 
   const invalid = validateChat(body);
   if(invalid) return jsonResponse({error:invalid},400);
+
+  let plusActive;
+  try { plusActive = await hasPlus(session.email); }
+  catch { return jsonResponse({error:'Tarif holatini tekshirib bo‘lmadi. Qayta urinib ko‘ring.'},503); }
+  if (!plusActive) return jsonResponse({error:'plus_required'},403);
+
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) return jsonResponse({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' }, 500);
+
+  let limit;
+  try { limit = await consumeAiUsage(session.email); }
+  catch { return jsonResponse({error:'AI limiti vaqtincha olinmadi. Qayta urinib ko‘ring.'},503); }
+  if (!limit.ok) return jsonResponse({error:limit.message},limit.status);
+
   const { system, messages = [], max_tokens, memory_scope } = body;
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
   const geminiBody = {

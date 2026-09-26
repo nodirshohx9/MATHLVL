@@ -1,5 +1,5 @@
 import crypto from 'crypto';
-import { checkGuestRateLimit } from '../lib/guest-limits.js';
+import { consumeAiUsage, hasPlus } from '../lib/ai-usage.js';
 
 export const config = { maxDuration: 60 };
 
@@ -51,25 +51,6 @@ async function redisCommand(command) {
   const data = await r.json();
   if (data.error) throw new Error(data.error);
   return data.result;
-}
-
-async function hasPlus(email) {
-  const raw = await redisCommand(['GET', `nova:plus:${email}`]);
-  if (!raw) return false;
-  try {
-    return Number(JSON.parse(raw).expiresAt) > Date.now();
-  } catch {
-    return false;
-  }
-}
-
-async function checkLimit(email) {
-  const id = crypto.createHash('sha256').update(String(email).toLowerCase()).digest('hex').slice(0, 24);
-  const day = new Date().toISOString().slice(0, 10);
-  const key = `mathlvl:mock-feedback:${id}:${day}`;
-  const count = Number(await redisCommand(['INCR', key]));
-  if (count === 1) await redisCommand(['EXPIRE', key, 172800]);
-  return count <= 20;
 }
 
 function cleanText(value, max = 400) {
@@ -307,13 +288,8 @@ export default async function handler(req, res) {
   if (!session) return res.status(401).json({ error: 'not_logged_in' });
 
   try {
-    if (!session.guest) {
-      if (!(await hasPlus(session.email))) {
-        return res.status(403).json({ error: 'plus_required' });
-      }
-      if (!(await checkLimit(session.email))) {
-        return res.status(429).json({ error: 'Bugungi Ustoz AI mock tahlili limiti tugadi.' });
-      }
+    if (!(await hasPlus(session.email))) {
+      return res.status(403).json({ error: 'plus_required' });
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
@@ -347,20 +323,10 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Tahlil uchun savollar topilmadi.' });
     }
 
-    if (session.guest) {
-      let guestLimit;
-      try {
-        guestLimit = await checkGuestRateLimit(req, {
-          scope: 'mock-feedback',
-          perMinute: 1,
-          perDay: 1,
-          message: 'Mehmon rejimida bugun uchun bepul AI tahlil ishlatildi. Ertaga yana urinib ko‘ring.'
-        });
-      } catch {
-        return res.status(503).json({ error: 'Mehmon tahlili hozircha ishlamayapti. Qayta urinib ko‘ring.' });
-      }
-      if (!guestLimit.ok) return res.status(guestLimit.status).json({ error: guestLimit.message });
-    }
+    let usage;
+    try { usage = await consumeAiUsage(session.email); }
+    catch { return res.status(503).json({ error: 'AI limiti vaqtincha olinmadi. Qayta urinib ko‘ring.' }); }
+    if (!usage.ok) return res.status(usage.status).json({ error: usage.message });
 
     const reviewItems = items.filter(item => !item.isCorrect).slice(0, MAX_ANALYZED_ITEMS);
     const missedCount = items.filter(item => !item.isCorrect).length;

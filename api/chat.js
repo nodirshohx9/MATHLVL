@@ -1,6 +1,6 @@
 import {memoryRequest} from '../lib/memory.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
-import { checkGuestRateLimit } from '../lib/guest-limits.js';
+import { consumeAiUsage, getAiUsage } from '../lib/ai-usage.js';
 import { teacherSystem } from '../lib/teacher.js';
 import crypto from 'crypto';
 
@@ -56,47 +56,8 @@ async function redisCommand(command) {
   return data.result;
 }
 
-async function checkRateLimit(email) {
-  if (!REDIS_URL || !REDIS_TOKEN) return { ok: true };
-  const id = crypto.createHash('sha256').update(email.toLowerCase()).digest('hex').slice(0, 24);
-  const minuteBucket = Math.floor(Date.now() / 60000);
-  const dayBucket = new Date().toISOString().slice(0, 10);
-  const minuteKey = `mathlvl:ai:min:${id}:${minuteBucket}`;
-  const dayKey = `mathlvl:ai:day:${id}:${dayBucket}`;
-  const minuteCount = Number(await redisCommand(['INCR', minuteKey]));
-  if (minuteCount === 1) await redisCommand(['EXPIRE', minuteKey, 120]);
-  const dayCount = Number(await redisCommand(['INCR', dayKey]));
-  if (dayCount === 1) await redisCommand(['EXPIRE', dayKey, 172800]);
-  if (minuteCount > 15) return { ok: false, message: "Juda ko'p so'rov yuborildi. Bir ozdan keyin urinib ko'ring." };
-  if (dayCount > 100) return { ok: false, message: 'Bugungi Ustoz AI limiti tugadi.' };
-  return { ok: true };
-}
-
 async function readUsage(req, session) {
-  if (!REDIS_URL || !REDIS_TOKEN) throw new Error('Redis sozlanmagan');
-  const emailId = crypto.createHash('sha256').update(String(session.email).toLowerCase()).digest('hex').slice(0,24);
-  const now = Date.now();
-  const minuteBucket = Math.floor(now / 60000);
-  const dayBucket = new Date(now).toISOString().slice(0,10);
-  const keys = [
-    `mathlvl:ai:min:${emailId}:${minuteBucket}`,
-    `mathlvl:ai:day:${emailId}:${dayBucket}`
-  ];
-  let minuteLimit = 15, dayLimit = 100;
-  if (session.guest) {
-    const ip = String(req.headers['x-forwarded-for'] || '').split(',')[0].trim()
-      || String(req.headers['x-real-ip'] || '').trim() || req.socket?.remoteAddress || '';
-    if (!ip) throw new Error('Mehmon IP topilmadi');
-    const ipId = crypto.createHash('sha256').update(ip).digest('hex').slice(0,24);
-    keys.push(`mathlvl:guest:ai:min:${ipId}:${minuteBucket}`, `mathlvl:guest:ai:day:${ipId}:${dayBucket}`);
-    minuteLimit = 6; dayLimit = 40;
-  }
-  const counts = await Promise.all(keys.map(async key => Number(await redisCommand(['GET',key])) || 0));
-  const minuteUsed = Math.max(counts[0], session.guest ? counts[2] : 0);
-  const dayUsed = Math.max(counts[1], session.guest ? counts[3] : 0);
-  const today = new Date(now);
-  const resetsAt = new Date(Date.UTC(today.getUTCFullYear(),today.getUTCMonth(),today.getUTCDate()+1));
-  return { isGuest:!!session.guest, dailyLimit:dayLimit, dailyUsed:dayUsed, dailyRemaining:Math.max(0,dayLimit-dayUsed), minuteLimit, minuteUsed, minuteRemaining:Math.max(0,minuteLimit-minuteUsed), resetsAt:resetsAt.toISOString(), intervalHours:24 };
+  return getAiUsage(session.email);
 }
 function toGeminiParts(content) {
   if (typeof content === 'string') return [{ text: content }];
@@ -162,7 +123,7 @@ export default async function handler(req, res) {
     res.setHeader('Pragma','no-cache');
     if(req.method !== 'GET') return res.status(405).json({error:'Faqat GET so‘rovi qabul qilinadi'});
     const session = verifySession(req);
-    if(!session) return res.status(401).json({error:'Hisob yoki mehmon sessiyasi topilmadi.'});
+    if(!session) return res.status(401).json({error:'Hisob sessiyasi topilmadi.'});
     try { return res.status(200).json(await readUsage(req,session)); }
     catch(error) { console.error('CHAT_USAGE_ERROR:',error); return res.status(503).json({error:'Limit ma’lumoti vaqtincha olinmadi.'}); }
   }
@@ -182,22 +143,16 @@ export default async function handler(req, res) {
   const session = verifySession(req);
   if (!session) return res.status(401).json({ error: 'Ustoz AI uchun avval tizimga kiring.' });
 
-  let limit;
-  try { limit = await checkRateLimit(session.email); } catch { return res.status(503).json({error:'AI vaqtincha band. Qayta urinib ko‘ring.'}); }
-  if (!limit.ok) return res.status(429).json({ error: limit.message });
-  if (session.guest) {
-    let guestLimit;
-    try { guestLimit=await checkGuestRateLimit(req,{scope:'ai',perMinute:6,perDay:40}); }
-    catch { return res.status(503).json({error:'Mehmon rejimidagi AI vaqtincha ishlamayapti.'}); }
-    if (!guestLimit.ok) return res.status(guestLimit.status).json({error:guestLimit.message});
-  }
-
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' });
 
   try {
     const invalid = validateChat(req.body);
     if(invalid) return res.status(400).json({error:invalid});
+    let usage;
+    try { usage = await consumeAiUsage(session.email); }
+    catch { return res.status(503).json({error:'AI limiti vaqtincha olinmadi. Qayta urinib ko‘ring.'}); }
+    if (!usage.ok) return res.status(usage.status).json({error:usage.message});
     const { system, messages = [], tools, max_tokens, mode } = req.body || {};
     const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
     const isSolve = mode === 'solve';
