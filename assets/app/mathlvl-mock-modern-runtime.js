@@ -26,6 +26,11 @@
     return {history:h, attempts:h.length, best, avg};
   }
 
+  function accountSession(){
+    const session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE || {};
+    return !!session.loggedIn && !session.isGuest;
+  }
+
   function ensureHero(){
     let hero = document.getElementById('mock-modern-hero');
     if(!hero){
@@ -160,6 +165,7 @@
   const observer = new MutationObserver(schedule);
   observer.observe(list,{childList:true,subtree:true});
   window.addEventListener('storage',schedule);
+  window.addEventListener('mathlvl:authchange',schedule);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible') schedule();});
   schedule();
 })();
