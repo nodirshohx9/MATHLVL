@@ -4,20 +4,11 @@
   const list = document.getElementById('mocktest-list');
   if(!panel || !list) return;
 
-  function accountSession(){
-    const session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE || {};
-    return !!session.loggedIn && !session.isGuest;
-  }
-  function clearGuestData(){
-    try{ localStorage.removeItem('mathlvl_mock_results'); localStorage.removeItem('mathlvl_mock_draft_v1'); }catch(_e){}
-  }
   function readHistory(){
-    if(!accountSession()){ clearGuestData(); return []; }
     try{ const v = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); return Array.isArray(v) ? v : []; }
     catch(_e){ return []; }
   }
   function readDraft(){
-    if(!accountSession()){ clearGuestData(); return null; }
     try{
       const d = JSON.parse(localStorage.getItem('mathlvl_mock_draft_v1') || 'null');
       if(!d || !d.testId) return null;
@@ -53,7 +44,7 @@
       <div class="mock-modern-copy">
         <div class="mock-modern-eyebrow">MATHLVL MOCK LAB</div>
         <h2 class="mock-modern-title">Milliy sertifikatga<br>imtihondek tayyorlaning.</h2>
-        <p class="mock-modern-sub">150 daqiqalik to‘liq format, saqlanadigan progress va har mock uchun aniq ishlangan holati.</p>
+        <p class="mock-modern-sub">${accountSession() ? '150 daqiqalik to‘liq format, akkauntda saqlanadigan progress va ishlangan holati.' : 'Mehmon rejimida test tarixi va davom ettirilgan test saqlanmaydi.'}</p>
         <div class="mock-modern-pills">
           <span class="mock-modern-pill"><b>45</b> topshiriq</span>
           <span class="mock-modern-pill"><b>55</b> javob elementi</span>
@@ -166,7 +157,6 @@
     queued=true;
     requestAnimationFrame(()=>{ queued=false; enhance(); });
   }
-  window.addEventListener('mathlvl:authchange', schedule);
   const observer = new MutationObserver(schedule);
   observer.observe(list,{childList:true,subtree:true});
   window.addEventListener('storage',schedule);
