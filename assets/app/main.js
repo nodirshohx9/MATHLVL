@@ -122,7 +122,7 @@ async function refreshTeacherAiUsage(){
   if(teacherUsageLoading) return teacherUsageLoading;
   teacherUsageLoading = (async()=>{
     try{
-      const response = await fetch('/api/chat-usage',{credentials:'include',cache:'no-store'});
+      const response = await fetch('/api/chat?action=usage',{credentials:'include',cache:'no-store'});
       const data = await response.json().catch(()=>({}));
       if(!response.ok) throw new Error(data.error || 'Limit ma’lumoti mavjud emas.');
       const remaining = document.getElementById('teacher-ai-usage-remaining');
