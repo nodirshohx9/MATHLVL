@@ -8,7 +8,7 @@ function parseCookies(header) {
     if (idx === -1) return;
     const key = pair.slice(0, idx).trim();
     const val = pair.slice(idx + 1).trim();
-    cookies[key] = decodeURIComponent(val);
+    try { cookies[key] = decodeURIComponent(val); } catch {}
   });
   return cookies;
 }
