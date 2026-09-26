@@ -45,20 +45,23 @@
     if(!authState.ready||authState.loggedIn){guestLogin?.classList.remove('ready');if(guestLogin)guestLogin.hidden=authState.loggedIn;return}
     if(guestLogin){guestLogin.hidden=false;guestLogin.classList.add('ready')}
   }
-  async function refreshAuth(){
-    try{
-      const res=await fetch('/api/auth',{credentials:'include',cache:'no-store'});
-      const data=await res.json();
-      authState.loggedIn=!!data.loggedIn;authState.isGuest=!!data.isGuest;
-      authState.user=authState.loggedIn?data:null;
-    }catch{authState.loggedIn=false;authState.isGuest=false;authState.user=null}
-    finally{authState.ready=true;updateGuestButton()}
+  function applyAuthState(data={}){
+    authState.loggedIn=!!data.loggedIn;authState.isGuest=!!data.isGuest;
+    authState.user=authState.loggedIn?data:null;
+    authState.ready=true;updateGuestButton();
     if(authState.loggedIn){
       let tab=null;
       try{tab=localStorage.getItem(pendingKey);localStorage.removeItem(pendingKey)}catch{}
       if(tab&&typeof window.activateTab==='function')setTimeout(()=>window.activateTab(tab),80);
     }
   }
+  async function refreshAuth(){
+    try{
+      const res=await fetch('/api/auth',{credentials:'include',cache:'no-store'});
+      applyAuthState(await res.json());
+    }catch{applyAuthState({loggedIn:false,isGuest:false})}
+  }
+  window.addEventListener('mathlvl:authchange',event=>applyAuthState(event.detail||{}));
   window.MATHLVL_AUTH_STATE=authState;
   window.requireMathlvlAuth=function(feature='generic',tab='home',onAllowed){
     if(authState.loggedIn){if(typeof onAllowed==='function')onAllowed();return true}
@@ -95,5 +98,7 @@
   document.getElementById('mathlvl-auth-close')?.addEventListener('click',closeGate);
   gate.addEventListener('click',e=>{if(e.target===gate)closeGate()});
   document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!gate.hidden)closeGate()});
-  wrapFeatureFunctions();setTimeout(wrapFeatureFunctions,150);setTimeout(wrapFeatureFunctions,700);refreshAuth();
+  wrapFeatureFunctions();setTimeout(wrapFeatureFunctions,150);setTimeout(wrapFeatureFunctions,700);
+  if(typeof window.refreshMathlvlAuthState==='function') window.refreshMathlvlAuthState();
+  else refreshAuth();
 })();
