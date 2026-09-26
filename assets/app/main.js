@@ -68,7 +68,7 @@ function activateTab(tab){
     if(panel) panel.classList.add('active');
   }
   window.scrollTo(0,0);
-  if(tab === 'teacher') refreshTeacherAiUsage();
+  if(tab === 'teacher' && typeof refreshTeacherAiUsage === 'function') refreshTeacherAiUsage();
 }
 document.querySelectorAll('.sidebar-nav-item[data-sidebar-tab]').forEach(btn=>{
   btn.addEventListener('click', ()=>{
