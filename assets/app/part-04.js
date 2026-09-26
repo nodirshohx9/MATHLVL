@@ -5,10 +5,10 @@
 
   function setAccountMenuState(signedIn, userName, isPlus){
     document.querySelectorAll('[data-auth-only="true"]').forEach(el => el.hidden = !signedIn);
-    document.querySelectorAll('[data-guest-only="true"]').forEach(el => el.hidden = signedIn);
+    document.querySelectorAll('[data-signed-out-only="true"]').forEach(el => el.hidden = signedIn);
 
-    if(footerName) footerName.textContent = signedIn ? (userName || 'Profil') : 'Mehmon';
-    if(footerPlan) footerPlan.textContent = signedIn ? (isPlus ? 'MATHLVL Plus' : 'Bepul plan') : 'Kirish qilinmagan';
+    if(footerName) footerName.textContent = signedIn ? (userName || 'Profil') : 'Hisobga kiring';
+    if(footerPlan) footerPlan.textContent = signedIn ? (isPlus ? 'MATHLVL Plus' : 'Bepul plan') : 'Akkauntga kiring';
   }
 
   window.setAccountMenuState = setAccountMenuState;
@@ -30,17 +30,9 @@
     setAccountMenuState(signedIn, name, plus);
   }
 
-  // Default to guest before app auth logic finishes.
+  // Default to signed out before app auth logic finishes.
   setAccountMenuState(false, '', false);
   setTimeout(syncFromExistingUI, 300);
-
-  // Login action opens the existing profile/login screen.
-  document.getElementById('sidebar-login-open')?.addEventListener('click', ()=>{
-    document.getElementById('sidebar-profile-menu')?.setAttribute('hidden','');
-    document.getElementById('sidebar-profile-wrap')?.classList.remove('open');
-    document.getElementById('sidebar-footer')?.setAttribute('aria-expanded','false');
-    if(typeof activateTab === 'function') activateTab('profile');
-  });
 
   // Hook existing sign-in/sign-out helpers if present.
   if(typeof window.showSignedOutUI === 'function'){
