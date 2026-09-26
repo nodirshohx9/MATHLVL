@@ -2781,19 +2781,27 @@ async function handleRedeemFlow(){
 }
 
 async function refreshAuthState(){
+  let data = { loggedIn:false, isGuest:false };
   try{
-    const res = await fetch('/api/auth');
-    const data = await res.json();
+    const res = await fetch('/api/auth', { credentials:'include', cache:'no-store' });
+    data = await res.json();
     if(data.loggedIn){ showSignedInUI(data); restoreTeacherMemory(); }
     else{ showSignedOutUI(); }
-  }catch(e){ showSignedOutUI(); }
+  }catch(e){
+    showSignedOutUI();
+  }
+  window.dispatchEvent(new CustomEvent('mathlvl:authchange', { detail:data }));
+  return data;
 }
+window.refreshMathlvlAuthState = refreshAuthState;
+window.addEventListener('focus', ()=>{ refreshAuthState(); });
 document.getElementById('google-btn').addEventListener('click', ()=>{
   window.location.href = '/api/auth-google-start';
 });
 document.getElementById('logout-row').addEventListener('click', async ()=>{
-  await fetch('/api/auth', { method:'POST' });
-  window.location.reload();
+  await fetch('/api/auth', { method:'POST', credentials:'include', cache:'no-store' });
+  await window.refreshMathlvlAuthState();
+  activateTab('home');
 });
 
 const urlParams = new URLSearchParams(window.location.search);
