@@ -21,7 +21,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
+    try { try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {} } catch {}
   });
   return cookies;
 }
@@ -33,7 +33,7 @@ function verifySession(req) {
   const [data, sig] = token.split('.');
   if (!data || !sig) return null;
   const expected = crypto.createHmac('sha256', secret).update(data).digest('hex');
-  if (sig.length !== expected.length) return null;
+  if (!/^[a-f0-9]{64}$/i.test(sig)) return null;
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
@@ -172,7 +172,7 @@ export default async function handler(req, res) {
       temperature: isSolve ? 0.1 : 0.35,
       thinkingConfig: {
         // Solver gets real reasoning budget; ordinary non-stream calls stay fast.
-        thinkingBudget: isSolve ? 4096 : 0
+        thinkingLevel: isSolve ? 'high' : 'low'
       }
     };
 
@@ -221,7 +221,8 @@ export default async function handler(req, res) {
       model: upstream.model
     });
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    console.error('CHAT_API_ERROR:', err);
+    return res.status(500).json({ error: 'Ustoz AI vaqtincha javob bera olmadi. Qayta urinib ko‘ring.' });
   }
 }
 
