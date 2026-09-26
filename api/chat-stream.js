@@ -1,4 +1,5 @@
 import {memoryRequest, memoryMessages} from '../lib/memory.js';
+import { checkGuestRateLimit } from '../lib/guest-limits.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
@@ -106,6 +107,12 @@ export default async function handler(request) {
   let limit;
   try { limit = await checkRateLimit(session.email); } catch { return jsonResponse({error:'AI vaqtincha band. Qayta urinib ko‘ring.'},503); }
   if (!limit.ok) return jsonResponse({ error: limit.message }, 429);
+  if (session.guest) {
+    let guestLimit;
+    try { guestLimit=await checkGuestRateLimit(request,{scope:'ai',perMinute:6,perDay:40}); }
+    catch { return jsonResponse({error:'Mehmon rejimidagi AI vaqtincha ishlamayapti.'},503); }
+    if (!guestLimit.ok) return jsonResponse({error:guestLimit.message},guestLimit.status);
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return jsonResponse({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' }, 500);
@@ -210,7 +217,7 @@ export default async function handler(request) {
 
         if(memory_scope === 'teacher' && answer){
           try {
-            await memoryRequest(request.headers.get('cookie'), 'write', memoryMessages([...messages,{role:'assistant',content:answer}]));
+            if (!session.guest) await memoryRequest(request.headers.get('cookie'), 'write', memoryMessages([...messages,{role:'assistant',content:answer}]));
             sendEvent({memorySaved:true});
           } catch { sendEvent({memorySaved:false}); }
         }

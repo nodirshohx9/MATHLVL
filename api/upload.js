@@ -61,7 +61,7 @@ export default async function handler(req, res) {
   const admin = verifySignedCookie(cookies.mathlvl_admin, secret);
   const user = verifySignedCookie(cookies.nova_session, secret);
   const isAdmin = admin?.role === 'admin';
-  const isLoggedInUser = !!user?.email;
+  const isLoggedInUser = !!user?.email && !user?.guest;
 
   // Vercel Blob's signed upload-completed callback has no browser session cookie.
   // Let handleUpload verify that callback's Vercel signature. Browser token requests

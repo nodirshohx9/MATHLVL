@@ -60,3 +60,10 @@
     #mathlvl-guest-login{ top:12px; right:12px; min-height:38px; padding:0 13px; border-radius:11px; }
     .mathlvl-auth-card{ padding:24px 20px 20px; border-radius:20px; }
   }
+
+/* Temporary guest access */
+.mathlvl-auth-guest{border:1px solid rgba(120,150,255,.24);background:rgba(255,255,255,.035);color:#edf1ff}
+.mathlvl-auth-guest:hover{border-color:#8da4ff;background:rgba(120,150,255,.09)}
+.mathlvl-auth-guest:disabled{opacity:.62;cursor:wait}
+.mathlvl-auth-guest-note{margin-top:13px;color:#8792ae;font:500 11px/1.55 'Inter',sans-serif;text-align:center}
+.mathlvl-auth-status{min-height:16px;margin-top:10px;color:#ff9d9d;font:500 12px/1.45 'Inter',sans-serif;text-align:center}

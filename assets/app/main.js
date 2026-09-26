@@ -2355,7 +2355,7 @@ function showSignedInUI(user){
   setUserAvatar(document.getElementById('sidebar-footer-avatar'), user);
 
   document.getElementById('profile-name').textContent = user.name || user.email;
-  document.getElementById('profile-email').textContent = user.email;
+  document.getElementById('profile-email').textContent = user.isGuest ? 'Vaqtinchalik mehmon sessiyasi · 12 soat' : (user.email || '');
 
   const sidebarName = document.getElementById('sidebar-footer-name');
   if(sidebarName) sidebarName.textContent = user.name || user.email || 'Profil';
@@ -3410,7 +3410,7 @@ async function restoreTeacherMemory(){
         for(const message of chatHistory) appendMsg(message.role === 'assistant' ? 'teacher' : 'user', message.content);
       }
       teacherMemoryReady = true;
-      label.textContent = 'Oxirgi 20 xabar hisobingizda saqlanadi';
+      label.textContent = data.isGuest ? 'Mehmon rejimida suhbat xotiraga saqlanmaydi' : 'Oxirgi 20 xabar hisobingizda saqlanadi';
     }catch{ label.textContent = 'Xotira yuklanmadi. Suhbatni davom ettirishingiz mumkin.'; }
     finally{teacherMemoryLoading = null;}
   })();

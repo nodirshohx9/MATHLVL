@@ -556,6 +556,8 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
+      const session=getSession(req);
+      if (session?.guest && !isAdmin(req)) return res.status(403).json({error:'Mehmon rejimida to‘lov va sovg‘a amallari ishlamaydi.'});
       const action = (req.body || {}).action;
       if (action === 'create') return await handleCreate(req, res);
       if (action === 'preview') return await handlePreview(req, res);
