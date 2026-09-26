@@ -47,7 +47,7 @@ async function verifySession(request) {
     while (base64.length % 4) base64 += '=';
     const json = decodeURIComponent(Array.from(atob(base64)).map(c => '%' + c.charCodeAt(0).toString(16).padStart(2, '0')).join(''));
     const payload = JSON.parse(json);
-    if (!payload.email || !payload.exp || payload.exp < Date.now()) return null;
+    if (!payload.email || !payload.exp || payload.exp < Date.now() || payload.guest) return null;
     return payload;
   } catch {
     return null;
