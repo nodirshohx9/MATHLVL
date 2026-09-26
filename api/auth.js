@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { checkGuestRateLimit } from '../lib/guest-limits.js';
 
 function parseCookies(header) {
   const cookies = {};
@@ -51,6 +52,41 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
+    if (req.body?.action === 'guest') {
+      const origin = String(req.headers.origin || '').trim();
+      const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0].trim().toLowerCase();
+      let sameOrigin = false;
+      try { sameOrigin = !!origin && !!host && new URL(origin).host.toLowerCase() === host; } catch {}
+      if (!sameOrigin) return res.status(403).json({ error: 'Bu amal faqat MATHLVL saytidan bajariladi.' });
+
+      const secret = process.env.SESSION_SECRET;
+      if (!secret) return res.status(503).json({ error: 'Mehmon rejimi hozircha sozlanmagan.' });
+      const existing = verifySession(parseCookies(req.headers.cookie).nova_session, secret);
+      if (existing) return res.status(200).json({ ok: true, isGuest: !!existing.guest, name: existing.guest ? 'Mehmon (sinov)' : existing.name });
+
+      let limit;
+      try {
+        limit = await checkGuestRateLimit(req, {
+          scope: 'session', perMinute: 6, perDay: 60,
+          message: 'Bugun mehmon rejimi ko‘p marta ishga tushirildi. Keyinroq qayta urinib ko‘ring.'
+        });
+      } catch {
+        return res.status(503).json({ error: 'Mehmon sessiyasini yaratib bo‘lmadi. Keyinroq urinib ko‘ring.' });
+      }
+      if (!limit.ok) return res.status(limit.status).json({ error: limit.message });
+
+      const session = {
+        email: `guest-${crypto.randomUUID()}@guest.mathlvl.invalid`,
+        name: 'Mehmon (sinov)',
+        guest: true,
+        exp: Date.now() + 12 * 60 * 60 * 1000
+      };
+      const data = Buffer.from(JSON.stringify(session)).toString('base64url');
+      const sig = crypto.createHmac('sha256', secret).update(data).digest('hex');
+      res.setHeader('Set-Cookie', `nova_session=${data}.${sig}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=43200`);
+      return res.status(200).json({ ok: true, isGuest: true, name: session.name });
+    }
+
     res.setHeader('Set-Cookie', 'nova_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
     return res.status(200).json({ ok: true });
   }
