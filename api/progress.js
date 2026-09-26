@@ -116,8 +116,12 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'mock-history') {
-      if (req.method === 'GET') return res.status(200).json({ results: await getMockHistory(session.email) });
+      if (req.method === 'GET') {
+        if (session.guest) { await redisCommand(['DEL', mockKey(session.email)]); return res.status(200).json({ results: [] }); }
+        return res.status(200).json({ results: await getMockHistory(session.email) });
+      }
       if (req.method === 'POST') {
+        if (session.guest) return res.status(200).json({ ok: true, saved: false });
         const result = await saveMockHistory(session.email, req.body, !!session.guest);
         if (!result) return res.status(400).json({ error: 'Natija noto‘g‘ri' });
         return res.status(201).json({ ok: true, result });
@@ -126,6 +130,11 @@ export default async function handler(req, res) {
     }
 
     const key = progressKey(session.email);
+    if (session.guest && req.method === 'GET') {
+      await redisCommand(['DEL', key]);
+      return res.status(200).json({ progress: {} });
+    }
+    if (session.guest && ['POST','DELETE'].includes(req.method)) return res.status(200).json({ ok: true, saved: false });
     if (req.method === 'GET') {
       const flat = await redisCommand(['HGETALL', key]);
       const progress = {};
