@@ -53,10 +53,11 @@ async function redisCommand(command) {
 }
 
 async function checkLoginRateLimit(req) {
-  if (!REDIS_URL || !REDIS_TOKEN) return { ok: true };
+  if (!REDIS_URL || !REDIS_TOKEN) throw new Error('Admin login limit store is not configured');
   const ipHash = crypto.createHash('sha256').update(requestIp(req)).digest('hex').slice(0, 24);
   const key = `mathlvl:admin-login:${ipHash}`;
   const attempts = Number(await redisCommand(['INCR', key]));
+  if (!Number.isFinite(attempts) || attempts < 1) throw new Error('Admin login limit counter is invalid');
   if (attempts === 1) await redisCommand(['EXPIRE', key, 15 * 60]);
   if (attempts > 6) return { ok: false };
   return { ok: true, key };
@@ -90,7 +91,7 @@ export default async function handler(req, res) {
   try {
     limit = await checkLoginRateLimit(req);
   } catch {
-    limit = { ok: true };
+    return res.status(503).json({ error: 'Kirishni himoyalash xizmati vaqtincha ishlamayapti.' });
   }
 
   if (!limit.ok) {
