@@ -156,18 +156,28 @@ export default async function handler(request) {
         const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
 
         let geminiRes;
-        try {
+        for(let attempt=0; attempt<3; attempt++){
+          if(upstreamAbort.signal.aborted) throw new DOMException('Aborted','AbortError');
           geminiRes = await fetch(url, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(geminiBody),
             signal: upstreamAbort.signal
           });
-        } catch(error) { throw error; }
+          if(![500,502,503,504].includes(geminiRes.status) || attempt===2) break;
+          await geminiRes.body?.cancel();
+          sendEvent({status:'AI hozir band, qayta ulanmoqda…'});
+          await new Promise(resolve=>setTimeout(resolve, 800 * (attempt+1)));
+        }
 
         if (!geminiRes.ok || !geminiRes.body) {
-          const errData = await geminiRes.json().catch(() => ({}));
-          sendEvent({ error: errData.error?.message || `Gemini API xatoligi (${geminiRes.status})` });
+          await geminiRes.body?.cancel();
+          const message = geminiRes.status===429
+            ? 'AI so‘rov limiti tugadi. Birozdan keyin qayta urinib ko‘ring.'
+            : geminiRes.status>=500
+              ? 'AI serveri hozir band. Iltimos, birozdan keyin qayta yuboring.'
+              : 'AI xizmatida xatolik yuz berdi. Qayta urinib ko‘ring.';
+          sendEvent({ error: message });
           sendRaw('data: [DONE]\n\n');
           return;
         }

@@ -1122,6 +1122,7 @@ Agar foydalanuvchi qaysi kitobda mavzu borligini so‘ragan bo‘lsa, FAQAT yuqo
         if(payload === '[DONE]') continue;
         let parsed = null;
         try{ parsed = JSON.parse(payload); }catch(e){}
+        if(parsed?.status){ bubbleEl.classList.remove('typing-dots'); bubbleEl.textContent = parsed.status; }
         if(typeof parsed?.memorySaved === 'boolean'){
           document.getElementById('memory-status').textContent = parsed.memorySaved ? 'Suhbat saqlandi' : 'Javob tayyor. Xotiraga saqlanmadi.';
         }
