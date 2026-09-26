@@ -3,12 +3,13 @@ import { checkGuestRateLimit } from '../lib/guest-limits.js';
 
 export const config = { maxDuration: 60 };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.5-flash';
+const GEMINI_MODEL = process.env.GEMINI_MOCK_MODEL || 'gemini-3.1-flash-lite';
 const GEMINI_FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL || 'gemini-2.5-flash';
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
-const BATCH_SIZE = 8;
-const BATCH_CONCURRENCY = 2;
+const MAX_ANALYZED_ITEMS = 5;
+const BATCH_SIZE = 5;
+const BATCH_CONCURRENCY = 1;
 
 function parseCookies(header) {
   const cookies = {};
@@ -100,7 +101,8 @@ async function requestGemini(apiKey, model, prompt, maxOutputTokens = 4200) {
         temperature: 0.15,
         thinkingConfig: { thinkingLevel: 'low' }
       }
-    })
+    }),
+    signal: AbortSignal.timeout(15000)
   });
   const data = await response.json().catch(() => ({}));
   return { response, data };
@@ -349,25 +351,32 @@ export default async function handler(req, res) {
       if (!guestLimit.ok) return res.status(guestLimit.status).json({ error: guestLimit.message });
     }
 
+    const reviewItems = items.filter(item => !item.isCorrect).slice(0, MAX_ANALYZED_ITEMS);
+    const missedCount = items.filter(item => !item.isCorrect).length;
     const batches = [];
-    for (let i = 0; i < items.length; i += BATCH_SIZE) {
-      batches.push(items.slice(i, i + BATCH_SIZE));
+    for (let i = 0; i < reviewItems.length; i += BATCH_SIZE) {
+      batches.push(reviewItems.slice(i, i + BATCH_SIZE));
     }
 
     const context = { title, correct, total, answered };
-    const parts = await mapWithConcurrency(
-      batches,
-      BATCH_CONCURRENCY,
-      (batch, index) => analyzeBatch(apiKey, context, batch, index, batches.length)
-    );
+    const parts = batches.length
+      ? await mapWithConcurrency(
+          batches,
+          BATCH_CONCURRENCY,
+          (batch, index) => analyzeBatch(apiKey, context, batch, index, batches.length)
+        )
+      : [];
 
     const summary = buildSummary(items, correct, total, answered);
-    const feedback = `${parts.join('\n\n')}\n\n${summary}`.trim();
+    const coverage = missedCount > reviewItems.length
+      ? `\\n\\nBatafsil yechim ${reviewItems.length} ta xato yoki javobsiz savol uchun berildi; qolganlari umumiy xulosada jamlandi.`
+      : '';
+    const feedback = `${parts.join('\\n\\n')}${parts.length ? '\\n\\n' : ''}${summary}${coverage}`.trim();
 
     return res.status(200).json({
       feedback,
-      analyzedCount: items.length,
-      expectedCount: items.length,
+      analyzedCount: reviewItems.length,
+      expectedCount: reviewItems.length,
       complete: true
     });
   } catch (err) {
