@@ -13,7 +13,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
+    try { try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {} } catch {}
   });
   return cookies;
 }
@@ -40,7 +40,7 @@ async function verifySession(request) {
   if (!data || !sigHex) return null;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   const expected = new Uint8Array(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(data)));
-  if (!safeEqual(expected, hexToBytes(sigHex))) return null;
+  if (!/^[a-f0-9]{64}$/i.test(sigHex) || !safeEqual(expected, hexToBytes(sigHex))) return null;
   try {
     let base64 = data.replace(/-/g, '+').replace(/_/g, '/');
     while (base64.length % 4) base64 += '=';
@@ -127,7 +127,7 @@ export default async function handler(request) {
   const contents = messages.map(m => ({ role: m.role === 'assistant' ? 'model' : 'user', parts: toGeminiParts(m.content) }));
   const geminiBody = {
     contents,
-    generationConfig: { maxOutputTokens: outputLimit(max_tokens), thinkingConfig: { thinkingBudget: 0 } }
+    generationConfig: { maxOutputTokens: outputLimit(max_tokens), thinkingConfig: { thinkingLevel: 'low' } }
   };
   const effectiveSystem = teacherSystem(system);
   if (effectiveSystem) geminiBody.systemInstruction = { parts: [{ text: effectiveSystem }] };
