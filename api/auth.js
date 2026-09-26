@@ -11,6 +11,7 @@ function parseCookies(header) {
   });
   return cookies;
 }
+
 function verifySession(cookieVal, secret) {
   if (!cookieVal || !secret) return null;
   const parts = cookieVal.split('.');
@@ -28,10 +29,9 @@ function verifySession(cookieVal, secret) {
   }
 }
 
-// GET  /api/auth -> joriy sessiya ma'lumotini qaytaradi
-// POST /api/auth -> chiqish
+// GET /api/auth -> return current account session
+// POST /api/auth -> log out
 export default async function handler(req, res) {
-  // Sessiya holati hech qachon CDN/brauzer keshida qolmasin.
   res.setHeader('Cache-Control', 'private, no-store, max-age=0');
   res.setHeader('Pragma', 'no-cache');
 
@@ -39,9 +39,12 @@ export default async function handler(req, res) {
     const cookies = parseCookies(req.headers.cookie);
     const session = verifySession(cookies.nova_session, process.env.SESSION_SECRET);
     if (!session || session.guest) {
-      if (session?.guest) res.setHeader('Set-Cookie', 'nova_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
+      if (session?.guest) {
+        res.setHeader('Set-Cookie', 'nova_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
+      }
       return res.status(200).json({ loggedIn: false });
     }
+
     return res.status(200).json({
       loggedIn: true,
       email: session.email,
@@ -52,10 +55,6 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    res.setHeader('Set-Cookie', `nova_session=${data}.${sig}; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=43200`);
-      return res.status(200).json({ ok: true, isGuest: true, name: session.name });
-    }
-
     res.setHeader('Set-Cookie', 'nova_session=; HttpOnly; Secure; SameSite=Lax; Path=/; Max-Age=0');
     return res.status(200).json({ ok: true });
   }
