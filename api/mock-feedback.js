@@ -120,7 +120,18 @@ async function getGeminiFeedback(apiKey, prompt, maxOutputTokens = 4200) {
     const attempt = attempts[i];
     if (attempt.delay) await sleep(attempt.delay);
 
-    const result = await requestGemini(apiKey, attempt.model, prompt, maxOutputTokens);
+    let result;
+    try {
+      result = await requestGemini(apiKey, attempt.model, prompt, maxOutputTokens);
+    } catch (error) {
+      last = {
+        response: { ok: false, status: 504 },
+        data: { error: { message: error?.message || 'Gemini javobi vaqtida kelmadi.' } },
+        model: attempt.model
+      };
+      console.error(`MOCK FEEDBACK GEMINI ${attempt.model} timeout:`, error?.message || error);
+      continue;
+    }
     const message = result.data?.error?.message || '';
     const candidate = result.data?.candidates?.[0];
     const text = (candidate?.content?.parts || []).map(p => p.text || '').join('').trim();
@@ -196,7 +207,7 @@ function outputContainsAllItems(text, items) {
   const source = String(text || '');
   return items.every(item => {
     const label = escapedLabel(item.label);
-    return new RegExp(`(?:^|\\n)#{2,4}\\s*${label}\\s*-?\\s*savol\\b`, 'i').test(source);
+    return new RegExp(`(?:^|\n)#{2,4}\\s*${label}\\s*-?\\s*savol\\b`, 'i').test(source);
   });
 }
 
@@ -369,9 +380,9 @@ export default async function handler(req, res) {
 
     const summary = buildSummary(items, correct, total, answered);
     const coverage = missedCount > reviewItems.length
-      ? `\\n\\nBatafsil yechim ${reviewItems.length} ta xato yoki javobsiz savol uchun berildi; qolganlari umumiy xulosada jamlandi.`
+      ? `\n\nBatafsil yechim ${reviewItems.length} ta xato yoki javobsiz savol uchun berildi; qolganlari umumiy xulosada jamlandi.`
       : '';
-    const feedback = `${parts.join('\\n\\n')}${parts.length ? '\\n\\n' : ''}${summary}${coverage}`.trim();
+    const feedback = `${parts.join('\n\n')}${parts.length ? '\n\n' : ''}${summary}${coverage}`.trim();
 
     return res.status(200).json({
       feedback,
