@@ -133,7 +133,7 @@ async function refreshTeacherAiUsage(){
       const fill = document.getElementById('teacher-ai-usage-fill');
       if(remaining) remaining.textContent = String(data.dailyRemaining);
       if(count) count.textContent = `Bugun ${data.dailyUsed} / ${data.dailyLimit} ta so‘rov ishlatildi`;
-      if(plan) plan.textContent = data.isGuest ? 'Mehmon • kunlik limit' : 'Akkaunt • kunlik limit';
+      if(plan) plan.textContent = 'Akkaunt • kunlik limit';
       if(reset){ const time = new Date(data.resetsAt).toLocaleTimeString('uz-UZ',{timeZone:'Asia/Tashkent',hour:'2-digit',minute:'2-digit'}); reset.textContent = `Yangilanish: ${time} (Toshkent)`; }
       if(track){ track.setAttribute('aria-valuemax',String(data.dailyLimit)); track.setAttribute('aria-valuenow',String(data.dailyUsed)); }
       if(fill) fill.style.width = `${Math.min(100,Math.max(0,(data.dailyUsed/data.dailyLimit)*100))}%`;
@@ -2395,7 +2395,7 @@ function showSignedInUI(user){
   setUserAvatar(document.getElementById('sidebar-footer-avatar'), user);
 
   document.getElementById('profile-name').textContent = user.name || user.email;
-  document.getElementById('profile-email').textContent = user.isGuest ? 'Vaqtinchalik mehmon sessiyasi · 12 soat' : (user.email || '');
+  document.getElementById('profile-email').textContent = user.email || '';
 
   const sidebarName = document.getElementById('sidebar-footer-name');
   if(sidebarName) sidebarName.textContent = user.name || user.email || 'Profil';
@@ -3380,7 +3380,7 @@ function finishMockTest(autoFinish){
         <button class="glow-btn" id="mock-ai-feedback" type="button">✨ Ustoz AI tahlili</button>
         <button class="ghost-btn" id="mock-back-list" type="button">Mock testlarga qaytish</button>
       </div>
-      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">Mehmonlar kuniga 1 marta bepul AI tahlilini sinab ko‘rishi mumkin. AI 5 tagacha xato yoki javobsiz savolni batafsil ko‘radi. Oddiy hisoblarda bu funksiya PLUS tarifida.</div>
+      <div style="max-width:620px;margin:8px auto 0;font-size:12px;color:var(--text-dim);">Mock testdan keyingi batafsil AI tahlili PLUS tarifida mavjud. AI 5 tagacha xato yoki javobsiz savolni ko‘rib chiqadi.</div>
       <div id="mock-ai-feedback-box" style="display:none;max-width:720px;margin:18px auto 0;text-align:left;padding:18px;border:1px solid var(--border-soft);border-radius:14px;background:rgba(255,255,255,.025);line-height:1.65;"></div>
     </div>`;
   document.getElementById('mock-back-list').addEventListener('click', renderMockTestList);
@@ -3432,7 +3432,7 @@ if(mockResultsBtn){
     list.innerHTML = `
       <div class="glass-card" style="padding:20px;">
         <h3 style="margin-top:0;">Oxirgi natijalar</h3>
-        ${history.length ? history.map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);"><b>${r.title}</b><div style="font-size:12px;color:var(--text-dim);">${r.correct}/${r.total} element • ${r.percent}%</div></div>`).join('') : (isAccountMockSession() ? '<div class="empty-note">Hali natija yo‘q.</div>' : '<div class="empty-note">Mehmon rejimida test natijalari saqlanmaydi. Hisobga kirsangiz, natijalar hisobingizda saqlanadi.</div>')}
+        ${history.length ? history.map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);"><b>${r.title}</b><div style="font-size:12px;color:var(--text-dim);">${r.correct}/${r.total} element • ${r.percent}%</div></div>`).join('') : '<div class="empty-note">Hali natija yo‘q.</div>'}
         <button class="ghost-btn" id="mock-results-back" type="button" style="margin-top:16px;">Orqaga</button>
       </div>`;
     document.getElementById('mock-results-back').addEventListener('click', renderMockTestList);
@@ -3461,7 +3461,7 @@ async function restoreTeacherMemory(){
         for(const message of chatHistory) appendMsg(message.role === 'assistant' ? 'teacher' : 'user', message.content);
       }
       teacherMemoryReady = true;
-      label.textContent = data.isGuest ? 'Mehmon rejimida suhbat xotiraga saqlanmaydi' : 'Oxirgi 20 xabar hisobingizda saqlanadi';
+      label.textContent = 'Oxirgi 20 xabar hisobingizda saqlanadi';
     }catch{ label.textContent = 'Xotira yuklanmadi. Suhbatni davom ettirishingiz mumkin.'; }
     finally{teacherMemoryLoading = null;}
   })();
