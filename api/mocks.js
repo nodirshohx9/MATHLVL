@@ -11,7 +11,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
   });
   return cookies;
 }
@@ -21,7 +21,7 @@ function verifySignedCookie(token, secret) {
   const [data, sig] = token.split('.');
   if (!data || !sig) return null;
   const expected = crypto.createHmac('sha256', secret).update(data).digest('hex');
-  if (sig.length !== expected.length) return null;
+  if (!/^[a-f0-9]{64}$/i.test(sig)) return null;
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
@@ -357,7 +357,7 @@ JSON SHAKLI:
       maxOutputTokens: 24000,
       responseMimeType: 'application/json',
       temperature: 0.1,
-      thinkingConfig: { thinkingBudget: 1024 }
+      thinkingConfig: { thinkingLevel: 'low' }
     }
   };
 

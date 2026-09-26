@@ -14,7 +14,7 @@ function parseCookies(header) {
   (header || '').split(';').forEach(pair => {
     const idx = pair.indexOf('=');
     if (idx === -1) return;
-    cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim());
+    try { cookies[pair.slice(0, idx).trim()] = decodeURIComponent(pair.slice(idx + 1).trim()); } catch {}
   });
   return cookies;
 }
@@ -26,7 +26,7 @@ function verifySession(req) {
   const [data, sig] = token.split('.');
   if (!data || !sig) return null;
   const expected = crypto.createHmac('sha256', secret).update(data).digest('hex');
-  if (sig.length !== expected.length) return null;
+  if (!/^[a-f0-9]{64}$/i.test(sig)) return null;
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expected))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
@@ -97,7 +97,7 @@ async function requestGemini(apiKey, model, prompt, maxOutputTokens = 4200) {
       generationConfig: {
         maxOutputTokens,
         temperature: 0.15,
-        thinkingConfig: { thinkingBudget: 0 }
+        thinkingConfig: { thinkingLevel: 'low' }
       }
     })
   });

@@ -24,7 +24,7 @@ function parseCookies(header) {
     if (idx === -1) return;
     const key = pair.slice(0, idx).trim();
     const val = pair.slice(idx + 1).trim();
-    cookies[key] = decodeURIComponent(val);
+    try { cookies[key] = decodeURIComponent(val); } catch {}
   });
   return cookies;
 }
@@ -35,7 +35,7 @@ function verifySession(cookieVal, secret) {
   if (parts.length !== 2) return null;
   const [data, sig] = parts;
   const expectedSig = crypto.createHmac('sha256', secret).update(data).digest('hex');
-  if (sig.length !== expectedSig.length) return null;
+  if (!/^[a-f0-9]{64}$/i.test(sig)) return null;
   if (!crypto.timingSafeEqual(Buffer.from(sig), Buffer.from(expectedSig))) return null;
   try {
     const payload = JSON.parse(Buffer.from(data, 'base64url').toString());
