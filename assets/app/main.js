@@ -1378,7 +1378,8 @@ async function startReading(book){
           url:source.url,
           disableAutoFetch:false,
           disableStream:false,
-          useWorkerFetch:true
+          useWorkerFetch:true,
+          isEvalSupported:false
         });
         let timeout;
         try { return await Promise.race([task.promise, new Promise((_, reject)=>{ timeout=setTimeout(()=>{task.destroy(); reject(new Error('PDF yuklanishi kechikdi.'));},25000); })]); }
