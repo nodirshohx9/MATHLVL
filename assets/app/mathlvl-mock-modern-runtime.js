@@ -4,11 +4,20 @@
   const list = document.getElementById('mocktest-list');
   if(!panel || !list) return;
 
+  function accountSession(){
+    const session = window.MATHLVL_CURRENT_SESSION || window.MATHLVL_AUTH_STATE || {};
+    return !!session.loggedIn && !session.isGuest;
+  }
+  function clearGuestData(){
+    try{ localStorage.removeItem('mathlvl_mock_results'); localStorage.removeItem('mathlvl_mock_draft_v1'); }catch(_e){}
+  }
   function readHistory(){
+    if(!accountSession()){ clearGuestData(); return []; }
     try{ const v = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); return Array.isArray(v) ? v : []; }
     catch(_e){ return []; }
   }
   function readDraft(){
+    if(!accountSession()){ clearGuestData(); return null; }
     try{
       const d = JSON.parse(localStorage.getItem('mathlvl_mock_draft_v1') || 'null');
       if(!d || !d.testId) return null;
@@ -157,6 +166,7 @@
     queued=true;
     requestAnimationFrame(()=>{ queued=false; enhance(); });
   }
+  window.addEventListener('mathlvl:authchange', schedule);
   const observer = new MutationObserver(schedule);
   observer.observe(list,{childList:true,subtree:true});
   window.addEventListener('storage',schedule);
