@@ -49,6 +49,9 @@
     authState.loggedIn=!!data.loggedIn;authState.isGuest=!!data.isGuest;
     authState.user=authState.loggedIn?data:null;
     authState.ready=true;updateGuestButton();
+    if(!authState.loggedIn || authState.isGuest){
+      try{localStorage.removeItem('mathlvl_mock_results');localStorage.removeItem('mathlvl_mock_draft_v1')}catch{}
+    }
     if(authState.loggedIn){
       let tab=null;
       try{tab=localStorage.getItem(pendingKey);localStorage.removeItem(pendingKey)}catch{}
