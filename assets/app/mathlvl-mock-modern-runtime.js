@@ -44,7 +44,7 @@
       <div class="mock-modern-copy">
         <div class="mock-modern-eyebrow">MATHLVL MOCK LAB</div>
         <h2 class="mock-modern-title">Milliy sertifikatga<br>imtihondek tayyorlaning.</h2>
-        <p class="mock-modern-sub">${accountSession() ? '150 daqiqalik to‘liq format, akkauntda saqlanadigan progress va ishlangan holati.' : 'Mehmon rejimida test tarixi va davom ettirilgan test saqlanmaydi.'}</p>
+        <p class="mock-modern-sub">${accountSession() ? '150 daqiqalik to‘liq format, akkauntda saqlanadigan progress va ishlangan holati.' : 'Test tarixi va davom ettirish uchun hisobingizga kiring.'}</p>
         <div class="mock-modern-pills">
           <span class="mock-modern-pill"><b>45</b> topshiriq</span>
           <span class="mock-modern-pill"><b>55</b> javob elementi</span>
