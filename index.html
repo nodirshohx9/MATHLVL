@@ -325,13 +325,18 @@
               </div>
             </div>
             <div class="status" id="chat-status"></div>
+            <section class="teacher-ai-usage" id="teacher-ai-usage" hidden aria-label="Ustoz AI limiti">
+              <div class="teacher-ai-usage-head"><div><span class="teacher-ai-usage-kicker">USTOZ AI</span><strong id="teacher-ai-usage-plan">Kunlik limit</strong></div><strong class="teacher-ai-usage-remaining" id="teacher-ai-usage-remaining">—</strong></div>
+              <div class="teacher-ai-usage-track" id="teacher-ai-usage-track" role="progressbar" aria-label="Bugungi AI so‘rovlari" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><span id="teacher-ai-usage-fill"></span></div>
+              <div class="teacher-ai-usage-foot"><span id="teacher-ai-usage-count">Limit yuklanmoqda…</span><span id="teacher-ai-usage-reset">Yangilanish vaqti yuklanmoqda…</span></div>
+            </section>
           </div>
         </div>
         <div class="book-col" id="book-col">
           <div id="book-detail-screen">
             <button class="back-link book-detail-back" id="book-back">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m15 18-6-6 6-6"/></svg>
-              <span>Kutubxonaga qaytish</span>
+              <span>Bosh menyuga qaytish</span>
             </button>
 
             <div class="book-detail-stage">
@@ -582,9 +587,13 @@
     <div class="fullscreen-overlay-inner">
       <button class="back-link" id="plan-select-back" style="margin-bottom:16px;">&larr; Orqaga</button>
       <h2 class="sec-title">MATHLVL Plus</h2>
-      <p class="sec-sub">Ko'proq kitoblar, ko'proq AI, ko'proq imkoniyat.</p>
+      <p class="sec-sub">Plus kutubxonasi, mock test tahlili va premium imkoniyatlar.</p>
 
       <div id="current-plan-note" style="display:none;"></div>
+      <div class="plan-ai-limit-panel" id="plan-ai-usage-copy">
+        <div class="plan-ai-limit-icon" aria-hidden="true">✦</div>
+        <div><strong>Ustoz AI limiti</strong><p>Akkauntda kuniga 100 ta, mehmon rejimida 40 ta so‘rov. Limit har kuni Toshkent vaqti bilan 05:00 da yangilanadi.</p></div>
+      </div>
 
       <div class="plan-toggle">
         <button class="plan-toggle-btn active" data-cycle="monthly">Oylik</button>
