@@ -43,6 +43,7 @@
 <script src="/assets/chat-safety.js"></script>
 <link rel="stylesheet" href="/assets/navigation-polish.css">
 <link rel="stylesheet" href="/assets/reader-pan.css">
+<link rel="stylesheet" href="/assets/learning/learning.css">
 </head>
 <body>
 
@@ -69,6 +70,8 @@
       <span>MATHLVL</span>
     </div>
     <button class="sidebar-nav-item active" data-sidebar-tab="home"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg></span>Bosh sahifa</button>
+    <button class="sidebar-nav-item" data-sidebar-tab="learning"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5h6l2 2 2-2h6v15h-6l-2 2-2-2H4zM12 7v15"/></svg></span>O‘quv yo‘lim</button>
+    <button class="sidebar-nav-item" data-sidebar-tab="sat"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 9-9M16 3h5v5"/></svg></span>SAT Math <span class="learning-nav-new">YANGI</span></button>
     <button class="sidebar-nav-item" data-sidebar-tab="books"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg></span>Kitoblar</button>
     <button class="sidebar-nav-item" data-sidebar-tab="teacher"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg></span>Ustoz AI</button>
     <button class="sidebar-nav-item" data-sidebar-tab="mocktest"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg></span>Mock Test</button>
@@ -150,6 +153,8 @@
     </button>
   </nav>
 
+  <section class="panel learning-page" id="panel-learning" aria-label="Shaxsiy o‘quv yo‘li"><div id="learning-dashboard"></div></section>
+  <section class="panel learning-page" id="panel-sat" aria-label="SAT Math"><div id="sat-dashboard"></div></section>
   <!-- ===== HOME / SOLVE ===== -->
   <section class="panel active" id="panel-home">
     <div class="dash-welcome">
@@ -198,6 +203,7 @@
       </div>
     </div>
 
+    <div class="learning-home-entry"><div><strong>O‘zingizga mos yo‘ldan boshlang</strong><p>Diagnostika, shaxsiy reja va SAT Math mashqlari.</p></div><div class="learning-home-actions"><button class="learning-btn primary" type="button" data-home-target="learning">O‘quv yo‘lim →</button><button class="learning-btn" type="button" data-home-target="sat">SAT Math</button></div></div>
     <div class="dash-solve-section">
       <div class="solve-section-head">
         <div>
@@ -948,6 +954,8 @@ UUIAAAAAAAAA
 
 <script id="mathlvl-mock-math-keyboard-toggle-fix-runtime" src="/assets/app/mathlvl-mock-math-keyboard-toggle-fix-runtime.js"></script>
 
+<dialog id="learning-dialog" class="learning-dialog" aria-labelledby="learning-dialog-title"></dialog>
+<script type="module" src="/assets/learning/learning.js"></script>
 </body>
 </html>
 

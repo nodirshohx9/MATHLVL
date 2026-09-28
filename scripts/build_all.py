@@ -59,7 +59,7 @@ for page in ['index.html','admin.html']:
     for asset in re.findall(r'(?:src|href)=["\'](/assets/[^"\']+)', source):
         if not Path(asset.split('?')[0].lstrip('/')).is_file():
             raise SystemExit(f'Missing asset: {asset}')
-subprocess.run(['node', '--test', 'tests/chat.test.mjs'], check=True)
+subprocess.run(['node', '--test', 'tests/chat.test.mjs', 'tests/learning.test.mjs'], check=True)
 
 # Branding assets are referenced outside /assets/ as well.
 logo = Path('mathlvl-logo.png')
