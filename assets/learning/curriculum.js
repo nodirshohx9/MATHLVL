@@ -100,3 +100,34 @@ export function streak(days,now=new Date()) {
   while(set.has(dayKey(date))){count++;date.setUTCDate(date.getUTCDate()-1);}
   return count;
 }
+
+// The response contract follows what is asked, not the number of roots in the equation.
+// Keep this guidance shared so validation and the visible instructions stay consistent.
+export function answerGuide(question) {
+  const common={label:'Javobingiz',instruction:'Bitta son yoki kasr kiriting.',placeholder:'Son yoki kasr',format:'Kasr: 1/4. O‘nli son: 0.25 yoki 0,25. O‘lchov birligini yozmang.'};
+  const guides={
+    linear:{label:'x ning qiymati',instruction:'Faqat x ning qiymatini yozing. “x =” yozish shart emas.'},
+    systems:{label:'Faqat x ning qiymati',instruction:'Sistemada x va y bor, lekin savolda faqat x so‘ralgan. y ni kiritmang.'},
+    quadratic:{label:'Kattaroq ildiz (x)',instruction:'Faqat kattaroq ildizni yozing — bitta qiymat. Ikki ildizni birga kiritmang.',placeholder:'Faqat kattaroq ildiz'},
+    exponential:{label:'Yakuniy miqdor',instruction:'Ko‘rsatilgan vaqtdan keyingi jami miqdorni bitta son bilan yozing.'},
+    percent:{label:'Chegirmadan keyingi narx',instruction:'Chegirma miqdorini emas, yangi narxni yozing. $ yoki % belgisi kerak emas.'},
+    statistics:question.en.includes('probability')?{label:'Ehtimollik',instruction:'Ehtimollikni kasr yoki 0 dan 1 gacha o‘nli son bilan yozing. Foiz belgisini ishlatmang.'}:{label:'O‘rta arifmetik',instruction:'Sonlarning o‘rta arifmetigini bitta qiymat bilan yozing.'},
+    geometry:{label:'Uchburchak yuzi',instruction:'Yuzaning son qiymatini yozing. “sm²” yoki “cm²” yozish shart emas.'},
+    trig:{label:'Trigonometrik nisbat',instruction:'So‘ralgan nisbatni kasr bilan yozing. Surat va maxraj orasiga / qo‘ying.',placeholder:'Surat/maxraj'}
+  };
+  return {...common,...guides[question.topic]};
+}
+export function answerError(question,input) {
+  const text=String(input??'').trim();
+  if(Number.isFinite(numericAnswer(text)))return '';
+  if(!text)return 'Javob kiriting yoki “Bilmayman” tugmasini bosing.';
+  if(/[;\n]|\b(?:va|and)\b/i.test(text)||/^\s*[+-]?\d+\s+[+-]?\d+\s*$/.test(text)) {
+    if(question.topic==='quadratic')return 'Bu savolda faqat kattaroq ildiz so‘ralgan. Ikkala ildizdan kattasini tanlab, bitta qiymat yozing.';
+    if(question.topic==='systems')return 'Bu savolda faqat x so‘ralgan. x va y ni birga emas, x ning bitta qiymatini yozing.';
+    return 'Bu savol uchun bitta qiymat kerak. Bir nechta javobni birga kiritmang.';
+  }
+  if(/[=]/.test(text))return 'Faqat son qiymatini yozing. Masalan, “x = 12” o‘rniga “12”.';
+  if(/[%$]|sm|cm/i.test(text))return 'Faqat son yoki kasrni kiriting; birlik va % belgisini olib tashlang.';
+  if(/^[-+\d.,\s]+\/\s*[+-]?0(?:[.,]0*)?$/.test(text))return 'Kasrning maxraji 0 bo‘lishi mumkin emas.';
+  return 'Son yoki kasr kiriting: masalan, 12, −3, 0.25 yoki 1/4. Vergul o‘nli kasr belgisi sifatida o‘qiladi.';
+}

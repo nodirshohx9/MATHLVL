@@ -61,3 +61,20 @@ test('API blocks cross-site writes and unsupported methods',async()=>{
   const res=response();await handleLearning(req,res,redis,'test');assert.equal(res.statusCode,status);
  }assert.equal(calls,0);
 });
+
+test('answer guidance distinguishes larger root, x-only systems and response formats',async()=>{
+ const {answerGuide,answerError}=await import('../assets/learning/curriculum.js');
+ const q=QUESTION_MAP.get('quadratic-0');
+ assert.match(answerGuide(q).instruction,/kattaroq/);
+ assert.match(answerError(q,'5 ; 2'),/faqat kattaroq/);
+ assert.match(answerError(q,'2 va 5'),/faqat kattaroq/);
+ assert.equal(answerError(q,'5'),'');assert.ok(isCorrect(q,'5'));assert.equal(isCorrect(q,'2'),false);
+ assert.match(answerError(QUESTION_MAP.get('systems-0'),'5; 2'),/faqat x/);
+ assert.match(answerError(q,'x=5'),/Faqat son/);
+ assert.match(answerError(q,'1/0'),/maxraji 0/);
+ assert.match(answerError(q,''),/Javob kiriting/);
+ assert.match(answerError(QUESTION_MAP.get('percent-0'),'108$'),/birlik/);
+ assert.equal(answerError(QUESTION_MAP.get('statistics-1'),'0,25'),'');
+ assert.match(answerGuide(QUESTION_MAP.get('trig-0')).instruction,/kasr/);
+ assert.ok(QUESTIONS.every(q=>answerGuide(q).label&&answerGuide(q).instruction));
+});

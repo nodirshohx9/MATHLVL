@@ -1,4 +1,4 @@
-import {TOPICS,TERMS,QUESTIONS,emptyState,mastery,orderedTopics,chooseQuestions,isCorrect,numericAnswer,dayKey,streak} from './curriculum.js';
+import {TOPICS,TERMS,QUESTIONS,emptyState,mastery,orderedTopics,chooseQuestions,isCorrect,answerGuide,answerError,dayKey,streak} from './curriculum.js';
 const root=document.getElementById('learning-dashboard');
 const satRoot=document.getElementById('sat-dashboard');
 const dialog=document.getElementById('learning-dialog');
@@ -75,15 +75,17 @@ function begin(mode,topic){
   }else questionView();
 }
 function questionView(){
-  const s=session;if(!s)return;const q=s.questions[s.index];
-  showDialog(`<div class="learning-dialog-head"><span>${s.mode==='diagnostic'?'DIAGNOSTIKA':s.mode==='review'?'XATOLARNI TAKRORLASH':'MASHQ'} · ${s.index+1} / ${s.questions.length}</span>${button('Yopish','close')}</div><progress value="${s.index}" max="${s.questions.length}" aria-label="Mashq jarayoni"></progress><h2 id="learning-dialog-title">${esc(s.track==='sat'?q.en:q.uz)}</h2><form id="learning-answer-form"><label for="learning-answer">Javobingiz</label><input id="learning-answer" type="text" inputmode="text" autocomplete="off" maxlength="50" placeholder="Masalan: 12, 0.25 yoki 1/4" required><p class="learning-small">Son yoki kasr kiriting. Kasr uchun / belgisidan foydalaning.</p><p class="learning-error" id="learning-answer-error" role="alert"></p><div class="learning-dialog-actions"><button class="learning-btn primary" type="submit">${s.mode==='diagnostic'?'Davom etish →':'Tekshirish'}</button>${button('Bilmayman','skip')}</div></form><div id="learning-answer-feedback" aria-live="polite"></div>`);
+  const s=session;if(!s)return;const q=s.questions[s.index],guide=answerGuide(q);
+  showDialog(`<div class="learning-dialog-head"><span>${s.mode==='diagnostic'?'DIAGNOSTIKA':s.mode==='review'?'XATOLARNI TAKRORLASH':'MASHQ'} · ${s.index+1} / ${s.questions.length}</span>${button('Yopish','close')}</div><progress value="${s.index}" max="${s.questions.length}" aria-label="Mashq jarayoni"></progress><h2 id="learning-dialog-title">${esc(s.track==='sat'?q.en:q.uz)}</h2>${s.track==='sat'?`<details class="learning-translation" ${language==='uz'?'open':''}><summary>O‘zbekcha tarjima</summary><p lang="uz">${esc(q.uz)}</p></details>`:''}<div class="learning-answer-guide" id="learning-answer-guide"><strong>Nima kiritiladi?</strong><p>${esc(guide.instruction)}</p></div><form id="learning-answer-form" novalidate><label for="learning-answer">${esc(guide.label)}</label><input id="learning-answer" type="text" inputmode="text" autocomplete="off" maxlength="50" placeholder="${esc(guide.placeholder)}" aria-describedby="learning-answer-guide learning-answer-format learning-answer-error" required><p class="learning-small" id="learning-answer-format">${esc(guide.format)}</p><p class="learning-error" id="learning-answer-error" role="alert"></p><div class="learning-dialog-actions"><button class="learning-btn primary" type="submit">${s.mode==='diagnostic'?'Davom etish →':'Tekshirish'}</button>${button('Bilmayman','skip')}</div></form><div id="learning-answer-feedback" aria-live="polite"></div>`);
   document.getElementById('learning-answer').focus();
 }
 function answer(skip=false){
   const s=session;if(!s||s.feedback)return;
   const input=document.getElementById('learning-answer');const value=skip?'':input.value.trim();
-  if(!skip&&!Number.isFinite(numericAnswer(value))){document.getElementById('learning-answer-error').textContent='To‘g‘ri son yoki kasr kiriting, masalan 0.5 yoki 1/2.';return;}
-  const q=s.questions[s.index];s.answers.push({id:q.id,value});s.feedback=true;
+  const q=s.questions[s.index],error=skip?'':answerError(q,value);
+  if(error){document.getElementById('learning-answer-error').textContent=error;input.setAttribute('aria-invalid','true');input.focus();return;}
+  input.removeAttribute('aria-invalid');document.getElementById('learning-answer-error').textContent='';
+  s.answers.push({id:q.id,value});s.feedback=true;
   if(s.mode==='diagnostic'){next();return;}
   document.querySelectorAll('#learning-answer-form button, #learning-answer-form input').forEach(el=>el.disabled=true);
   const ok=isCorrect(q,value);
