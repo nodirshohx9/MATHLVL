@@ -7,7 +7,7 @@
   const section = document.getElementById('mathlvl-mobile-section');
   if(!btn || !backdrop || !sidebar) return;
 
-  const titles = {home:'Bosh sahifa',books:'Kitoblar',teacher:'Ustoz AI',mocktest:'Mock Test',profile:'Profil'};
+  const titles = {home:'Bosh sahifa',learning:'O‘quv yo‘lim',sat:'SAT Math',books:'Kitoblar',teacher:'Ustoz AI',mocktest:'Mock Test',profile:'Profil'};
   function openMenu(){
     if(window.innerWidth >= 900 || body.classList.contains('reader-mode')) return;
     body.classList.add('mobile-sidebar-open');

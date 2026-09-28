@@ -9,3 +9,11 @@ DOMPurify 3.4.16 is vendored in assets/vendor/purify.min.js with its upstream li
 Book tutor history is bounded and in-memory per book, and is cleared on page reload. Persistent cross-device AI memory is a separate future database integration.
 
 Teacher memory is now persisted in Supabase project nbpqyodesukgbznzgfek. The teacher-memory Edge Function validates the existing MATHLVL session against the fixed production auth endpoint before deriving the owner hash. Only the service backend can access teacher_memory; public database roles have no grants. No database keys ship to the browser or repository. Only the last 20 text messages (2500 characters each) are stored; image bytes are excluded. The UI provides a clear-history action. Book-specific drawer history remains session-local.
+
+## Personal learning and SAT Math
+
+`assets/learning/` contains the dashboard, curriculum, and original foundational practice (8 topics / 96 variants). SAT prompts are English; explanations support Uzbek and English. This is not a full adaptive SAT or national-certificate syllabus and does not predict official scores. Domain reference: https://satsuite.collegeboard.org/sat/whats-on-the-test/math/overview
+
+The existing authenticated `/api/progress?action=learning` endpoint stores per-account, per-track plans and progress in the existing Redis service; no additional environment variables or database migration are needed. Server-side grading, replay protection, and compare-and-set updates preserve progress across devices and concurrent tabs. Diagnostic results prioritize weak topics; daily minutes control practice length. Exam date and target are planning metadata. Signed-out visitors can browse the dashboard and are asked to sign in to start or save.
+
+Run `python scripts/build_all.py` for the existing checks plus learning regression tests. The question bank is deliberately public practice material; these results must not be used for competitive rankings or certified scores.

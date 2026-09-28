@@ -1,3 +1,4 @@
+import { handleLearning } from '../lib/learning-progress.js';
 import crypto from 'crypto';
 
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
@@ -115,6 +116,8 @@ export default async function handler(req, res) {
   const action = String(req.query?.action || 'books');
 
   try {
+    if (action === 'learning') return await handleLearning(req, res, redisCommand, `mathlvl:learning:${userHash(session.email)}`);
+
     if (action === 'mock-history') {
       if (req.method === 'GET') {
         if (session.guest) { await redisCommand(['DEL', mockKey(session.email)]); return res.status(200).json({ results: [] }); }
