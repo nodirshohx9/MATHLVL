@@ -97,7 +97,8 @@ async function callMathlvlAI({system, messages, tools, max_tokens, mode}){
   const res = await fetch(API_URL, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body)
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(65000)
   });
 
   const payload = await res.json().catch(()=> ({}));
@@ -641,8 +642,8 @@ async function refreshAllBookViews(){
   if(document.getElementById('book-list-section-outer')?.dataset.booksRebuild === '1') return;
   const grid = document.getElementById('book-grid');
   if(grid) grid.textContent = 'Kitoblar yuklanmoqda…';
-  const books = await loadBooks();
-  renderBookGrid(document.getElementById('book-grid'), books, { selectable:true, deletable:false });
+  await loadBooks();
+  runLibraryFilters();
 }
 
 function normalizeBookSearch(value){
@@ -765,7 +766,9 @@ function appendMsg(role, text){
   const div = document.createElement('div');
   div.className = 'msg ' + role;
   div.innerHTML = `<div class="bubble"></div>`;
-  div.querySelector('.bubble').textContent = text;
+  const bubble = div.querySelector('.bubble');
+  if(role === 'teacher') renderAiAnswer(bubble, text);
+  else bubble.textContent = text;
   win.appendChild(div);
   win.scrollTop = win.scrollHeight;
 }
@@ -1323,11 +1326,19 @@ function openBookInChat(book){
 
   const startBtn = document.getElementById('book-start-reading');
   startBtn.querySelector('span').textContent = 'O‘qishni boshlash';
+  startBtn.disabled = false;
   startBtn.onclick = async ()=>{
-    const readableBook = await resolveBookForReading(book);
-    if(!readableBook) return;
-    activeBook = readableBook;
-    startReading(readableBook);
+    startBtn.disabled = true;
+    startBtn.querySelector('span').textContent = 'Kitob ochilmoqda…';
+    try {
+      const readableBook = await resolveBookForReading(book);
+      if(!readableBook || activeBook?.id !== book.id || !document.body.classList.contains('reader-mode')) return;
+      activeBook = readableBook;
+      await startReading(readableBook);
+    } finally {
+      startBtn.disabled = false;
+      startBtn.querySelector('span').textContent = 'O‘qishni boshlash';
+    }
   };
   requestAnimationFrame(()=>{
     window.scrollTo({top:0, left:0, behavior:'instant'});

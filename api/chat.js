@@ -3,16 +3,10 @@ import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { consumeAiUsage, getAiUsage } from '../lib/ai-usage.js';
 import { teacherSystem } from '../lib/teacher.js';
 import crypto from 'crypto';
+import { requestGeminiWithFallback } from '../lib/gemini-request.js';
 
 export const config = { maxDuration: 60 };
 
-const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.8-flash';
-const GEMINI_FALLBACK_MODELS = [...new Set([
-  GEMINI_MODEL,
-  'gemini-3.8-flash',
-  'gemini-3.6-flash',
-  'gemini-3.5-flash'
-])];
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -67,54 +61,6 @@ function toGeminiParts(content) {
       : { text: block.text || '' });
   }
   return [{ text: String(content || '') }];
-}
-
-function sleep(ms) {
-  return new Promise(resolve => setTimeout(resolve, ms));
-}
-
-function isRetryableGeminiStatus(status) {
-  return status === 429 || status === 500 || status === 502 || status === 503 || status === 504;
-}
-
-async function requestGeminiWithFallback(apiKey, body) {
-  let last = null;
-
-  for (let modelIndex = 0; modelIndex < GEMINI_FALLBACK_MODELS.length; modelIndex++) {
-    const model = GEMINI_FALLBACK_MODELS[modelIndex];
-    const attempts = modelIndex === 0 ? 2 : 1;
-
-    for (let attempt = 0; attempt < attempts; attempt++) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: AbortSignal.timeout(12000)
-        });
-        const data = await response.json().catch(() => ({}));
-
-        if (response.ok) {
-          return { response, data, model };
-        }
-
-        last = { response, data, model };
-
-        if (!isRetryableGeminiStatus(response.status)) {
-          return last;
-        }
-
-        // High-demand / temporary capacity errors are usually short lived.
-        await sleep(350 + (modelIndex * 180) + (attempt * 300));
-      } catch (error) {
-        last = { response: null, data: { error: { message: error.message } }, model };
-        await sleep(300 + (modelIndex * 150));
-      }
-    }
-  }
-
-  return last;
 }
 
 export default async function handler(req, res) {
