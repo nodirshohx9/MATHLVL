@@ -2476,14 +2476,16 @@ function renderSubscriptionCard(plusData){
 
 async function refreshPlusStatus(){
   try{
-    const res = await fetch('/api/gift?action=status',{credentials:'include',cache:'no-store'});
+    const res = await fetch('/api/gift?action=status',{credentials:'include',cache:'no-store',signal:AbortSignal.timeout(12000)});
+    if(!res.ok) throw new Error('Plus status unavailable');
     const data = await res.json();
+    const wasActive = window.MATHLVL_PLUS_DATA?.active;
     renderSubscriptionCard(data);
+    if(wasActive === false && data.active) showPlusSuccess(data);
     return data;
   }catch(e){
-    const data = { active:false };
-    renderSubscriptionCard(data);
-    return data;
+    // A temporary network error must not revoke a confirmed subscription in the UI.
+    return window.MATHLVL_PLUS_DATA || {active:false};
   }
 }
 
@@ -2767,102 +2769,91 @@ document.getElementById('redeem-screen-back').addEventListener('click', ()=>{
   stopQrScanner();
 });
 
-async function handleRedeemFlow(){
-  const params = new URLSearchParams(window.location.search);
-  const redeemCode = params.get('redeem');
-  if(!redeemCode) return;
-
-  const overlay = document.getElementById('redeem-overlay');
-  const content = document.getElementById('redeem-content');
-  overlay.style.display = 'flex';
-
-  const meRes = await fetch('/api/auth');
-  const me = await meRes.json();
-
-  if(!me.loggedIn){
-    content.innerHTML = `
-      <div style="font-size:32px; margin-bottom:12px;">🎁</div>
-      <h3 style="font-family:var(--font-display); margin-bottom:10px;">Sizga MATHLVL Plus sovg'a qilindi!</h3>
-      <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:20px;">Sovg'ani faollashtirish uchun avval hisobingizga kiring.</p>
-      <button class="glow-btn" id="redeem-login-btn" style="width:100%;">Google bilan kirish</button>
-    `;
-    document.getElementById('redeem-login-btn').addEventListener('click', ()=>{
-      window.location.href = '/api/auth-google-start?redeem=' + encodeURIComponent(redeemCode);
-    });
-    return;
-  }
-
-  content.innerHTML = `<div style="color:var(--text-dim); font-size:13.5px;">Tekshirilmoqda...</div>`;
+const giftErrors = {
+  already_used: 'Bu sovg‘a kodi allaqachon ishlatilgan.',
+  already_redeemed: 'Bu kod hisobingizda avval faollashtirilgan.',
+  already_redeemed_by_user: 'Bu kod hisobingizda avval faollashtirilgan.',
+  expired: 'Sovg‘a kodining muddati tugagan.', revoked: 'Sovg‘a kodi endi faol emas.',
+  not_found: 'Sovg‘a kodi topilmadi.', not_logged_in: 'Avval hisobingizga kiring.'
+};
+let giftBusy = false;
+async function giftRequest(body){
+  const response = await fetch('/api/gift', {method:'POST',credentials:'include',
+    headers:{'Content-Type':'application/json'},body:JSON.stringify(body),signal:AbortSignal.timeout(15000)});
+  const data = await response.json();
+  if(!response.ok) throw new Error(giftErrors[data.error] || 'Faollashtirib bo‘lmadi. Qayta urinib ko‘ring.');
+  return data;
+}
+function plusDialog(title, message, confirmText, cancelText){
+  const modal = document.createElement('dialog');
+  modal.className = 'plus-celebration';
+  modal.setAttribute('aria-label', title);
+  modal.innerHTML = `<div class="plus-celebration-icon" aria-hidden="true">✦</div><span class="plus-celebration-tag">MATHLVL PLUS</span><h2></h2><p></p><div class="plus-celebration-benefits">250 ta AI so‘rovi / kun · Kitob ichidagi AI · Mock tahlili</div><div class="plus-celebration-actions"><button class="glow-btn" type="button" data-plus-confirm></button>${cancelText?'<button class="ghost-btn" type="button" data-plus-cancel></button>':''}</div>`;
+  modal.querySelector('h2').textContent = title;
+  modal.querySelector('p').textContent = message;
+  modal.querySelector('[data-plus-confirm]').textContent = confirmText;
+  if(cancelText) modal.querySelector('[data-plus-cancel]').textContent = cancelText;
+  document.body.appendChild(modal);
+  return new Promise(resolve=>{
+    let settled=false;
+    const finish=value=>{if(settled)return;settled=true;modal.close();modal.remove();resolve(value);};
+    modal.querySelector('[data-plus-confirm]').onclick=()=>finish(true);
+    if(cancelText) modal.querySelector('[data-plus-cancel]').onclick=()=>finish(false);
+    modal.addEventListener('cancel',e=>{e.preventDefault();finish(false);});
+    modal.showModal();
+  });
+}
+function showPlusSuccess(data){
+  const expiry = formatUzDate(data.expiresAt);
+  return plusDialog('Tabriklaymiz! MATHLVL Plus faollashdi!',
+    `${data.durationDays ? data.durationDays+' kunlik Plus hisobingizga qo‘shildi. ' : ''}${expiry ? 'Amal qilish muddati: '+expiry+'gacha.' : 'Premium imkoniyatlar endi siz uchun ochiq.'}`,
+    'Ajoyib, davom etamiz!');
+}
+async function redeemGift(code){
+  if(giftBusy)return;
+  giftBusy=true;
+  const btn=document.getElementById('manual-redeem-btn');
+  const status=document.getElementById('manual-redeem-status');
+  btn.disabled=true;status.classList.remove('err');status.textContent='Kod tekshirilmoqda…';
   try{
-    const previewRes = await fetch('/api/gift', {
-      method:'POST', headers:{ 'Content-Type':'application/json' },
-      body: JSON.stringify({ action:'preview', code: redeemCode })
-    });
-    const preview = await previewRes.json();
-    const errMessages = {
-      already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
-      expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
-      revoked: "Ushbu sovg'a kodi endi faol emas.",
-      not_found: "Sovg'a kodi topilmadi."
-    };
-    if(!previewRes.ok){
-      content.innerHTML = `
-        <div style="font-size:32px; margin-bottom:12px;">😕</div>
-        <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${errMessages[preview.error] || "Nimadir xato ketdi."}</p>
-        <button class="ghost-btn" id="redeem-close-btn" style="width:100%;">Yopish</button>
-      `;
-      document.getElementById('redeem-close-btn').addEventListener('click', ()=>{
-        overlay.style.display = 'none';
-        window.history.replaceState({}, '', window.location.pathname);
-      });
-      return;
+    const preview=await giftRequest({action:'preview',code});
+    status.textContent='';
+    if(!await plusDialog('Sizga Plus sovg‘a qilindi!', `${preview.durationDays} kunlik MATHLVL Plus’ni hisobingizda faollashtirasizmi?`, 'Faollashtirish', 'Hozir emas'))return;
+    status.textContent='Plus faollashtirilmoqda…';
+    const data=await giftRequest({action:'redeem',code});
+    renderSubscriptionCard({...data,active:true});
+    document.getElementById('manual-redeem-input').value='';
+    document.getElementById('redeem-screen-overlay').classList.remove('open');
+    document.getElementById('plan-select-overlay')?.classList.remove('open');
+    status.textContent='';
+    refreshAiUsage();
+    await showPlusSuccess(data);
+  }catch(error){
+    status.classList.add('err');
+    status.textContent=error.name==='TimeoutError'||error.name==='AbortError'
+      ? 'Javob kechikdi. Profilingizdagi Plus holatini tekshiring, so‘ng qayta urinib ko‘ring.'
+      : error.message || 'Ulanishda xato. Qayta urinib ko‘ring.';
+  }finally{giftBusy=false;btn.disabled=false;}
+}
+async function handleRedeemFlow(){
+  const params=new URLSearchParams(window.location.search),code=params.get('redeem');
+  if(!code)return;
+  openRedeemScreen();
+  document.getElementById('manual-redeem-input').value=code;
+  window.history.replaceState({},'',window.location.pathname);
+  const status=document.getElementById('manual-redeem-status');
+  try{
+    const response=await fetch('/api/auth',{credentials:'include',signal:AbortSignal.timeout(15000)});
+    if(!response.ok)throw new Error('Hisobni tekshirib bo‘lmadi. Qayta urinib ko‘ring.');
+    const me=await response.json();
+    if(!me.loggedIn){
+      status.textContent='Sovg‘ani olish uchun avval Google hisobingizga kiring.';
+      const login=document.createElement('button');login.className='glow-btn';login.textContent='Google bilan kirish';
+      login.onclick=()=>{window.location.href='/api/auth-google-start?redeem='+encodeURIComponent(code);};
+      status.appendChild(login);return;
     }
-
-    content.innerHTML = `
-      <div style="font-size:32px; margin-bottom:12px;">🎁</div>
-      <h3 style="font-family:var(--font-display); margin-bottom:10px;">Sizga MATHLVL Plus sovg'a qilindi</h3>
-      <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${preview.durationDays} kunlik MATHLVL Plus</p>
-      <div style="display:flex; gap:10px;">
-        <button class="ghost-btn" id="redeem-cancel-btn" style="flex:1;">Bekor qilish</button>
-        <button class="glow-btn" id="redeem-confirm-btn" style="flex:1;">Faollashtirish</button>
-      </div>
-    `;
-    document.getElementById('redeem-cancel-btn').addEventListener('click', ()=>{
-      overlay.style.display = 'none';
-      window.history.replaceState({}, '', window.location.pathname);
-    });
-    document.getElementById('redeem-confirm-btn').addEventListener('click', async ()=>{
-      content.innerHTML = `<div style="color:var(--text-dim); font-size:13.5px;">Faollashtirilmoqda...</div>`;
-      const res = await fetch('/api/gift', {
-        method:'POST', headers:{ 'Content-Type':'application/json' },
-        body: JSON.stringify({ action:'redeem', code: redeemCode })
-      });
-      const data = await res.json();
-      if(!res.ok){
-        content.innerHTML = `
-          <div style="font-size:32px; margin-bottom:12px;">😕</div>
-          <p style="color:var(--text-dim); font-size:14px; margin-bottom:20px;">${errMessages[data.error] || "Nimadir xato ketdi."}</p>
-          <button class="ghost-btn" id="redeem-close-btn" style="width:100%;">Yopish</button>
-        `;
-      }else{
-        const newDateStr = formatUzDate(data.expiresAt);
-        content.innerHTML = `
-          <div style="font-size:32px; margin-bottom:12px;">🎉</div>
-          <h3 style="font-family:var(--font-display); margin-bottom:10px;">MATHLVL Plus faollashtirildi!</h3>
-          <p style="color:var(--text-dim); font-size:13.5px; margin-bottom:6px;">+${data.durationDays} kun</p>
-          <p style="color:var(--text-dim); font-size:13px; margin-bottom:20px;">Yangi muddat: ${newDateStr}gacha</p>
-          <button class="glow-btn" id="redeem-close-btn" style="width:100%;">Davom etish</button>
-        `;
-        refreshPlusStatus();
-      }
-      document.getElementById('redeem-close-btn').addEventListener('click', ()=>{
-        overlay.style.display = 'none';
-        window.history.replaceState({}, '', window.location.pathname);
-      });
-    });
-  }catch(err){
-    content.innerHTML = `<p style="color:var(--text-dim); font-size:14px;">Nimadir xato ketdi. Qayta urinib ko'ring.</p>`;
-  }
+    await redeemGift(code);
+  }catch{status.textContent='Hisobni tekshirib bo‘lmadi. Ulanishni tekshiring va Faollashtirish tugmasini qayta bosing.';status.classList.add('err');}
 }
 
 async function refreshAuthState(){
@@ -2897,7 +2888,7 @@ if(urlParams.get('logged_in') === '1' && !urlParams.get('redeem')){
 }else if(urlParams.get('login_error') === '1'){
   window.history.replaceState({}, '', window.location.pathname);
 }
-handleRedeemFlow();
+setTimeout(handleRedeemFlow, 0);
 
 let qrScannerInstance = null;
 function extractRedeemCode(scannedText){
@@ -2908,101 +2899,51 @@ function extractRedeemCode(scannedText){
   }catch(e){}
   return scannedText.trim();
 }
+let qrGeneration = 0;
+let qrStarting = false;
 document.getElementById('qr-scan-btn').addEventListener('click', async ()=>{
-  const wrap = document.getElementById('qr-scanner-wrap');
-  wrap.style.display = 'block';
-  const statusEl = document.getElementById('manual-redeem-status');
-  statusEl.textContent = '';
-  statusEl.classList.remove('err');
+  if(qrStarting || qrScannerInstance || giftBusy)return;
+  const generation=++qrGeneration;
+  const wrap=document.getElementById('qr-scanner-wrap');
+  const status=document.getElementById('manual-redeem-status');
+  const button=document.getElementById('qr-scan-btn');
+  wrap.style.display='block';status.textContent='Kamera ochilmoqda…';status.classList.remove('err');
+  qrStarting=true;button.disabled=true;
+  let scanner,decoded=false,timer;
   try{
-    qrScannerInstance = new Html5Qrcode('qr-scanner-view');
-    await qrScannerInstance.start(
-      { facingMode: 'environment' },
-      { fps: 10, qrbox: 220 },
-      (decodedText)=>{
-        document.getElementById('manual-redeem-input').value = extractRedeemCode(decodedText);
-        stopQrScanner();
-        document.getElementById('manual-redeem-btn').click();
-      },
-      ()=>{}
-    );
-  }catch(err){
-    statusEl.textContent = "Kameraga ruxsat berilmadi yoki kamera topilmadi.";
-    statusEl.classList.add('err');
-    wrap.style.display = 'none';
-  }
+    scanner=new Html5Qrcode('qr-scanner-view');qrScannerInstance=scanner;
+    const starting=scanner.start({facingMode:'environment'},{fps:8,qrbox:220},text=>{
+      if(decoded || generation!==qrGeneration || giftBusy)return;
+      decoded=true;
+      const code=extractRedeemCode(text);
+      document.getElementById('manual-redeem-input').value=code;
+      stopQrScanner();
+      redeemGift(code);
+    },()=>{});
+    starting.then(()=>{if(generation!==qrGeneration)scanner.stop().then(()=>scanner.clear()).catch(()=>{});}).catch(()=>{});
+    await Promise.race([starting,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('camera_timeout')),12000);})]);
+    if(generation!==qrGeneration)return;
+    status.textContent='QR kodni kamera qarshisiga tuting.';
+  }catch{
+    if(generation===qrGeneration){
+      status.textContent='Kamera ochilmadi. Ruxsatni tekshiring yoki kodni qo‘lda kiriting.';
+      status.classList.add('err');wrap.style.display='none';qrScannerInstance=null;qrGeneration++;
+    }
+  }finally{clearTimeout(timer);qrStarting=false;button.disabled=false;}
 });
 function stopQrScanner(){
-  document.getElementById('qr-scanner-wrap').style.display = 'none';
-  if(qrScannerInstance){
-    const scanner = qrScannerInstance;
-    qrScannerInstance = null;
-    scanner.stop().then(()=> scanner.clear()).catch(()=>{});
-  }
+  qrGeneration++;
+  document.getElementById('qr-scanner-wrap').style.display='none';
+  const scanner=qrScannerInstance;qrScannerInstance=null;
+  // If start is pending, its continuation closes the camera once it resolves.
+  if(scanner && !qrStarting) scanner.stop().then(()=>scanner.clear()).catch(()=>{});
 }
 document.getElementById('qr-scan-close-btn').addEventListener('click', stopQrScanner);
 
-document.getElementById('manual-redeem-btn').addEventListener('click', async ()=>{
-  const input = document.getElementById('manual-redeem-input');
-  const code = input.value.trim();
-  const statusEl = document.getElementById('manual-redeem-status');
-  const btn = document.getElementById('manual-redeem-btn');
-  if(!code){
-    statusEl.textContent = "Kodni kiriting.";
-    statusEl.classList.add('err');
-    return;
-  }
-  btn.disabled = true;
-  statusEl.classList.remove('err');
-  statusEl.textContent = "Tekshirilmoqda...";
-  const errMessages = {
-    already_used: "Bu sovg'a kodi allaqachon faollashtirilgan.",
-    expired: "Ushbu sovg'a kodining amal qilish muddati tugagan.",
-    revoked: "Ushbu sovg'a kodi endi faol emas.",
-    not_found: "Sovg'a kodi topilmadi.",
-    not_logged_in: "Avval hisobingizga kiring."
-  };
-  try{
-    const previewRes = await fetch('/api/gift', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'preview', code })
-    });
-    const preview = await previewRes.json();
-    if(!previewRes.ok){
-      statusEl.textContent = errMessages[preview.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
-      statusEl.classList.add('err');
-      btn.disabled = false;
-      return;
-    }
-
-    if(!confirm(`Sizga MATHLVL Plus sovg'a qilindi — ${preview.durationDays} kunlik. Faollashtirilsinmi?`)){
-      statusEl.textContent = '';
-      btn.disabled = false;
-      return;
-    }
-
-    statusEl.textContent = "Faollashtirilmoqda...";
-    const res = await fetch('/api/gift', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action:'redeem', code })
-    });
-    const data = await res.json();
-    if(!res.ok){
-      statusEl.textContent = errMessages[data.error] || "Nimadir xato ketdi. Qayta urinib ko'ring.";
-      statusEl.classList.add('err');
-    }else{
-      statusEl.textContent = `${data.durationDays} kunlik MATHLVL Plus faollashtirildi.`;
-      input.value = '';
-      refreshPlusStatus();
-    }
-  }catch(err){
-    statusEl.textContent = "Nimadir xato ketdi. Qayta urinib ko'ring.";
-    statusEl.classList.add('err');
-  }finally{
-    btn.disabled = false;
-  }
+document.getElementById('manual-redeem-btn').addEventListener('click', ()=>{
+  const code=document.getElementById('manual-redeem-input').value.trim();
+  if(!code){document.getElementById('manual-redeem-status').textContent='Kodni kiriting.';return;}
+  redeemGift(code);
 });
 refreshAuthState();
 

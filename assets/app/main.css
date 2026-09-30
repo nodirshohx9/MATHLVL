@@ -7256,3 +7256,12 @@ html[data-theme="light"] .profile-ai-usage-total strong{color:#172033}
 
 /* Keep the library below the reader out of the reading/detail layout. */
 body.reader-mode #book-list-section-outer { display: none !important; }
+
+.plus-celebration{box-sizing:border-box;width:min(440px,calc(100vw - 32px));max-height:calc(100dvh - 32px);overflow:auto;margin:auto;padding:34px 26px;border:1px solid rgba(139,124,255,.45);border-radius:26px;background:var(--bg-card,#10131e);color:var(--text,#f7f8ff);text-align:center;box-shadow:0 24px 90px #0008;font-family:var(--font-body,inherit)}
+.plus-celebration::backdrop{background:rgba(3,5,14,.76);backdrop-filter:blur(8px)}
+.plus-celebration-icon{display:grid;place-items:center;width:76px;height:76px;margin:0 auto 20px;border-radius:24px;color:#fff;font-size:42px;background:linear-gradient(135deg,#5175ff,#9c64ff);box-shadow:0 8px 35px #755cff55}
+.plus-celebration-tag{color:#9b8cff;letter-spacing:.18em;font-size:11px;font-weight:800}
+.plus-celebration h2{font-family:var(--font-display,inherit);font-size:27px;line-height:1.2;margin:14px 0}
+.plus-celebration p{font-size:14px;line-height:1.7;color:var(--text-dim,#b0b5ca);margin:0 0 20px}
+.plus-celebration-benefits{padding:14px;border:1px solid #8580ff33;border-radius:14px;background:#8580ff0d;font-size:12px;line-height:1.8;margin-bottom:22px}
+.plus-celebration-actions{display:grid;gap:10px}.plus-celebration-actions button{width:100%;min-height:46px}

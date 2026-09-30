@@ -85,7 +85,7 @@ test('subscription dates use Uzbek month names at Tashkent midnight',()=>{
 });
 test('QR close clears the stopped scanner even after its global reference is reset',async()=>{
  let cleared=0,resolveStop;const stopped=new Promise(resolve=>resolveStop=resolve);
- const ctx={document:{getElementById:()=>({style:{}})},qrScannerInstance:{stop:()=>stopped,clear:()=>cleared++}};
+ const ctx={qrGeneration:0,qrStarting:false,document:{getElementById:()=>({style:{}})},qrScannerInstance:{stop:()=>stopped,clear:()=>cleared++}};
  vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function stopQrScanner()'),source.indexOf("document.getElementById('qr-scan-close-btn')")),ctx);
  ctx.stopQrScanner();assert.equal(ctx.qrScannerInstance,null);resolveStop();await stopped;await Promise.resolve();assert.equal(cleared,1);
 });
@@ -98,4 +98,32 @@ test('free teacher reaches quota validation while reader tutoring still requires
  assert.equal((await ctx.handler(request(undefined))).status,403);assert.equal(quotaChecks,1);
  assert.equal((await ctx.handler(request('reader'))).status,403);
  ctx.verifySession=async()=>null;assert.equal((await ctx.handler(request('teacher'))).status,401);
+});
+function giftHarness(){
+ const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{disabled:false,value:'CODE',textContent:'',classList:{add(){},remove(){}}});return nodes.get(id)};
+ const calls=[];const ctx={AbortSignal,document:{getElementById:node},renderSubscriptionCard:data=>calls.push(['plan',data]),refreshAiUsage(){},window:{},fetch:async()=>{throw new Error('unexpected network')}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('const giftErrors ='),source.indexOf('async function refreshAuthState()')),ctx);
+ ctx.plusDialog=async()=>true;ctx.showPlusSuccess=async data=>calls.push(['success',data]);return {ctx,node,calls};
+}
+test('gift activation ignores duplicate submits and celebrates only confirmed success',async()=>{
+ const {ctx,node,calls}=giftHarness();let release;const preview=new Promise(r=>release=r);let requests=0;
+ ctx.giftRequest=async body=>{requests++;if(body.action==='preview')return preview;return {durationDays:30,expiresAt:123};};
+ const pending=ctx.redeemGift('CODE');await ctx.redeemGift('CODE');assert.equal(requests,1);
+ release({durationDays:30});await pending;
+ assert.equal(requests,2);assert.equal(calls[0][0],'plan');assert.equal(calls[0][1].active,true);assert.equal(calls[1][0],'success');assert.equal(node('manual-redeem-btn').disabled,false);
+});
+test('cancelled gift confirmation never redeems',async()=>{
+ const {ctx,calls}=giftHarness();let requests=0;ctx.giftRequest=async()=>{requests++;return {durationDays:30}};ctx.plusDialog=async()=>false;
+ await ctx.redeemGift('CODE');assert.equal(requests,1);assert.equal(calls.length,0);
+});
+test('gift timeout unlocks retry and never shows false success',async()=>{
+ const {ctx,node,calls}=giftHarness();ctx.giftRequest=async()=>{const error=new Error('timeout');error.name='TimeoutError';throw error;};
+ await ctx.redeemGift('CODE');assert.equal(node('manual-redeem-btn').disabled,false);assert.match(node('manual-redeem-status').textContent,/Javob kechikdi/);assert.equal(calls.length,0);
+});
+test('QR repeated decode callback initiates only one activation',async()=>{
+ const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{style:{},classList:{add(){},remove(){}},addEventListener(_,fn){this.click=fn}});return nodes.get(id)};
+ let decode,activations=0,cleared=0;
+ const ctx={setTimeout,clearTimeout,document:{getElementById:node},giftBusy:false,qrScannerInstance:null,extractRedeemCode:x=>x,redeemGift:()=>activations++,Html5Qrcode:class{async start(a,b,fn){decode=fn}async stop(){}clear(){cleared++}}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('let qrGeneration ='),source.indexOf("document.getElementById('qr-scan-close-btn')")),ctx);
+ await node('qr-scan-btn').click();decode('CODE');decode('CODE');await Promise.resolve();assert.equal(activations,1);assert.equal(cleared,1);
 });
