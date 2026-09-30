@@ -2935,8 +2935,9 @@ document.getElementById('qr-scan-btn').addEventListener('click', async ()=>{
 function stopQrScanner(){
   document.getElementById('qr-scanner-wrap').style.display = 'none';
   if(qrScannerInstance){
-    qrScannerInstance.stop().then(()=> qrScannerInstance.clear()).catch(()=>{});
+    const scanner = qrScannerInstance;
     qrScannerInstance = null;
+    scanner.stop().then(()=> scanner.clear()).catch(()=>{});
   }
 }
 document.getElementById('qr-scan-close-btn').addEventListener('click', stopQrScanner);

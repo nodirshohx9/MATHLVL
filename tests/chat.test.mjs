@@ -83,3 +83,19 @@ test('subscription dates use Uzbek month names at Tashkent midnight',()=>{
  assert.equal(ctx.formatUzDate('2026-11-21T20:00:00Z'),'22-noyabr');
  assert.equal(ctx.formatUzDate('invalid'),'');
 });
+test('QR close clears the stopped scanner even after its global reference is reset',async()=>{
+ let cleared=0,resolveStop;const stopped=new Promise(resolve=>resolveStop=resolve);
+ const ctx={document:{getElementById:()=>({style:{}})},qrScannerInstance:{stop:()=>stopped,clear:()=>cleared++}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('function stopQrScanner()'),source.indexOf("document.getElementById('qr-scan-close-btn')")),ctx);
+ ctx.stopQrScanner();assert.equal(ctx.qrScannerInstance,null);resolveStop();await stopped;await Promise.resolve();assert.equal(cleared,1);
+});
+test('free teacher reaches quota validation while reader tutoring still requires Plus',async()=>{
+ const stream=readFileSync('api/chat-stream.js','utf8');let quotaChecks=0;
+ const ctx={process:{env:{GEMINI_API_KEY:'test-only'}},verifySession:async()=>({email:'qa@example.test'}),validateChat:()=>null,hasPlus:async()=>false,consumeAiUsage:async()=>{quotaChecks++;return {ok:false,status:429,message:'test quota'}},jsonResponse:(body,status)=>({body,status})};
+ vm.createContext(ctx);vm.runInContext(stream.slice(stream.indexOf('export default async function handler')).replace('export default ',''),ctx);
+ const request=scope=>({method:'POST',json:async()=>({memory_scope:scope,messages:[{role:'user',content:'2+2'}]})});
+ assert.equal((await ctx.handler(request('teacher'))).status,429);assert.equal(quotaChecks,1);
+ assert.equal((await ctx.handler(request(undefined))).status,403);assert.equal(quotaChecks,1);
+ assert.equal((await ctx.handler(request('reader'))).status,403);
+ ctx.verifySession=async()=>null;assert.equal((await ctx.handler(request('teacher'))).status,401);
+});

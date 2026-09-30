@@ -84,7 +84,8 @@ export default async function handler(request) {
   let plusActive;
   try { plusActive = await hasPlus(session.email); }
   catch { return jsonResponse({error:'Tarif holatini tekshirib bo‘lmadi. Qayta urinib ko‘ring.'},503); }
-  if (!plusActive) return jsonResponse({error:'plus_required'},403);
+  // General tutoring uses the Free/Plus shared quota; book tutoring stays Plus-only.
+  if (!plusActive && body.memory_scope !== 'teacher') return jsonResponse({error:'plus_required'},403);
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return jsonResponse({ error: 'Server sozlanmagan: GEMINI_API_KEY topilmadi' }, 500);
