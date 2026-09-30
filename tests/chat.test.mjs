@@ -65,3 +65,21 @@ test('persistent memory excludes image bytes and bounds stored text',async()=>{
    const first=ctx.renderPageInto({},1);const second=ctx.renderPageInto({},1);
    assert.equal(first,second);assert.equal(calls,1);finish();await first;assert.equal(state.pending,null);
  });
+test('account menu follows auth events, never unrelated Plus text',()=>{
+ const nodes=new Map();const node=id=>{if(!nodes.has(id))nodes.set(id,{textContent:'',hidden:false});return nodes.get(id)};
+ const events={};const auth=node('auth'),out=node('out');
+ const ctx={window:{MATHLVL_CURRENT_SESSION:{loggedIn:true,name:'Learner'},MATHLVL_PLUS_ACTIVE:true,addEventListener:(name,fn)=>events[name]=fn},document:{getElementById:node,querySelectorAll:selector=>selector.includes('data-auth-only')?[auth]:[out]}};
+ vm.createContext(ctx);vm.runInContext(readFileSync('assets/app/part-04.js','utf8'),ctx);
+ assert.equal(node('sidebar-footer-name').textContent,'Learner');assert.equal(auth.hidden,false);assert.equal(out.hidden,true);
+ events['mathlvl:authchange']({detail:{loggedIn:false}});
+ assert.equal(auth.hidden,true);assert.equal(out.hidden,false);assert.equal(node('sidebar-footer-plan').textContent,'Akkauntga kiring');
+ events['mathlvl:authchange']({detail:{loggedIn:true,name:'Learner'}});
+ assert.equal(auth.hidden,false);assert.equal(node('sidebar-footer-name').textContent,'Learner');
+});
+test('subscription dates use Uzbek month names at Tashkent midnight',()=>{
+ const ctx={Intl,Date};vm.createContext(ctx);
+ vm.runInContext(source.slice(source.indexOf('function formatUzDate('),source.indexOf('function renderSubscriptionCard(')),ctx);
+ assert.equal(ctx.formatUzDate('2026-10-26T20:00:00Z'),'27-oktabr');
+ assert.equal(ctx.formatUzDate('2026-11-21T20:00:00Z'),'22-noyabr');
+ assert.equal(ctx.formatUzDate('invalid'),'');
+});

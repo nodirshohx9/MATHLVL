@@ -2434,6 +2434,16 @@ function showSignedInUI(user){
   renderMyBooks();
 }
 
+function formatUzDate(value){
+  const date = new Date(value);
+  if(!Number.isFinite(date.getTime())) return '';
+  const parts = new Intl.DateTimeFormat('en-GB', {timeZone:'Asia/Tashkent', day:'numeric', month:'numeric'}).formatToParts(date);
+  const day = parts.find(p=>p.type==='day').value;
+  const month = Number(parts.find(p=>p.type==='month').value);
+  const months = ['yanvar','fevral','mart','aprel','may','iyun','iyul','avgust','sentabr','oktabr','noyabr','dekabr'];
+  return `${day}-${months[month-1]}`;
+}
+
 function renderSubscriptionCard(plusData){
   plusData = plusData || {active:false};
   window.MATHLVL_PLUS_ACTIVE = !!plusData.active;
@@ -2445,7 +2455,7 @@ function renderSubscriptionCard(plusData){
   if(plusData.active){
     badge.textContent = 'MATHLVL PLUS';
     badge.classList.add('plus');
-    const dateStr = new Date(plusData.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+    const dateStr = formatUzDate(plusData.expiresAt);
     el.innerHTML = `
       <div style="font-family:var(--font-display); font-size:16px; margin-bottom:4px;">MATHLVL Plus</div>
       <div style="font-size:13px; color:var(--gold); margin-bottom:2px;">Faol</div>
@@ -2639,7 +2649,7 @@ async function openPlanSelect(plusData){
 
   const noteEl = document.getElementById('current-plan-note');
   if(plusData && plusData.active){
-    const dateStr = new Date(plusData.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+    const dateStr = formatUzDate(plusData.expiresAt);
     noteEl.style.display = 'block';
     noteEl.innerHTML = `<div class="glass-card profile-section-card" style="margin-bottom:16px;">
       <div style="font-size:12px; color:var(--text-dim); margin-bottom:6px;">Sizning hozirgi tarifingiz</div>
@@ -2835,7 +2845,7 @@ async function handleRedeemFlow(){
           <button class="ghost-btn" id="redeem-close-btn" style="width:100%;">Yopish</button>
         `;
       }else{
-        const newDateStr = new Date(data.expiresAt).toLocaleDateString('uz-UZ', { day:'numeric', month:'long' });
+        const newDateStr = formatUzDate(data.expiresAt);
         content.innerHTML = `
           <div style="font-size:32px; margin-bottom:12px;">🎉</div>
           <h3 style="font-family:var(--font-display); margin-bottom:10px;">MATHLVL Plus faollashtirildi!</h3>
