@@ -30,7 +30,7 @@ replacement = r'''function setupPageObserver(){
 
     for(let i=start; i<=end; i++){
       const num = parseInt(items[i].dataset.page, 10);
-      if(Number.isFinite(num)) renderPageInto(items[i], num);
+      if(Number.isFinite(num) && typeof window.renderPageInto === 'function') window.renderPageInto(items[i], num);
     }
 
     const num = parseInt(items[idx]?.dataset.page, 10);
@@ -69,10 +69,20 @@ if n != 1:
 idx = s2.find('function setupPageObserver(){')
 end = s2.find('function updateCurrentVisiblePage()', idx)
 block = s2[idx:end]
-if "const renderNearby =" not in block or "renderPageInto(items[i], num)" not in block:
+if "const renderNearby =" not in block or "window.renderPageInto(items[i], num)" not in block:
     raise SystemExit('simple reader fix verification failed')
 if "IntersectionObserver(" in block or "renderPageInto(entry.target, num)" in block:
     raise SystemExit('old observer runtime still present')
+
+
+
+# The renderer is declared later in the same reader script. Expose it explicitly on
+# window so build-time script splitting/reordering cannot hide it from setupPageObserver.
+renderer_anchor = "// ---- Ekrandan uzoq sahifalarni bo'shatish (xotira uchun) ----"
+if "window.renderPageInto = renderPageInto;" not in s2:
+    if renderer_anchor not in s2:
+        raise SystemExit('renderer export anchor not found')
+    s2 = s2.replace(renderer_anchor, "window.renderPageInto = renderPageInto;\n\n" + renderer_anchor, 1)
 
 p.write_text(s2, encoding='utf-8')
 print('Book reader IntersectionObserver fixed.')
