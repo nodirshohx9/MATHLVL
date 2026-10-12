@@ -20,12 +20,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/assets/app/main.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.0/marked.min.js" defer></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/katex.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.9/contrib/auto-render.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js" defer></script>
   <script type="module">
     import { upload } from 'https://esm.sh/@vercel/blob@0.27.0/client';
     window.__blobUpload = upload;
@@ -39,11 +39,26 @@
 
 <link rel="stylesheet" id="mathlvl-library-final-style" href="/assets/app/mathlvl-library-final-style.css">
 
-<script src="/assets/vendor/purify.min.js"></script>
-<script src="/assets/chat-safety.js"></script>
+<script src="/assets/vendor/purify.min.js" defer></script>
+<script src="/assets/chat-safety.js" defer></script>
 <link rel="stylesheet" href="/assets/navigation-polish.css">
 <link rel="stylesheet" href="/assets/reader-pan.css">
 <link rel="stylesheet" href="/assets/learning/learning.css">
+
+<!-- Load layout styles before any page content can paint. -->
+<link rel="stylesheet" href="/assets/app/part-05.css">
+<link rel="stylesheet" id="mathlvl-reader-ai-zero-latency-v4" href="/assets/app/mathlvl-reader-ai-zero-latency-v4.css">
+<link rel="stylesheet" id="mathlvl-mock-modern-ui" href="/assets/app/mathlvl-mock-modern-ui.css">
+<link rel="stylesheet" id="mathlvl-mobile-sidebar-nav-style" href="/assets/app/mathlvl-mobile-sidebar-nav-style.css">
+<link rel="stylesheet" id="mathlvl-mobile-sidebar-polish-v3" href="/assets/app/mathlvl-mobile-sidebar-polish-v3.css">
+<link rel="stylesheet" id="mathlvl-mobile-sidebar-label-cleanup-v1" href="/assets/app/mathlvl-mobile-sidebar-label-cleanup-v1.css">
+<link rel="stylesheet" id="mathlvl-gift-qr-cleanup-style" href="/assets/app/mathlvl-gift-qr-cleanup-style.css">
+<link rel="stylesheet" id="mathlvl-light-mode-contrast-v1" href="/assets/app/mathlvl-light-mode-contrast-v1.css">
+<link rel="stylesheet" id="mathlvl-mock-mobile-redesign-v2" href="/assets/app/mathlvl-mock-mobile-redesign-v2.css">
+<link rel="stylesheet" id="mathlvl-mock-media-render-style" href="/assets/app/mathlvl-mock-media-render-style.css">
+<link rel="stylesheet" id="mathlvl-mock-learning-review-style" href="/assets/app/mathlvl-mock-learning-review-style.css">
+<link rel="stylesheet" id="mathlvl-mock-selection-visibility" href="/assets/app/mathlvl-mock-selection-visibility.css">
+<link rel="stylesheet" id="mathlvl-mock-math-keyboard-toggle-fix" href="/assets/app/mathlvl-mock-math-keyboard-toggle-fix.css">
 </head>
 <body>
 
@@ -57,7 +72,7 @@
     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
   </button>
   <div class="mathlvl-mobile-brand" aria-label="MATHLVL">
-    <img src="/mathlvl-logo.png" alt="">
+    <img src="/mathlvl-logo.png" alt="" width="27" height="27">
     <span>MATHLVL</span>
   </div>
   <div class="mathlvl-mobile-section" id="mathlvl-mobile-section">Bosh sahifa</div>
@@ -66,7 +81,7 @@
 
   <aside class="app-sidebar" id="mathlvl-main-sidebar">
     <div class="sidebar-logo" id="sidebar-logo-btn">
-      <img class="mathlvl-logo-image" src="/mathlvl-logo.png" alt="MATHLVL logo">
+      <img class="mathlvl-logo-image" src="/mathlvl-logo.png" alt="MATHLVL logo" width="32" height="32">
       <span>MATHLVL</span>
     </div>
     <button class="sidebar-nav-item active" data-sidebar-tab="home"><span class="ic"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg></span>Bosh sahifa</button>
@@ -784,10 +799,10 @@ UUIAAAAAAAAA
   </a>
 </div>
 
-<script src="/assets/app/main.js"></script>
+<script src="/assets/app/main.js" defer></script>
 </div>
 
-<script src="/assets/app/part-02.js"></script>
+<script src="/assets/app/part-02.js" defer></script>
 
 
 <div class="nova-help-overlay" id="nova-help-overlay" hidden>
@@ -867,14 +882,14 @@ UUIAAAAAAAAA
 </div>
 
 
-<script src="/assets/app/part-03.js"></script>
+<script src="/assets/app/part-03.js" defer></script>
 
 
-<script src="/assets/app/part-04.js"></script>
+<script src="/assets/app/part-04.js" defer></script>
 
 <script src="/assets/teacher-experience.js?v=2" defer></script>
 <!-- MATHLVL_AUTH_GATE_START -->
-<link rel="stylesheet" href="/assets/app/part-05.css">
+
 
 <button id="mathlvl-login-open" type="button" aria-label="MATHLVL hisobiga kirish">
   <svg viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>
@@ -901,58 +916,58 @@ UUIAAAAAAAAA
   </div>
 </div>
 
-<script src="/assets/app/part-05.js"></script>
+<script src="/assets/app/part-05.js" defer></script>
 <!-- MATHLVL_AUTH_GATE_END -->
 
 
-<link rel="stylesheet" id="mathlvl-reader-ai-zero-latency-v4" href="/assets/app/mathlvl-reader-ai-zero-latency-v4.css">
 
 
 
-<link rel="stylesheet" id="mathlvl-mock-modern-ui" href="/assets/app/mathlvl-mock-modern-ui.css">
-
-<script id="mathlvl-mock-modern-runtime" src="/assets/app/mathlvl-mock-modern-runtime.js"></script>
 
 
-<link rel="stylesheet" id="mathlvl-mobile-sidebar-nav-style" href="/assets/app/mathlvl-mobile-sidebar-nav-style.css">
 
-<script id="mathlvl-mobile-sidebar-nav-runtime" src="/assets/app/mathlvl-mobile-sidebar-nav-runtime.js"></script>
-
-
-<link rel="stylesheet" id="mathlvl-mobile-sidebar-polish-v3" href="/assets/app/mathlvl-mobile-sidebar-polish-v3.css">
-<script id="mathlvl-mobile-sidebar-polish-runtime-v3" src="/assets/app/mathlvl-mobile-sidebar-polish-runtime-v3.js"></script>
+<script id="mathlvl-mock-modern-runtime" src="/assets/app/mathlvl-mock-modern-runtime.js" defer></script>
 
 
-<link rel="stylesheet" id="mathlvl-mobile-sidebar-label-cleanup-v1" href="/assets/app/mathlvl-mobile-sidebar-label-cleanup-v1.css">
 
 
-<link rel="stylesheet" id="mathlvl-gift-qr-cleanup-style" href="/assets/app/mathlvl-gift-qr-cleanup-style.css">
-<script id="mathlvl-gift-qr-cleanup-runtime" src="/assets/app/mathlvl-gift-qr-cleanup-runtime.js"></script>
+<script id="mathlvl-mobile-sidebar-nav-runtime" src="/assets/app/mathlvl-mobile-sidebar-nav-runtime.js" defer></script>
 
 
-<link rel="stylesheet" id="mathlvl-light-mode-contrast-v1" href="/assets/app/mathlvl-light-mode-contrast-v1.css">
+
+<script id="mathlvl-mobile-sidebar-polish-runtime-v3" src="/assets/app/mathlvl-mobile-sidebar-polish-runtime-v3.js" defer></script>
 
 
-<link rel="stylesheet" id="mathlvl-mock-mobile-redesign-v2" href="/assets/app/mathlvl-mock-mobile-redesign-v2.css">
 
 
-<link rel="stylesheet" id="mathlvl-mock-media-render-style" href="/assets/app/mathlvl-mock-media-render-style.css">
-<script id="mathlvl-mock-media-render-runtime" src="/assets/app/mathlvl-mock-media-render-runtime.js"></script>
 
 
-<link rel="stylesheet" id="mathlvl-mock-learning-review-style" href="/assets/app/mathlvl-mock-learning-review-style.css">
-
-<script id="mathlvl-mock-learning-review-runtime" src="/assets/app/mathlvl-mock-learning-review-runtime.js"></script>
+<script id="mathlvl-gift-qr-cleanup-runtime" src="/assets/app/mathlvl-gift-qr-cleanup-runtime.js" defer></script>
 
 
-<link rel="stylesheet" id="mathlvl-mock-selection-visibility" href="/assets/app/mathlvl-mock-selection-visibility.css">
-
-<script id="mathlvl-mock-selection-visibility-runtime" src="/assets/app/mathlvl-mock-selection-visibility-runtime.js"></script>
 
 
-<link rel="stylesheet" id="mathlvl-mock-math-keyboard-toggle-fix" href="/assets/app/mathlvl-mock-math-keyboard-toggle-fix.css">
 
-<script id="mathlvl-mock-math-keyboard-toggle-fix-runtime" src="/assets/app/mathlvl-mock-math-keyboard-toggle-fix-runtime.js"></script>
+
+
+
+
+<script id="mathlvl-mock-media-render-runtime" src="/assets/app/mathlvl-mock-media-render-runtime.js" defer></script>
+
+
+
+
+<script id="mathlvl-mock-learning-review-runtime" src="/assets/app/mathlvl-mock-learning-review-runtime.js" defer></script>
+
+
+
+
+<script id="mathlvl-mock-selection-visibility-runtime" src="/assets/app/mathlvl-mock-selection-visibility-runtime.js" defer></script>
+
+
+
+
+<script id="mathlvl-mock-math-keyboard-toggle-fix-runtime" src="/assets/app/mathlvl-mock-math-keyboard-toggle-fix-runtime.js" defer></script>
 
 <dialog id="learning-dialog" class="learning-dialog" aria-labelledby="learning-dialog-title"></dialog>
 <script type="module" src="/assets/learning/learning.js"></script>

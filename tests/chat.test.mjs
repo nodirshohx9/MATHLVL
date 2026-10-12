@@ -127,3 +127,23 @@ test('QR repeated decode callback initiates only one activation',async()=>{
  vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('let qrGeneration ='),source.indexOf("document.getElementById('qr-scan-close-btn')")),ctx);
  await node('qr-scan-btn').click();decode('CODE');decode('CODE');await Promise.resolve();assert.equal(activations,1);assert.equal(cleared,1);
 });
+
+test('mock card decorators settle without repeatedly mutating the observed list',()=>{
+ const modern=readFileSync(new URL('../assets/app/mathlvl-mock-modern-runtime.js',import.meta.url),'utf8');
+ const review=readFileSync(new URL('../assets/app/mathlvl-mock-learning-review-runtime.js',import.meta.url),'utf8');
+ let writes=0;
+ const tracked=(initial={})=>{const node={...initial};for(const key of ['textContent','innerHTML']){let value=initial[key]||'';Object.defineProperty(node,key,{get:()=>value,set:v=>{value=v;writes++;}});}return node;};
+ const btn=tracked({dataset:{mtStart:'one'},textContent:'Boshlash'});
+ const badge=tracked({textContent:'✓ Ishlangan'});
+ const row=tracked();
+ const body={querySelector:s=>s==='.mock-status-row'?row:null};
+ const card={classList:{toggle(){}},querySelector:s=>s==='[data-mt-start]'?btn:s==='.mt-card-title'?{textContent:'Mock'}:body};
+ const list={querySelectorAll:s=>s==='.mt-card'?[card]:s==='.mock-status-badge.done'?[badge]:[]};
+ const ctx={list,readHistory:()=>[{title:'Mock',percent:80}],readDraft:()=>null};vm.createContext(ctx);
+ vm.runInContext(modern.slice(modern.indexOf('  function enhanceCards()'),modern.indexOf('  function enhanceRun()')),ctx);
+ vm.runInContext(review.slice(review.indexOf('  function cleanMockCards()'),review.indexOf('  function enhance(){')),ctx);
+ ctx.enhanceCards();ctx.cleanMockCards();assert.ok(writes>0);
+ writes=0;for(let i=0;i<5;i++){ctx.enhanceCards();ctx.cleanMockCards();}
+ assert.equal(writes,0,'unchanged cards must not schedule another observer pass');
+ assert.equal(btn.textContent,'Qayta ishlash');assert.ok(!row.innerHTML.includes('mock-best-score'));
+});

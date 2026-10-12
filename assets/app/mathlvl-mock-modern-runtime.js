@@ -45,7 +45,7 @@
     const draftPct = draft ? Math.max(0,Math.min(100,Math.round(((Number(draft.mockIndex)||0)+1)/45*100))) : 0;
     const primaryValue = draft ? 'Davom eting' : (a.attempts ? `${a.best}%` : 'Boshlang');
     const primarySub = draft ? `${(Number(draft.mockIndex)||0)+1}/45-topshiriqdan` : (a.attempts ? 'eng yaxshi natija' : 'birinchi mock tayyor');
-    hero.innerHTML = `
+    const heroHTML = `
       <div class="mock-modern-copy">
         <div class="mock-modern-eyebrow">MATHLVL MOCK LAB</div>
         <h2 class="mock-modern-title">Milliy sertifikatga<br>imtihondek tayyorlaning.</h2>
@@ -65,6 +65,10 @@
         <div class="mock-modern-stat"><span class="mock-modern-stat-label">Ishlangan</span><div class="mock-modern-stat-value">${a.attempts}</div><div class="mock-modern-stat-sub">urinish</div></div>
         <div class="mock-modern-stat"><span class="mock-modern-stat-label">O‘rtacha</span><div class="mock-modern-stat-value">${a.attempts?a.avg+'%':'—'}</div><div class="mock-modern-stat-sub">barcha urinishlar</div></div>
       </div>`;
+    if(hero.dataset.renderedHtml !== heroHTML){
+      hero.innerHTML = heroHTML;
+      hero.dataset.renderedHtml = heroHTML;
+    }
     const resultsBtn = document.getElementById('mocktest-results-btn');
     const actions = document.getElementById('mock-modern-actions');
     if(resultsBtn && actions && resultsBtn.parentElement !== actions){
@@ -96,17 +100,18 @@
         badgeClass='progress'; badgeText='Davom etmoqda';
         const idx = Math.max(0,Math.min(44,Number(draft.mockIndex)||0));
         const pct = Math.round((idx+1)/45*100);
-        extra = `<span class="mock-best-score">${idx+1}/45 · ${pct}%</span>`;
-        btn.textContent = 'Davom ettirish';
+        extra = '';
+        if(btn.textContent !== 'Davom ettirish') btn.textContent = 'Davom ettirish';
         let pr = body.querySelector('.mock-modern-progress');
         if(!pr){ pr=document.createElement('div'); pr.className='mock-modern-progress'; body.appendChild(pr); }
-        pr.innerHTML=`<div class="mock-modern-progress-head"><span>Progress</span><span>${idx+1}/45</span></div><div class="mock-modern-progress-track"><div class="mock-modern-progress-fill" style="width:${pct}%"></div></div>`;
+        const progressHTML=`<div class="mock-modern-progress-head"><span>Progress</span><span>${idx+1}/45</span></div><div class="mock-modern-progress-track"><div class="mock-modern-progress-fill" style="width:${pct}%"></div></div>`;
+        if(pr.innerHTML !== progressHTML) pr.innerHTML = progressHTML;
       }else{
         body.querySelector('.mock-modern-progress')?.remove();
         if(attempts.length){
-          badgeClass='done'; badgeText='✓ Ishlangan'; extra=`<span class="mock-best-score">Eng yaxshi: ${best}% · ${attempts.length} urinish</span>`;
-          btn.textContent = 'Qayta ishlash';
-        }else btn.textContent = 'Boshlash';
+          badgeClass='done'; badgeText='✓ Ishlangan'; extra='';
+          if(btn.textContent !== 'Qayta ishlash') btn.textContent = 'Qayta ishlash';
+        }else if(btn.textContent !== 'Boshlash') btn.textContent = 'Boshlash';
       }
       const html = `<span class="mock-status-badge ${badgeClass}">${badgeText}</span>${extra}`;
       if(row.innerHTML !== html) row.innerHTML = html;

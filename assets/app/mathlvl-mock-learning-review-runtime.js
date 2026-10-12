@@ -158,7 +158,7 @@
 
   function cleanMockCards(){
     list.querySelectorAll('.mock-best-score').forEach(el=>el.remove());
-    list.querySelectorAll('.mock-status-badge.done').forEach(el=>{ el.textContent='✓ Ishlangan'; });
+    list.querySelectorAll('.mock-status-badge.done').forEach(el=>{ if(el.textContent !== '✓ Ishlangan') el.textContent='✓ Ishlangan'; });
   }
 
   function enhance(){
