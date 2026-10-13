@@ -3448,14 +3448,17 @@ renderMockTestList();
 
 let teacherMemoryReady = false;
 let teacherMemoryLoading = null;
+let teacherMemoryRetryAt = 0;
 async function restoreTeacherMemory(){
   if(teacherMemoryReady) return;
   if(teacherMemoryLoading) return teacherMemoryLoading;
+  // A temporarily unavailable memory service must not be retried on every focus.
+  if(Date.now() < teacherMemoryRetryAt) return;
   teacherMemoryLoading = (async()=>{
     const label = document.getElementById('memory-status');
     label.textContent = 'Suhbat yuklanmoqda…';
     try{
-      const response = await fetch('/api/chat?action=memory');
+      const response = await fetch('/api/chat?action=memory', {signal:AbortSignal.timeout(15000)});
       if(!response.ok) throw new Error('memory');
       const data = await response.json();
       if(!chatHistory.length && Array.isArray(data.messages)){
@@ -3463,8 +3466,12 @@ async function restoreTeacherMemory(){
         for(const message of chatHistory) appendMsg(message.role === 'assistant' ? 'teacher' : 'user', message.content);
       }
       teacherMemoryReady = true;
+      teacherMemoryRetryAt = 0;
       label.textContent = 'Oxirgi 20 xabar hisobingizda saqlanadi';
-    }catch{ label.textContent = 'Xotira yuklanmadi. Suhbatni davom ettirishingiz mumkin.'; }
+    }catch{
+      teacherMemoryRetryAt = Date.now() + 60000;
+      label.textContent = 'Xotira vaqtincha ulanmayapti. Suhbatni davom ettirishingiz mumkin.';
+    }
     finally{teacherMemoryLoading = null;}
   })();
   return teacherMemoryLoading;

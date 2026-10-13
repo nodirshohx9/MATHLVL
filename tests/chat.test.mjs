@@ -147,3 +147,16 @@ test('mock card decorators settle without repeatedly mutating the observed list'
  assert.equal(writes,0,'unchanged cards must not schedule another observer pass');
  assert.equal(btn.textContent,'Qayta ishlash');assert.ok(!row.innerHTML.includes('mock-best-score'));
 });
+
+test('unavailable teacher memory backs off across focus events and recovers',async()=>{
+ let now=1000,calls=0,healthy=false;
+ const label={textContent:''};
+ const ctx={Date:{now:()=>now},AbortSignal,document:{getElementById:()=>label},chatHistory:[],appendMsg(){},fetch:async()=>{calls++;return {ok:healthy,json:async()=>({messages:[]})};}};
+ vm.createContext(ctx);vm.runInContext(source.slice(source.indexOf('let teacherMemoryReady'),source.indexOf("document.getElementById('memory-clear').addEventListener")),ctx);
+ await ctx.restoreTeacherMemory();
+ for(let i=0;i<8;i++)await ctx.restoreTeacherMemory();
+ assert.equal(calls,1);assert.match(label.textContent,/davom ettirishingiz/);
+ now+=60001;healthy=true;await ctx.restoreTeacherMemory();
+ assert.equal(calls,2);assert.match(label.textContent,/saqlanadi/);
+ await ctx.restoreTeacherMemory();assert.equal(calls,2);
+});
