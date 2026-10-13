@@ -3062,7 +3062,7 @@ window.addEventListener('mathlvl:authchange', event=>{
   window.MATHLVL_CURRENT_SESSION = event.detail || {};
   if(isAccountMockSession(event.detail)) syncMockHistoryFromServer();
   else clearGuestMockStorage();
-  if(typeof renderMockTestList === 'function') renderMockTestList();
+  if(typeof renderMockTestList === 'function') renderMockTestList({background:true});
   refreshAiUsage();
 });
 function saveMockResultToServer(result){
@@ -3118,7 +3118,7 @@ async function loadMockTests(){
       mockTestData = Array.from(byId.values());
     }
   }catch(e){}
-  renderMockTestList();
+  renderMockTestList({background:true});
 }
 function mockAnsweredElements(){
   if(!activeMock) return 0;
@@ -3128,7 +3128,9 @@ function mockAnsweredElements(){
   return closed + open;
 }
 
-function renderMockTestList(){
+function renderMockTestList({background=false} = {}){
+  // Late catalog/auth responses must never interrupt an ongoing attempt or result.
+  if(background && activeMock) return;
   if(mockTimerId) clearInterval(mockTimerId);
   mockTimerId = null;
   activeMock = null;

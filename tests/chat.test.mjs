@@ -177,3 +177,16 @@ test('auth refresh coalesces requests and preserves session on network failure',
  ctx.fetch=async()=>({ok:true,json:async()=>({loggedIn:false})});
  await ctx.refreshAuthState();assert.equal(signedOut,1);assert.equal(ctx.window.MATHLVL_CURRENT_SESSION.loggedIn,false);
 });
+
+
+test('background mock refresh preserves active question, answers and timer',()=>{
+ const attempt={id:'ongoing'};let cleared=0,writes=0;
+ const list={set innerHTML(v){writes++;},querySelectorAll:()=>[]};
+ const ctx={activeMock:attempt,mockTimerId:42,clearInterval(){cleared++;},document:{getElementById:()=>list},mockTestData:[]};
+ vm.createContext(ctx);
+ vm.runInContext(source.slice(source.indexOf('function renderMockTestList('),source.indexOf('function startMockTest(')),ctx);
+ ctx.renderMockTestList({background:true});
+ assert.equal(ctx.activeMock,attempt);assert.equal(ctx.mockTimerId,42);assert.equal(cleared,0);assert.equal(writes,0);
+ ctx.renderMockTestList();assert.equal(ctx.activeMock,null);assert.equal(cleared,1);assert.equal(writes,1);
+ assert.match(source,/renderMockTestList\(\{background:true\}\)/);
+});
