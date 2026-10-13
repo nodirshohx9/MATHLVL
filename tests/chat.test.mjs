@@ -17,7 +17,7 @@ test('math renderer distinguishes block and inline delimiters',()=>{
 test('book tutor sends successful history and displays chunks before stream ends',async()=>{
  const bubble={classList:{remove(){}},textContent:''};const win={appendChild(){},scrollHeight:10};const send={disabled:false};
  const requests=[];let n=0;
- const ctx={Map,TextDecoder,AbortSignal,window:{MATHLVL_PLUS_ACTIVE:true},refreshAiUsage(){},activeBook:{id:'book-a',title:'Test'},currentVisiblePage:1,readerNumPages:3,
+ const ctx={Map,TextDecoder,AbortSignal,setTimeout,clearTimeout,window:{MATHLVL_PLUS_ACTIVE:true},refreshAiUsage(){},activeBook:{id:'book-a',title:'Test'},currentVisiblePage:1,readerNumPages:3,
  document:{getElementById:id=>id==='ai-sheet-send'?send:id==='ai-sheet-chat'?win:null,createElement:()=>({querySelector:()=>bubble})},
  appendAiSheetMsg(){},getCurrentPageText:async()=>'',cleanAiText:x=>x,renderAiAnswer:(el,text)=>el.textContent=text,
  fetch:async(_,opts)=>{requests.push(JSON.parse(opts.body));let i=0;return {ok:true,body:{getReader:()=>({read:async()=>{if(i++===0)return {value:new TextEncoder().encode('data: {"text":"Javob"}\n\n'),done:false};assert.equal(bubble.textContent,'Javob');return {done:true};}})}};}};
@@ -159,4 +159,21 @@ test('unavailable teacher memory backs off across focus events and recovers',asy
  now+=60001;healthy=true;await ctx.restoreTeacherMemory();
  assert.equal(calls,2);assert.match(label.textContent,/saqlanadi/);
  await ctx.restoreTeacherMemory();assert.equal(calls,2);
+});
+
+
+test('auth refresh coalesces requests and preserves session on network failure',async()=>{
+ let calls=0, resolveFetch, signedOut=0;
+ const session={loggedIn:true};
+ const ctx={AbortSignal,Date,window:{MATHLVL_CURRENT_SESSION:session,dispatchEvent(){},addEventListener(){}},CustomEvent:class{},
+ showSignedInUI(){},showSignedOutUI(){signedOut++;},restoreTeacherMemory(){},
+ fetch:()=>{calls++;return new Promise(resolve=>{resolveFetch=resolve;});}};
+ vm.createContext(ctx);
+ vm.runInContext(source.slice(source.indexOf('let authRefreshPending'),source.indexOf("document.getElementById('google-btn')")),ctx);
+ const first=ctx.refreshAuthState(),second=ctx.refreshAuthState();
+ assert.equal(calls,1);
+ resolveFetch({ok:false});await Promise.all([first,second]);
+ assert.equal(signedOut,0);assert.equal(ctx.window.MATHLVL_CURRENT_SESSION,session);
+ ctx.fetch=async()=>({ok:true,json:async()=>({loggedIn:false})});
+ await ctx.refreshAuthState();assert.equal(signedOut,1);assert.equal(ctx.window.MATHLVL_CURRENT_SESSION.loggedIn,false);
 });

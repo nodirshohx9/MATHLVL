@@ -1,44 +1,6 @@
 
 const API_URL = "/api/chat"; // xavfsiz backend orqali - API kalit shu yerda ko'rinmaydi
 
-// ---------- Starfield ----------
-const starsEl = document.getElementById('stars');
-for(let i=0;i<80;i++){
-  const s = document.createElement('span');
-  s.style.left = Math.random()*100 + '%';
-  s.style.top = Math.random()*100 + '%';
-  s.style.animationDelay = (Math.random()*4) + 's';
-  const size = (Math.random()*1.6 + 1).toFixed(1);
-  s.style.width = size + 'px'; s.style.height = size + 'px';
-  starsEl.appendChild(s);
-}
-
-// ---------- Floating geometric formulas/shapes ----------
-const shapes = [
-  `<svg width="46" height="46" viewBox="0 0 46 46"><circle cx="23" cy="23" r="18" stroke="#3DA9FC" stroke-width="1.6" fill="none"/></svg>`,
-  `<svg width="46" height="46" viewBox="0 0 46 46"><polygon points="23,4 42,40 4,40" stroke="#FFC93C" stroke-width="1.6" fill="none"/></svg>`,
-  `<svg width="40" height="40" viewBox="0 0 40 40"><rect x="6" y="6" width="28" height="28" stroke="#3DA9FC" stroke-width="1.6" fill="none" transform="rotate(20 20 20)"/></svg>`,
-  `<svg width="52" height="34" viewBox="0 0 52 34"><text x="0" y="26" font-family="Sora" font-size="30" fill="#FFC93C">π</text></svg>`,
-  `<svg width="52" height="34" viewBox="0 0 52 34"><text x="0" y="26" font-family="Sora" font-size="28" fill="#3DA9FC">Σ</text></svg>`,
-  `<svg width="60" height="34" viewBox="0 0 60 34"><text x="0" y="26" font-family="Sora" font-size="24" fill="#FFC93C">√x</text></svg>`,
-  `<svg width="60" height="34" viewBox="0 0 60 34"><text x="0" y="26" font-family="Sora" font-size="24" fill="#3DA9FC">∞</text></svg>`,
-  `<svg width="60" height="30" viewBox="0 0 60 30"><text x="0" y="24" font-family="Sora" font-size="22" fill="#FFC93C">x²+y²</text></svg>`
-];
-const floatersEl = document.getElementById('floaters');
-const positions = [
-  [4,10],[88,8],[10,70],[80,60],[45,4],[65,85],[20,40],[92,35],[35,90],[55,22]
-];
-positions.forEach((pos, i)=>{
-  const wrap = document.createElement('div');
-  wrap.className = 'floater' + (i % 2 === 0 ? '' : ' gold');
-  wrap.style.left = pos[0] + '%';
-  wrap.style.top = pos[1] + '%';
-  wrap.style.animationDuration = (14 + Math.random()*10).toFixed(1) + 's';
-  wrap.style.animationDelay = (Math.random()*-10).toFixed(1) + 's';
-  wrap.innerHTML = shapes[i % shapes.length];
-  floatersEl.appendChild(wrap);
-});
-
 // ---------- Tabs ----------
 const tabTitles = { home:'Bosh sahifa', teacher:'Ustoz AI', books:'Kitoblar', mocktest:'Mock Test', profile:'Profil' };
 function activateTab(tab){
@@ -2313,18 +2275,23 @@ async function sendAiSheetMessage(text){
   const win = document.getElementById('ai-sheet-chat');
   win.scrollTop = win.scrollHeight;
 
-  const pageText = await getCurrentPageText();
+  try{
+  let pageTextTimer;
+  const pageText = await Promise.race([
+    getCurrentPageText(),
+    new Promise(resolve=>{ pageTextTimer=setTimeout(()=>resolve(''), 5000); })
+  ]).finally(()=>clearTimeout(pageTextTimer));
   let system = `Sen tajribali, mehribon matematika ustozisan. O'zbek tilida javob ber. Foydalanuvchi hozir "${activeBook ? activeBook.title : ''}" kitobini o'qiyapti, hozir ${currentVisiblePage}-sahifada (jami ${readerNumPages} sahifa).`;
   if(pageText){
     system += `\n\nShu sahifadagi matn (kontekst uchun): ${pageText}`;
   }
   system += `\nAgar savol shu sahifa yoki kitob mavzusi bilan bog'liq bo'lsa, shu kontekstdan foydalanib javob ber. Agar savol umuman boshqa matematik mavzuga oid bo'lsa ("bu sahifada yo'q" deb to'xtab qolma) — o'zingning umumiy matematik bilimingdan foydalanib, baribir to'liq va foydali javob ber. Qisqa, aniq va tushunarli yoz.`;
 
-  try{
     const res = await fetch('/api/chat-stream', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ system, messages: [...history, turn].slice(-20), max_tokens: 1500 })
+      body: JSON.stringify({ system, messages: [...history, turn].slice(-20), max_tokens: 1500 }),
+      signal: AbortSignal.timeout(75000)
     });
     if(!res.ok || !res.body){ const data = await res.json().catch(()=>({})); throw new Error(data.error || 'Ulanishda xatolik.'); }
     const reader = res.body.getReader();
@@ -2856,22 +2823,32 @@ async function handleRedeemFlow(){
   }catch{status.textContent='Hisobni tekshirib bo‘lmadi. Ulanishni tekshiring va Faollashtirish tugmasini qayta bosing.';status.classList.add('err');}
 }
 
+let authRefreshPending = null;
+let authRefreshAt = 0;
 async function refreshAuthState(){
-  let data = { loggedIn:false, isGuest:false };
-  try{
-    const res = await fetch('/api/auth', { credentials:'include', cache:'no-store' });
-    data = await res.json();
-    if(data.loggedIn){ showSignedInUI(data); restoreTeacherMemory(); }
-    else{ showSignedOutUI(); }
-  }catch(e){
-    showSignedOutUI();
-  }
-  window.MATHLVL_CURRENT_SESSION = data;
-  window.dispatchEvent(new CustomEvent('mathlvl:authchange', { detail:data }));
-  return data;
+  if(authRefreshPending) return authRefreshPending;
+  authRefreshPending = (async()=>{
+    try{
+      const res = await fetch('/api/auth', { credentials:'include', cache:'no-store', signal:AbortSignal.timeout(12000) });
+      if(!res.ok) throw new Error('Hisobni tekshirib bo‘lmadi');
+      const data = await res.json();
+      if(data.loggedIn){ showSignedInUI(data); restoreTeacherMemory(); }
+      else{ showSignedOutUI(); }
+      window.MATHLVL_CURRENT_SESSION = data;
+      window.dispatchEvent(new CustomEvent('mathlvl:authchange', { detail:data }));
+      return data;
+    }catch(e){
+      // A temporary network failure is not a logout.
+      return window.MATHLVL_CURRENT_SESSION || { loggedIn:false, isGuest:false };
+    }finally{ authRefreshAt = Date.now(); }
+  })();
+  try{ return await authRefreshPending; }
+  finally{ authRefreshPending = null; }
 }
 window.refreshMathlvlAuthState = refreshAuthState;
-window.addEventListener('focus', ()=>{ refreshAuthState(); });
+window.addEventListener('focus', ()=>{
+  if(Date.now() - authRefreshAt >= 30000) refreshAuthState();
+});
 document.getElementById('google-btn').addEventListener('click', ()=>{
   window.location.href = '/api/auth-google-start';
 });
