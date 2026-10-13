@@ -3160,7 +3160,7 @@ function renderMockTestList({background=false} = {}){
   }
   list.querySelectorAll('[data-mt-start]').forEach(btn=>{
     const test = mockTestData.find(t=>String(t.id)===btn.dataset.mtStart);
-    const result = savedHistory.find(r=>r.testId===test?.id || r.title===test?.title);
+    const result = savedHistory.sort((a,b)=>new Date(b.at)-new Date(a.at)).find(r=>r.testId===test?.id || r.title===test?.title);
     if(!result) return;
     const review = document.createElement('button');
     review.className='ghost-btn'; review.type='button'; review.textContent='Tahlili';
@@ -3168,7 +3168,8 @@ function renderMockTestList({background=false} = {}){
     score.style.cssText='display:block;margin-top:8px;font-size:12px;color:var(--text-dim)';
     btn.parentElement.querySelector('.mt-card-body')?.appendChild(score);
     review.addEventListener('click',()=>showSavedMockReview(result));
-    btn.before(review);
+    const actions=document.createElement('div'); actions.className='mock-card-actions';
+    btn.before(actions); actions.append(review,btn);
   });
   list.querySelectorAll('[data-mt-start]').forEach(btn => btn.addEventListener('click', () => startMockTest(btn.dataset.mtStart)));
 }
@@ -3176,18 +3177,55 @@ function renderMockTestList({background=false} = {}){
 function showSavedMockReview(result){
   const list=document.getElementById('mocktest-list');
   list.innerHTML=`<div class="glass-card" id="mock-saved-review">
-    <h3>${escapeHtml(result.title)}</h3>
-    <h2>${Number(result.correct)}/${Number(result.total)} — ${Number(result.percent)}%</h2>
+    <div class="mock-review-header"><div><span class="mock-review-label">OXIRGI NATIJA</span><h3>${escapeHtml(result.title)}</h3></div><button class="ghost-btn" id="mock-review-back" type="button">← Mock testlar</button></div>
+    <div class="mock-review-score"><strong>${Number(result.percent)}%</strong><span>${Number(result.correct)}/${Number(result.total)} to‘g‘ri javob</span></div>
     <p>${escapeHtml(new Date(result.at).toLocaleDateString('uz-UZ'))}</p>
-    <div id="mock-saved-ai"></div>
+    <section class="mock-review-tutor"><h3>✦ Ustoz AI</h3><div id="mock-saved-ai"></div>
+    <button class="glow-btn" id="mock-review-analyze" type="button" ${!result.items?.length?'disabled':''}>${result.feedback?'Tahlilni yangilash':'AI tahlilini olish'}</button>
+    <p class="mock-review-note">Yangi AI so‘rovlari umumiy kunlik limitdan sarflanadi. Saqlangan tahlilni o‘qish limit sarflamaydi.</p>
+    <form id="mock-review-chat"><label for="mock-review-question">Test bo‘yicha savolingiz</label><textarea id="mock-review-question" maxlength="4000" placeholder="Masalan, 12-savoldagi xatomni tushuntiring" required></textarea><button class="glow-btn" type="submit">Yuborish</button></form><div id="mock-review-reply" aria-live="polite"></div></section>
+    <h3>Javoblar tafsiloti</h3>
     ${(result.items || []).map(item=>`<details style="margin:12px 0"><summary>${escapeHtml(item.label)} — ${item.isCorrect?'To‘g‘ri':'Xato yoki javobsiz'}</summary><p>${escapeHtml(item.question)}</p><p>Sizning javobingiz: ${escapeHtml(item.given || 'Javobsiz')}</p><p>To‘g‘ri javob: ${escapeHtml(item.expected)}</p></details>`).join('')}
     ${!result.items?.length?'<p>Bu eski natijaning batafsil javoblari saqlanmagan.</p>':''}
-    <button class="ghost-btn" id="mock-review-back" type="button">Mock testlarga qaytish</button>
   </div>`;
   const ai=document.getElementById('mock-saved-ai');
   ai.innerHTML=result.feedback?safeMarkdown(result.feedback):'<p>Bu urinish uchun AI tahlili hali olinmagan.</p>';
   renderMockMath(list);
   document.getElementById('mock-review-back').addEventListener('click',()=>renderMockTestList());
+  let busy=false;
+  const analyze=document.getElementById('mock-review-analyze');
+  const form=document.getElementById('mock-review-chat');
+  const reply=document.getElementById('mock-review-reply');
+  async function runReviewAI(task){
+    if(busy) return;
+    if(window.MATHLVL_PLUS_ACTIVE !== true){await openPlanSelect(await refreshPlusStatus());return;}
+    busy=true; analyze.disabled=true; form.querySelector('button').disabled=true;
+    reply.textContent='Ustoz AI javob tayyorlamoqda…';
+    try{await task();}catch(error){reply.textContent=error.message || 'Qayta urinib ko‘ring.';}
+    finally{busy=false;analyze.disabled=!result.items?.length;form.querySelector('button').disabled=false;refreshAiUsage();}
+  }
+  analyze.addEventListener('click',()=>runReviewAI(async()=>{
+    const response=await fetch('/api/mock-feedback',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(result),signal:AbortSignal.timeout(180000)});
+    const data=await response.json();
+    if(!response.ok) throw new Error(data.error || 'Tahlil olinmadi');
+    result.feedback=data.feedback || '';
+    ai.innerHTML=safeMarkdown(result.feedback);renderMockMath(ai);
+    try{const history=JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); const index=history.findIndex(r=>r.at===result.at && r.title===result.title);if(index>=0)history[index]=result;localStorage.setItem('mathlvl_mock_results',JSON.stringify(history));}catch(e){}
+    reply.textContent=await saveMockResultToServer(result)?'Oxirgi tahlil hisobingizda saqlandi.':'Hisobga saqlanmadi. Ulanishni tekshirib qayta urining.';
+    analyze.textContent='Tahlilni yangilash';
+  }));
+  const conversation=[];
+  form.addEventListener('submit',event=>{
+    event.preventDefault();
+    const input=document.getElementById('mock-review-question');const question=input.value.trim();if(!question)return;
+    runReviewAI(async()=>{
+      const turn={role:'user',content:question};
+      const data=await callMathlvlAI({mode:'mock-review',system:'Sen matematika ustozisan. Shu test natijasiga asoslanib savolga o‘zbekcha tushuntirish ber. Natija: '+JSON.stringify({title:result.title,percent:result.percent,items:result.items}).slice(0,24000),messages:[...conversation,turn].slice(-12),max_tokens:1800});
+      const answer=extractText(data);conversation.push(turn,{role:'assistant',content:answer});
+      reply.innerHTML=safeMarkdown(answer);renderMockMath(reply);input.value='';
+    });
+  });
+
 }
 
 function startMockTest(id){

@@ -1,6 +1,6 @@
 import {memoryRequest} from '../lib/memory.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
-import { consumeAiUsage, getAiUsage } from '../lib/ai-usage.js';
+import { consumeAiUsage, getAiUsage, hasPlus } from '../lib/ai-usage.js';
 import { teacherSystem } from '../lib/teacher.js';
 import crypto from 'crypto';
 import { requestGeminiWithFallback } from '../lib/gemini-request.js';
@@ -95,6 +95,7 @@ export default async function handler(req, res) {
   try {
     const invalid = validateChat(req.body);
     if(invalid) return res.status(400).json({error:invalid});
+    if(req.body?.mode === 'mock-review' && !(await hasPlus(session.email))) return res.status(403).json({error:'Mock tahlili MATHLVL Plus tarifida mavjud.'});
     let usage;
     try { usage = await consumeAiUsage(session.email); }
     catch { return res.status(503).json({error:'AI limiti vaqtincha olinmadi. Qayta urinib ko‘ring.'}); }
