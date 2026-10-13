@@ -68,7 +68,12 @@ function cleanMockResult(input) {
   const answered = Math.max(0, Math.min(total, Math.floor(Number(input?.answered) || 0)));
   const atDate = new Date(input?.at || Date.now());
   if (!title || Number.isNaN(atDate.getTime())) return null;
-  return { title, correct, total, answered, percent: Math.round(correct / total * 100), at: atDate.toISOString() };
+  const items = Array.isArray(input?.items) ? input.items.slice(0,100).map(item=>({
+    label:String(item.label || '').slice(0,20), question:String(item.question || '').slice(0,6000),
+    given:String(item.given || '').slice(0,2000), expected:String(item.expected || '').slice(0,2000), isCorrect:item.isCorrect === true
+  })) : [];
+  return { title, correct, total, answered, percent: Math.round(correct / total * 100), at: atDate.toISOString(),
+    testId:String(input?.testId || '').slice(0,160), items, feedback:String(input?.feedback || '').slice(0,60000) };
 }
 
 async function getMockHistory(email) {

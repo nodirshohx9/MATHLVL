@@ -182,7 +182,7 @@ test('auth refresh coalesces requests and preserves session on network failure',
 test('background mock refresh preserves active question, answers and timer',()=>{
  const attempt={id:'ongoing'};let cleared=0,writes=0;
  const list={set innerHTML(v){writes++;},querySelectorAll:()=>[]};
- const ctx={activeMock:attempt,mockTimerId:42,clearInterval(){cleared++;},document:{getElementById:()=>list},mockTestData:[]};
+ const ctx={isAccountMockSession:()=>false,activeMock:attempt,mockTimerId:42,clearInterval(){cleared++;},document:{getElementById:()=>list},mockTestData:[]};
  vm.createContext(ctx);
  vm.runInContext(source.slice(source.indexOf('function renderMockTestList('),source.indexOf('function startMockTest(')),ctx);
  ctx.renderMockTestList({background:true});
@@ -200,4 +200,15 @@ test('open A/B question earns one point only when all parts are correct',()=>{
  assert.equal(grade().correct,45);assert.equal(grade().totalElements,45);assert.equal(grade().percent,100);
  ctx.mockOpenAnswers[0]=['2','wrong'];assert.equal(grade().correct,44);assert.equal(grade().percent,98);
  ctx.mockOpenAnswers[0]=['',''];assert.equal(grade().correct,44);
+});
+
+
+test('mock history preserves answer review and AI analysis across storage round trip',()=>{
+ const api=readFileSync('api/progress.js','utf8');
+ const ctx={};vm.createContext(ctx);
+ vm.runInContext(api.slice(api.indexOf('function cleanMockResult('),api.indexOf('async function getMockHistory(')),ctx);
+ const input={title:'Mock #1',testId:'mock-1',total:45,correct:34,answered:45,at:'2026-10-13T06:00:00Z',feedback:'Izoh: x = 2',items:[{label:'36A',question:'x?',given:'3',expected:'2',isCorrect:false}]};
+ const saved=JSON.parse(JSON.stringify(ctx.cleanMockResult(input)));
+ assert.equal(saved.feedback,input.feedback);assert.equal(saved.testId,'mock-1');assert.equal(saved.items[0].expected,'2');assert.equal(saved.percent,76);
+ assert.equal(ctx.cleanMockResult({...input,items:null}).items.length,0);
 });

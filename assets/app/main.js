@@ -3056,6 +3056,7 @@ async function syncMockHistoryFromServer(){
     if(!res.ok) return;
     const data = await res.json();
     localStorage.setItem('mathlvl_mock_results', JSON.stringify(Array.isArray(data.results) ? data.results : []));
+    renderMockTestList({background:true});
   }catch(e){}
 }
 window.addEventListener('mathlvl:authchange', event=>{
@@ -3065,11 +3066,14 @@ window.addEventListener('mathlvl:authchange', event=>{
   if(typeof renderMockTestList === 'function') renderMockTestList({background:true});
   refreshAiUsage();
 });
-function saveMockResultToServer(result){
-  if(!isAccountMockSession()) return;
-  fetch('/api/progress?action=mock-history', {
-    method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(result)
-  }).catch(()=>{});
+async function saveMockResultToServer(result){
+  if(!isAccountMockSession()) return false;
+  try{
+  const response = await fetch('/api/progress?action=mock-history', {
+    method:'POST', credentials:'include', headers:{'Content-Type':'application/json'}, body:JSON.stringify(result), signal:AbortSignal.timeout(15000)
+  });
+  return response.ok;
+  }catch(e){ return false; }
 }
 
 function renderMockMath(el){
@@ -3134,7 +3138,7 @@ function mockAnsweredElements(){
 
 function renderMockTestList({background=false} = {}){
   // Late catalog/auth responses must never interrupt an ongoing attempt or result.
-  if(background && activeMock) return;
+  if(background && (activeMock || document.getElementById('mock-ai-feedback') || document.getElementById('mock-saved-review'))) return;
   if(mockTimerId) clearInterval(mockTimerId);
   mockTimerId = null;
   activeMock = null;
@@ -3150,7 +3154,40 @@ function renderMockTestList({background=false} = {}){
       </div>
       <button class="glow-btn mt-card-start" type="button" data-mt-start="${t.id}">Boshlash</button>
     </div>`).join('');
+  let savedHistory = [];
+  if(isAccountMockSession()){
+    try{ savedHistory = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]'); }catch(e){}
+  }
+  list.querySelectorAll('[data-mt-start]').forEach(btn=>{
+    const test = mockTestData.find(t=>String(t.id)===btn.dataset.mtStart);
+    const result = savedHistory.find(r=>r.testId===test?.id || r.title===test?.title);
+    if(!result) return;
+    const review = document.createElement('button');
+    review.className='ghost-btn'; review.type='button'; review.textContent='Tahlili';
+    const score=document.createElement('span'); score.textContent=`Oxirgi natija: ${Number(result.percent)}%`;
+    score.style.cssText='display:block;margin-top:8px;font-size:12px;color:var(--text-dim)';
+    btn.parentElement.querySelector('.mt-card-body')?.appendChild(score);
+    review.addEventListener('click',()=>showSavedMockReview(result));
+    btn.before(review);
+  });
   list.querySelectorAll('[data-mt-start]').forEach(btn => btn.addEventListener('click', () => startMockTest(btn.dataset.mtStart)));
+}
+
+function showSavedMockReview(result){
+  const list=document.getElementById('mocktest-list');
+  list.innerHTML=`<div class="glass-card" id="mock-saved-review">
+    <h3>${escapeHtml(result.title)}</h3>
+    <h2>${Number(result.correct)}/${Number(result.total)} — ${Number(result.percent)}%</h2>
+    <p>${escapeHtml(new Date(result.at).toLocaleDateString('uz-UZ'))}</p>
+    <div id="mock-saved-ai"></div>
+    ${(result.items || []).map(item=>`<details style="margin:12px 0"><summary>${escapeHtml(item.label)} — ${item.isCorrect?'To‘g‘ri':'Xato yoki javobsiz'}</summary><p>${escapeHtml(item.question)}</p><p>Sizning javobingiz: ${escapeHtml(item.given || 'Javobsiz')}</p><p>To‘g‘ri javob: ${escapeHtml(item.expected)}</p></details>`).join('')}
+    ${!result.items?.length?'<p>Bu eski natijaning batafsil javoblari saqlanmagan.</p>':''}
+    <button class="ghost-btn" id="mock-review-back" type="button">Mock testlarga qaytish</button>
+  </div>`;
+  const ai=document.getElementById('mock-saved-ai');
+  ai.innerHTML=result.feedback?safeMarkdown(result.feedback):'<p>Bu urinish uchun AI tahlili hali olinmagan.</p>';
+  renderMockMath(list);
+  document.getElementById('mock-review-back').addEventListener('click',()=>renderMockTestList());
 }
 
 function startMockTest(id){
@@ -3328,14 +3365,15 @@ function finishMockTest(autoFinish){
     answered,
     items:feedbackItems
   };
-  const result = {title:activeMock.title,correct,total:totalElements,answered,percent,at:new Date().toISOString()};
+  const result = {testId:activeMock.id,title:activeMock.title,correct,total:totalElements,answered,percent,at:new Date().toISOString(),items:feedbackItems,feedback:''};
+  let resultSavePending = Promise.resolve(false);
   if(isAccountMockSession()){
     try{
       const history = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]');
       history.unshift(result);
       localStorage.setItem('mathlvl_mock_results', JSON.stringify(history.slice(0,20)));
     }catch(e){}
-    saveMockResultToServer(result);
+    resultSavePending = saveMockResultToServer(result);
   }else clearGuestMockStorage();
 
   clearMockDraft();
@@ -3395,8 +3433,25 @@ function finishMockTest(autoFinish){
       }
       if(!res.ok) throw new Error(data.error || "Tahlilni olib bo‘lmadi");
 
-      box.innerHTML = safeMarkdown(data.feedback || '');
+      result.feedback = data.feedback || '';
+      try{
+        const history = JSON.parse(localStorage.getItem('mathlvl_mock_results') || '[]');
+        const index = history.findIndex(r=>r.at===result.at && r.title===result.title);
+        if(index>=0) history[index]=result;
+        localStorage.setItem('mathlvl_mock_results',JSON.stringify(history));
+      }catch(e){}
+      await resultSavePending;
+      const saved = await saveMockResultToServer(result);
+      box.innerHTML = safeMarkdown(result.feedback);
       renderMockMath(box);
+      const saveStatus=document.createElement('p');
+      saveStatus.textContent=saved?'Tahlil hisobingizda saqlandi.':'Tahlil shu qurilmada saqlandi. Hisobga saqlash uchun qayta urining.';
+      box.appendChild(saveStatus);
+      if(!saved){
+        const retry=document.createElement('button'); retry.className='ghost-btn'; retry.textContent='Saqlashni qayta urinish';
+        retry.onclick=async()=>{retry.disabled=true; const ok=await saveMockResultToServer(result); retry.disabled=false; if(ok){saveStatus.textContent='Tahlil hisobingizda saqlandi.';retry.remove();}};
+        box.appendChild(retry);
+      }
     }catch(err){
       box.textContent = err.message || "Ustoz AI tahlilini olishda muammo yuz berdi.";
     }finally{
