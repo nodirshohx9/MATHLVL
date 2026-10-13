@@ -190,3 +190,14 @@ test('background mock refresh preserves active question, answers and timer',()=>
  ctx.renderMockTestList();assert.equal(ctx.activeMock,null);assert.equal(cleared,1);assert.equal(writes,1);
  assert.match(source,/renderMockTestList\(\{background:true\}\)/);
 });
+
+
+test('open A/B question earns one point only when all parts are correct',()=>{
+ const block=source.slice(source.indexOf('  let correctClosed = 0;',source.indexOf('function finishMockTest')),source.indexOf('  const feedbackItems =',source.indexOf('function finishMockTest')));
+ const activeMock={closed:Array.from({length:35},()=>({a:0})),open:Array.from({length:10},()=>({parts:[{ans:'2'},{ans:'3'}]}))};
+ const ctx={activeMock,mockClosedAnswers:Array(35).fill(0),mockOpenAnswers:Array.from({length:10},()=>['2','3']),isMockAnswerCorrect:(a,b)=>a===b,mockTotalQuestions:t=>t.closed.length+t.open.length,mockAnsweredQuestions:()=>45};
+ const grade=()=>vm.runInNewContext(block+';({correct,totalElements,percent})',{...ctx});
+ assert.equal(grade().correct,45);assert.equal(grade().totalElements,45);assert.equal(grade().percent,100);
+ ctx.mockOpenAnswers[0]=['2','wrong'];assert.equal(grade().correct,44);assert.equal(grade().percent,98);
+ ctx.mockOpenAnswers[0]=['',''];assert.equal(grade().correct,44);
+});

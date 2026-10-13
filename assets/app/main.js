@@ -3290,12 +3290,12 @@ function finishMockTest(autoFinish){
   let correctClosed = 0;
   activeMock.closed.forEach((q,i) => { if(mockClosedAnswers[i] === q.a) correctClosed++; });
   let correctOpen = 0;
-  activeMock.open.forEach((q,qi) => q.parts.forEach((p,pi) => {
-    if(isMockAnswerCorrect(mockOpenAnswers[qi][pi], p.ans)) correctOpen++;
-  }));
+  activeMock.open.forEach((q,qi) => {
+    if(q.parts.every((p,pi)=>isMockAnswerCorrect(mockOpenAnswers[qi][pi], p.ans))) correctOpen++;
+  });
   const correct = correctClosed + correctOpen;
-  const totalElements = mockTotalElements(activeMock);
-  const answered = mockAnsweredElements();
+  const totalElements = mockTotalQuestions(activeMock);
+  const answered = mockAnsweredQuestions();
   const percent = Math.round(correct / totalElements * 100);
   const feedbackItems = [];
   const feedbackLetters = ['A','B','C','D'];
@@ -3345,7 +3345,7 @@ function finishMockTest(autoFinish){
     <div class="glass-card" style="text-align:center;padding:28px;">
       <div style="font-size:42px;">${percent>=70?'🏆':percent>=50?'📈':'📚'}</div>
       <h3>${mockTotalQuestions(activeMock)} ta savol bo‘yicha natija</h3>
-      <div>To‘g‘ri javoblar: ${correct}/${totalElements} (ochiq savollarning A/B qismlari alohida hisoblanadi)</div>
+      <div>To‘g‘ri javoblar: ${correct}/${totalElements} ta savol. Ochiq savolning barcha qismlari to‘g‘ri bo‘lsa, 1 ta hisoblanadi.</div>
       <div style="font-size:30px;font-weight:800;color:var(--blue);">${percent}%</div>
       <div style="color:var(--text-dim);margin:8px 0 8px;">Yopiq: ${correctClosed}/${activeMock.closed.length} • Ochiq A/B: ${correctOpen}/${totalElements-activeMock.closed.length} • Javob berilgan: ${answered}/${totalElements}${autoFinish?' • Vaqt tugadi':''}</div>
       <div style="max-width:650px;margin:0 auto 20px;font-size:12px;line-height:1.55;color:var(--text-dim);">Bu MATHLVL mashq ko‘rsatkichi. Rasmiy Milliy sertifikat natijasi oddiy foiz bilan emas, BBAning statistik baholash usuli (Rash modeli) asosida hisoblanadi.</div>
@@ -3418,7 +3418,7 @@ if(mockResultsBtn){
     list.innerHTML = `
       <div class="glass-card" style="padding:20px;">
         <h3 style="margin-top:0;">Oxirgi natijalar</h3>
-        ${history.length ? history.map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);"><b>${r.title}</b><div style="font-size:12px;color:var(--text-dim);">${r.correct}/${r.total} element • ${r.percent}%</div></div>`).join('') : '<div class="empty-note">Hali natija yo‘q.</div>'}
+        ${history.length ? history.map(r => `<div style="padding:10px 0;border-bottom:1px solid var(--border-soft);"><b>${r.title}</b><div style="font-size:12px;color:var(--text-dim);">${r.correct}/${r.total} ${r.total === 55 ? 'javob qismi (eski hisob)' : 'savol'} • ${r.percent}%</div></div>`).join('') : '<div class="empty-note">Hali natija yo‘q.</div>'}
         <button class="ghost-btn" id="mock-results-back" type="button" style="margin-top:16px;">Orqaga</button>
       </div>`;
     document.getElementById('mock-results-back').addEventListener('click', renderMockTestList);

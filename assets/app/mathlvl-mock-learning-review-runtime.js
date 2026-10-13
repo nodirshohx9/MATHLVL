@@ -138,14 +138,14 @@
 
     btn.addEventListener('click',async ()=>{
       if(typeof activeMock === 'undefined' || !activeMock) return;
-      const total = mockTotalElements(activeMock);
-      const answered = mockAnsweredElements();
+      const total = mockTotalQuestions(activeMock);
+      const answered = mockAnsweredQuestions();
       const left = Math.max(0,total-answered);
 
       const approved = await showMockConfirm({
         title: left ? 'Javobsiz savollar bor' : 'Testni yakunlaysizmi?',
         message: left
-          ? `${left} ta javob elementi hali javobsiz. Testni hozir yakunlasangiz, ular javobsiz hisoblanadi.`
+          ? `${left} ta savolga hali to‘liq javob berilmagan. Testni hozir yakunlasangiz, ular javobsiz hisoblanadi.`
           : 'Barcha javoblaringiz saqlanadi va natija darhol hisoblanadi.',
         confirmText: 'Testni yakunlash'
       });
