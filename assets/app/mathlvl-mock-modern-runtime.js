@@ -52,7 +52,7 @@
         <p class="mock-modern-sub">${accountSession() ? '150 daqiqalik to‘liq format, akkauntda saqlanadigan progress va ishlangan holati.' : 'Test tarixi va davom ettirish uchun hisobingizga kiring.'}</p>
         <div class="mock-modern-pills">
           <span class="mock-modern-pill"><b>45</b> topshiriq</span>
-          <span class="mock-modern-pill"><b>55</b> javob elementi</span>
+          <span class="mock-modern-pill"><b>35 + 10</b> yopiq va ochiq savol</span>
           <span class="mock-modern-pill"><b>150</b> daqiqa</span>
         </div>
         <div class="mock-modern-actions" id="mock-modern-actions"></div>
