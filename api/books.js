@@ -499,6 +499,9 @@ export default async function handler(req, res) {
       if (featured === 'true') books = books.filter(book => book.featured === true);
 
       books.sort((a, b) => {
+        const gradeNumber = book => Number(String(book.grade || '').match(/\d+/)?.[0] || 0);
+        const gradeOrder = gradeNumber(b) - gradeNumber(a);
+        if (gradeOrder) return gradeOrder;
         const order = Number(b.sortOrder || 0) - Number(a.sortOrder || 0);
         return order || Number(b.createdAt || 0) - Number(a.createdAt || 0);
       });
