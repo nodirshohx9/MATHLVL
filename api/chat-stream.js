@@ -2,10 +2,9 @@ import {memoryRequest, memoryMessages} from '../lib/memory.js';
 import { consumeAiUsage, hasPlus } from '../lib/ai-usage.js';
 import { validateChat, outputLimit } from '../lib/chat-limits.js';
 import { teacherSystem } from '../lib/teacher.js';
+import { requestGeminiStreamWithFallback } from '../lib/gemini-request.js';
 export const config = { runtime: 'edge', regions: ['iad1'] };
 
-// Keep interactive tutoring on the lower-latency model; operators can override it separately.
-const GEMINI_MODEL = process.env.GEMINI_STREAM_MODEL || 'gemini-3.1-flash-lite';
 const REDIS_URL = process.env.UPSTASH_REDIS_REST_URL;
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN;
 
@@ -132,23 +131,10 @@ export default async function handler(request) {
       const disconnect = () => upstreamAbort.abort();
       request.signal.addEventListener('abort', disconnect, {once:true});
       try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:streamGenerateContent?alt=sse&key=${apiKey}`;
-
-        let geminiRes;
-        for(let attempt=0; attempt<3; attempt++){
-          if(upstreamAbort.signal.aborted) throw new DOMException('Aborted','AbortError');
-          geminiRes = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(geminiBody),
-            signal: upstreamAbort.signal
-          });
-          if(![500,502,503,504].includes(geminiRes.status) || attempt===2) break;
-          await geminiRes.body?.cancel();
-          sendEvent({status:'AI hozir band, qayta ulanmoqda…'});
-          await new Promise(resolve=>setTimeout(resolve, 800 * (attempt+1)));
-        }
-
+        const geminiRes = await requestGeminiStreamWithFallback(apiKey, geminiBody, {
+          signal: upstreamAbort.signal,
+          onFallback: () => sendEvent({status:'AI hozir band, zaxira modelga ulanmoqda…'})
+        });
         if (!geminiRes.ok || !geminiRes.body) {
           await geminiRes.body?.cancel();
           const message = geminiRes.status===429
