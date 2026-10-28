@@ -62,3 +62,22 @@ test('teacher stream recovers a network failure and respects cancellation', asyn
   await assert.rejects(requestGeminiStreamWithFallback('key', {}, {signal:abort.signal,fetcher}));
   assert.equal(calls,2);
 });
+
+test('matching operator model overrides still retain an independent backup', async () => {
+  const previousStream = process.env.GEMINI_STREAM_MODEL;
+  const previousModel = process.env.GEMINI_MODEL;
+  try {
+    process.env.GEMINI_STREAM_MODEL = process.env.GEMINI_MODEL = 'busy-model';
+    const urls=[];
+    const result=await requestGeminiStreamWithFallback('key', {}, {fetcher:async(url)=>{
+      urls.push(url);
+      return new Response('{}',{status:urls.length===1?503:200});
+    }});
+    assert.equal(result.status,200);
+    assert.equal(urls.length,2);
+    assert.match(urls[1],/gemini-3\.5-flash-lite:streamGenerateContent/);
+  } finally {
+    if(previousStream===undefined) delete process.env.GEMINI_STREAM_MODEL; else process.env.GEMINI_STREAM_MODEL=previousStream;
+    if(previousModel===undefined) delete process.env.GEMINI_MODEL; else process.env.GEMINI_MODEL=previousModel;
+  }
+});
