@@ -8,14 +8,22 @@
   if(!btn || !backdrop || !sidebar) return;
 
   const titles = {home:'Bosh sahifa',learning:'O‘quv yo‘lim',sat:'SAT Math',books:'Kitoblar',teacher:'Ustoz AI',mocktest:'Mock Test',profile:'Profil'};
+  function syncDrawerAccess(){
+    const closed = window.innerWidth < 900 && !body.classList.contains('mobile-sidebar-open');
+    if(closed && sidebar.contains(document.activeElement)) btn.focus({preventScroll:true});
+    sidebar.inert = closed;
+  }
   function openMenu(){
     if(window.innerWidth >= 900 || body.classList.contains('reader-mode')) return;
     body.classList.add('mobile-sidebar-open');
     btn.setAttribute('aria-expanded','true');
+    syncDrawerAccess();
+    sidebar.querySelector('.sidebar-nav-item.active')?.focus({preventScroll:true});
   }
   function closeMenu(){
     body.classList.remove('mobile-sidebar-open');
     btn.setAttribute('aria-expanded','false');
+    syncDrawerAccess();
     const profileMenu = document.getElementById('sidebar-profile-menu');
     const profileWrap = document.getElementById('sidebar-profile-wrap');
     if(profileMenu) profileMenu.hidden = true;
@@ -50,10 +58,12 @@
   });
 
   document.addEventListener('keydown', e=>{ if(e.key === 'Escape') closeMenu(); });
-  window.addEventListener('resize', ()=>{ if(window.innerWidth >= 900) closeMenu(); });
+  window.addEventListener('resize', ()=>{ if(window.innerWidth >= 900) closeMenu(); else syncDrawerAccess(); });
 
   const observer = new MutationObserver(syncSectionTitle);
   document.querySelectorAll('.panel').forEach(p=>observer.observe(p,{attributes:true,attributeFilter:['class']}));
   observer.observe(body,{attributes:true,attributeFilter:['class']});
+  new MutationObserver(syncDrawerAccess).observe(body,{attributes:true,attributeFilter:['class']});
+  syncDrawerAccess();
   syncSectionTitle();
 })();

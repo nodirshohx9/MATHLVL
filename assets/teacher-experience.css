@@ -28,3 +28,8 @@ html[data-theme="light"]{--teacher-panel:#f8faff;--teacher-border:#d8dfec;--teac
 html[data-theme="light"] .teacher-picker{color:#1e2b45}html[data-theme="light"] .teacher-option-copy small,html[data-theme="light"] .teacher-ai-badge{color:#53637c}html[data-theme="light"] .teacher-selection-status{color:#586882!important}html[data-theme="light"] #panel-teacher.view-teacher .ai-welcome>p{color:#53637c!important}
 @media(max-width:600px){.teacher-picker{padding:13px;margin-bottom:10px;border-radius:16px}.teacher-picker h3{font-size:16px}.teacher-option{padding:10px;gap:8px}.teacher-avatar{width:34px;height:34px;font-size:16px}.teacher-option-copy strong{font-size:12px}.teacher-option-copy small{font-size:10px}.teacher-ai-badge{font-size:10px}.teacher-selection-status{font-size:10px!important}#panel-teacher.view-teacher .ai-welcome{padding:14px 8px!important}#panel-teacher.view-teacher .ai-orb{display:none!important}.teacher-picker-compact .teacher-check{display:none}}
 @media(prefers-reduced-motion:reduce){.teacher-option,.book-card{transition:none!important}.book-card:hover{transform:none}}
+
+@media (max-width: 899px) {
+  #panel-teacher.view-teacher .chat-col { min-width: 0; overflow-x: clip; }
+  #panel-teacher.view-teacher .bubble .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+}
