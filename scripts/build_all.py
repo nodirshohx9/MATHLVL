@@ -65,3 +65,6 @@ subprocess.run(['node', '--test', 'tests/chat.test.mjs', 'tests/learning.test.mj
 logo = Path('mathlvl-logo.png')
 if not logo.is_file() or logo.read_bytes()[:8] != b'\x89PNG\r\n\x1a\n':
     raise SystemExit('Missing or invalid mathlvl-logo.png')
+
+# Keep editable source assets and produce fingerprinted browser assets at deploy time.
+subprocess.run(['node', 'scripts/optimize-home.mjs'], check=True)
