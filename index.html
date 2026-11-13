@@ -55,6 +55,8 @@
 <link rel="manifest" href="/manifest.webmanifest">
 <link rel="apple-touch-icon" href="/assets/install/icon-180.png">
 <script defer src="/assets/install/install.js"></script>
+<link rel="stylesheet" href="/assets/app/home-dashboard.css">
+<script src="/assets/app/home-dashboard.js" defer></script>
 </head>
 <body>
 
@@ -178,40 +180,25 @@
         <div class="hero-eyebrow">MATHLVL / O‘QUV PLATFORMASI</div>
         <h2 class="hero-title">Matematikani bir tizimda o‘rganing.</h2>
         <p class="hero-sub">Kitoblar, Ustoz AI va Milliy sertifikat mock testlari — bitta zamonaviy o‘quv muhitida.</p>
-        <div class="hero-trust-row" aria-label="Platforma imkoniyatlari">
-          <span>Kitoblar</span>
-          <span>Ustoz AI</span>
-          <span>Mock testlar</span>
+        <div class="home-chips" aria-label="Platforma imkoniyatlari">
+          <button type="button" class="home-chip hpp-link" data-home-target="books" title="O‘qish va o‘rganish"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg> Kitoblar</button>
+          <button type="button" class="home-chip hpp-link" data-home-target="teacher" title="Qadam-baqadam tushuntirish"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg> Ustoz AI</button>
+          <button type="button" class="home-chip hpp-link" data-home-target="mocktest" title="Mock testlar — Real formatdagi mock testlar"><svg class="nova-svg-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg> Milliy sertifikat</button>
         </div>
       </div>
-      <div class="hero-product-preview" aria-label="MATHLVL asosiy bo‘limlari">
-        <div class="hpp-top">
-          <span class="hpp-status-dot"></span>
-          <span>MATHLVL workspace</span>
-          <span class="hpp-status">online</span>
-        </div>
-        <button class="hpp-metric hpp-link" type="button" data-home-target="books">
-          <span class="hpp-icon">
-            <svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg>
-          </span>
-          <span class="hpp-copy"><b>Kitoblar</b><small>O‘qish va o‘rganish</small></span>
-          <span class="hpp-arrow">↗</span>
-        </button>
-        <button class="hpp-metric hpp-link" type="button" data-home-target="teacher">
-          <span class="hpp-icon">
-            <svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg>
-          </span>
-          <span class="hpp-copy"><b>Ustoz AI</b><small>Qadam-baqadam tushuntirish</small></span>
-          <span class="hpp-arrow">↗</span>
-        </button>
-        <button class="hpp-metric hpp-link" type="button" data-home-target="mocktest">
-          <span class="hpp-icon">
-            <svg class="nova-svg-icon" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 9h6M9 13h6M9 17h3"/></svg>
-          </span>
-          <span class="hpp-copy"><b>Milliy sertifikat</b><small>Real formatdagi mock testlar</small></span>
-          <span class="hpp-arrow">↗</span>
-        </button>
-      </div>
+      <svg class="home-graph" viewBox="0 0 360 220" aria-hidden="true" focusable="false">
+        <defs>
+          <pattern id="home-grid" width="20" height="20" patternUnits="userSpaceOnUse"><path d="M20 0H0V20" class="graph-grid"/></pattern>
+          <filter id="home-glow" x="-40%" y="-40%" width="180%" height="180%"><feGaussianBlur stdDeviation="4"/></filter>
+          <path id="home-parabola" d="M62 22 Q180 342 298 22"/>
+        </defs>
+        <rect width="360" height="220" fill="url(#home-grid)"/>
+        <path class="graph-plane" d="M180 112 269 57V166Z"/>
+        <path class="graph-axis" d="M15 112H345m-6 -3 6 3-6 3M180 210V12m-3 6 3-6 3 6"/>
+        <g class="graph-curve"><use href="#home-parabola" filter="url(#home-glow)"/><use href="#home-parabola"/></g>
+        <g class="graph-points"><circle cx="102" cy="112" r="3"/><circle cx="180" cy="182" r="3"/><circle cx="258" cy="112" r="3"/></g>
+        <g class="graph-label"><text x="10" y="22">y = ax² + bx + c</text><text x="18" y="198">Δ = b² − 4ac</text><text x="335" y="128">x</text><text x="190" y="19">y</text></g>
+      </svg>
     </div>
 
     <details id="install-app" style="margin:1rem 0;line-height:1.6"><summary>Mathlvl’ni telefonga o‘rnatish</summary>
@@ -220,6 +207,29 @@
 <p>iPhone’da saytni Safari’da oching. Ulashish → Bosh ekranga qo‘shish → Qo‘shish. «Veb-ilova sifatida ochish» ko‘rinsa, uni yoqing.</p>
 <p>Kitoblar, testlar va Ustoz AI uchun internet kerak.</p></details>
     <div class="learning-home-entry"><div><strong>O‘zingizga mos yo‘ldan boshlang</strong><p>Diagnostika, shaxsiy reja va SAT Math mashqlari.</p></div><div class="learning-home-actions"><button class="learning-btn primary" type="button" data-home-target="learning">O‘quv yo‘lim →</button><button class="learning-btn" type="button" data-home-target="sat">SAT Math</button></div></div>
+    <div class="home-feature-row">
+      <article class="home-card home-continue">
+        <div><small>Davom ettirish</small><h3>Chiziqli tenglamalar</h3>
+          <div class="home-progress"><progress max="100" value="60" aria-label="Chiziqli tenglamalar"></progress>60%</div>
+        </div>
+        <button class="home-primary hpp-link" type="button" data-home-target="learning">Davom ettirish</button>
+      </article>
+      <button class="home-card home-sat hpp-link" type="button" data-home-target="sat">
+        <svg class="nova-svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 9-9M16 3h5v5"/></svg><span><strong>SAT Math</strong><small>SAT imtihoniga tayyorgarlik</small></span><b class="home-badge">YANGI</b>
+      </button>
+    </div>
+    <div class="home-stats">
+      <div class="home-card home-stat"><svg class="nova-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2c1 5-3 6-2 10-2-1-3-2-3-4-5 5-4 12 4 13 7 0 10-8 5-13 0 3-2 4-3 4 2-4 1-7-1-10Z"/></svg><div><small>Kunlik seriya</small><strong data-home-stat="streak"></strong></div></div>
+      <div class="home-card home-stat"><svg class="nova-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14 2 4 14h7l-1 8 10-13h-7Z"/></svg><div><small>Bugungi XP</small><strong data-home-stat="xp"></strong></div></div>
+      <div class="home-card home-stat"><svg class="nova-svg-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 20v-5m7 5V9m7 11V3"/></svg><div><small>Yechilgan masalalar</small><strong data-home-stat="solved"></strong></div></div>
+    </div>
+    <nav class="home-mobile-nav" aria-label="Asosiy navigatsiya">
+      <button class="hpp-link" type="button" data-home-target="home" aria-current="page"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M3 11.5 12 4l9 7.5"/><path d="M5.5 10.5V20h13v-9.5"/><path d="M9.5 20v-6h5v6"/></svg><span>Bosh sahifa</span></button>
+      <button class="hpp-link" type="button" data-home-target="learning"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5h6l2 2 2-2h6v15h-6l-2 2-2-2H4zM12 7v15"/></svg><span>O‘quv yo‘lim</span></button>
+      <button class="hpp-link" type="button" data-home-target="sat"><svg class="nova-svg-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/><path d="m12 12 9-9M16 3h5v5"/></svg><span>SAT Math</span></button>
+      <button class="hpp-link" type="button" data-home-target="books"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H11v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M20 5.5A2.5 2.5 0 0 0 17.5 3H13v16h4.5a2.5 2.5 0 0 1 2.5 2.5z"/></svg><span>Kitoblar</span></button>
+      <button class="hpp-link" type="button" data-home-target="teacher"><svg class="nova-svg-icon" viewBox="0 0 24 24"><path d="m12 3 1.4 4.1L17.5 8.5l-4.1 1.4L12 14l-1.4-4.1-4.1-1.4 4.1-1.4z"/></svg><span>Ustoz AI</span></button>
+    </nav>
     <div class="dash-solve-section">
       <div class="solve-section-head">
         <div>
