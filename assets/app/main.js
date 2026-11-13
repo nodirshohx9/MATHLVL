@@ -2907,7 +2907,9 @@ document.getElementById('qr-scan-btn').addEventListener('click', async ()=>{
   qrStarting=true;button.disabled=true;
   let scanner,decoded=false,timer;
   try{
-    await loadFeatureScript('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js');
+    if (typeof Html5Qrcode === 'undefined') {
+      await loadFeatureScript('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js');
+    }
     if (generation !== qrGeneration) return;
     scanner=new Html5Qrcode('qr-scanner-view');qrScannerInstance=scanner;
     const starting=scanner.start({facingMode:'environment'},{fps:8,qrbox:220},text=>{
