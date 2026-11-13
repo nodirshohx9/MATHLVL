@@ -30,6 +30,7 @@ html[data-theme="light"] .teacher-picker{color:#1e2b45}html[data-theme="light"] 
 @media(prefers-reduced-motion:reduce){.teacher-option,.book-card{transition:none!important}.book-card:hover{transform:none}}
 
 @media (max-width: 899px) {
-  #panel-teacher.view-teacher .chat-col { min-width: 0; overflow-x: clip; }
+  #panel-teacher.view-teacher { max-width: 100%; min-width: 0; overflow-x: clip !important; }
+  #panel-teacher.view-teacher .chat-col { min-width: 0; overflow-x: clip !important; }
   #panel-teacher.view-teacher .bubble .katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; }
 }
