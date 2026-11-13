@@ -1204,8 +1204,23 @@ document.querySelectorAll('.chip-btn').forEach(chip=>{
 });
 
 // ---- Book mode: detail screen -> custom continuous-scroll PDF reader (PDF.js) ----
-if(window['pdfjsLib']){
-  pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+const featureScripts = new Map();
+function loadFeatureScript(url) {
+  if (!featureScripts.has(url)) {
+    const ready = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = url;
+      script.onload = resolve;
+      script.onerror = () => {
+        featureScripts.delete(url);
+        script.remove();
+        reject(new Error('Kutubxonani yuklab bo‘lmadi.'));
+      };
+      document.head.append(script);
+    });
+    featureScripts.set(url, ready);
+  }
+  return featureScripts.get(url);
 }
 let readerPdfDoc = null;
 let readerPageNum = 1;
@@ -1375,8 +1390,11 @@ async function startReading(book){
     retryBtn.style.display = 'inline-block';
   }
 
-  if(typeof pdfjsLib === 'undefined'){
-    console.error('PDF.js kutubxonasi yuklanmadi (pdfjsLib aniqlanmagan).');
+  try {
+    await loadFeatureScript('https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js');
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.worker.min.js';
+  } catch (error) {
+    console.error(error);
     showReaderError();
     return;
   }
@@ -2698,7 +2716,8 @@ document.getElementById('payment-submit-btn').addEventListener('click', async ()
   statusEl.textContent = "Yuklanmoqda...";
   try{
     const safeName = String(file.name || 'receipt.jpg').replace(/[^a-zA-Z0-9._-]+/g,'-').slice(-100);
-    const blobResult = await window.__blobUpload(`payment/${Date.now()}-${safeName}`, file, {
+    const { upload } = await import("https://esm.sh/@vercel/blob@0.27.0/client");
+    const blobResult = await upload(`payment/${Date.now()}-${safeName}`, file, {
       access: 'public',
       handleUploadUrl: '/api/upload'
     });
@@ -2888,6 +2907,10 @@ document.getElementById('qr-scan-btn').addEventListener('click', async ()=>{
   qrStarting=true;button.disabled=true;
   let scanner,decoded=false,timer;
   try{
+    if (typeof Html5Qrcode === 'undefined') {
+      await loadFeatureScript('https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js');
+    }
+    if (generation !== qrGeneration) return;
     scanner=new Html5Qrcode('qr-scanner-view');qrScannerInstance=scanner;
     const starting=scanner.start({facingMode:'environment'},{fps:8,qrbox:220},text=>{
       if(decoded || generation!==qrGeneration || giftBusy)return;
